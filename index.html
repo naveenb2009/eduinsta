@@ -1,0 +1,2454 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>EduInsta</title>
+<meta name="theme-color" content="#05060F">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="EduInsta">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20512%20512%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%235eead4%22/%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%237c6cf6%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%22512%22%20height%3D%22512%22%20rx%3D%22112%22%20fill%3D%22url%28%23g%29%22/%3E%3Cpath%20d%3D%22M208%20160%20L368%20256%20L208%20352%20Z%22%20fill%3D%22%23fff%22/%3E%3Cpath%20d%3D%22M128%20120%20L240%2072%20L352%20120%20L240%20168%20Z%22%20fill%3D%22%230b0f1e%22%20opacity%3D%22.85%22/%3E%3Ccircle%20cx%3D%22352%22%20cy%3D%22136%22%20r%3D%2221%22%20fill%3D%22%23facc15%22/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20512%20512%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%235eead4%22/%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%237c6cf6%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%22512%22%20height%3D%22512%22%20rx%3D%22112%22%20fill%3D%22url%28%23g%29%22/%3E%3Cpath%20d%3D%22M208%20160%20L368%20256%20L208%20352%20Z%22%20fill%3D%22%23fff%22/%3E%3Cpath%20d%3D%22M128%20120%20L240%2072%20L352%20120%20L240%20168%20Z%22%20fill%3D%22%230b0f1e%22%20opacity%3D%22.85%22/%3E%3Ccircle%20cx%3D%22352%22%20cy%3D%22136%22%20r%3D%2221%22%20fill%3D%22%23facc15%22/%3E%3C/svg%3E">
+<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22EduInsta%22%2C%22short_name%22%3A%22EduInsta%22%2C%22description%22%3A%22Educational%20short-video%20learning%20app%22%2C%22start_url%22%3A%22.%22%2C%22scope%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22orientation%22%3A%22portrait%22%2C%22background_color%22%3A%22%2305060F%22%2C%22theme_color%22%3A%22%2305060F%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage/svg%2Bxml%2C%253Csvg%2520xmlns%253D%2522http%253A//www.w3.org/2000/svg%2522%2520viewBox%253D%25220%25200%2520512%2520512%2522%253E%253Cdefs%253E%253ClinearGradient%2520id%253D%2522g%2522%2520x1%253D%25220%2522%2520y1%253D%25220%2522%2520x2%253D%25221%2522%2520y2%253D%25221%2522%253E%253Cstop%2520offset%253D%25220%2522%2520stop-color%253D%2522%25235eead4%2522/%253E%253Cstop%2520offset%253D%25221%2522%2520stop-color%253D%2522%25237c6cf6%2522/%253E%253C/linearGradient%253E%253C/defs%253E%253Crect%2520width%253D%2522512%2522%2520height%253D%2522512%2522%2520rx%253D%2522112%2522%2520fill%253D%2522url%2528%2523g%2529%2522/%253E%253Cpath%2520d%253D%2522M208%2520160%2520L368%2520256%2520L208%2520352%2520Z%2522%2520fill%253D%2522%2523fff%2522/%253E%253Cpath%2520d%253D%2522M128%2520120%2520L240%252072%2520L352%2520120%2520L240%2520168%2520Z%2522%2520fill%253D%2522%25230b0f1e%2522%2520opacity%253D%2522.85%2522/%253E%253Ccircle%2520cx%253D%2522352%2522%2520cy%253D%2522136%2522%2520r%253D%252221%2522%2520fill%253D%2522%2523facc15%2522/%253E%253C/svg%253E%22%2C%22sizes%22%3A%22any%22%2C%22type%22%3A%22image/svg%2Bxml%22%2C%22purpose%22%3A%22any%20maskable%22%7D%5D%7D">
+<style>
+*{box-sizing:border-box}
+:root{--brand-teal:#5eead4;--brand-purple:#7c6cf6;--brand-gold:#facc15;--brand-dark:#05060f}
+html,body{margin:0;height:100%;font-family:Arial,sans-serif;background:var(--brand-dark);color:#fff;overflow:hidden}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+.app{height:100vh;height:100dvh;position:relative;
+  background:
+    radial-gradient(1100px 650px at 12% -8%,rgba(94,234,212,.20),transparent 60%),
+    radial-gradient(950px 620px at 108% 8%,rgba(124,108,246,.22),transparent 55%),
+    linear-gradient(180deg,#05060f 0%,#0b0f1f 55%,#05060f 100%)}
+
+/* ---------- Header / bottom nav ---------- */
+header{height:58px;position:fixed;top:0;left:0;right:0;z-index:20;background:rgba(8,10,20,.68);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:space-between;padding:0 14px;border-bottom:1px solid rgba(94,234,212,.16)}
+.logo{font-weight:800;font-size:20px;color:#5eead4;background:linear-gradient(90deg,var(--brand-teal),var(--brand-purple));-webkit-background-clip:text;background-clip:text}
+@supports (-webkit-background-clip:text) or (background-clip:text){.logo{color:transparent}}
+.logoMark{width:30px;height:30px;flex:none;display:block}
+.headerLeft{display:flex;align-items:center;gap:9px}
+.headerBtns{display:flex;gap:8px}
+.iconBtn{position:relative;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);color:#fff;border-radius:50%;width:38px;height:38px;font-size:16px;display:flex;align-items:center;justify-content:center;flex:none}
+.notifBadge{position:absolute;top:-3px;right:-3px;background:#ff4d4f;color:#fff;font-size:9px;min-width:16px;height:16px;border-radius:9px;display:none;align-items:center;justify-content:center;padding:0 3px;font-weight:800;border:1.5px solid #05060f}
+.notifActions{display:flex;gap:8px;margin:2px 0 10px}
+.notifActions button{flex:1;border:1px solid #ddd;background:#fff;border-radius:9px;padding:8px;font-size:12px}
+.notifList{max-height:55dvh;overflow:auto}
+.notifItem{display:flex;align-items:flex-start;gap:10px;width:100%;border:0;border-top:1px solid #f0f0f0;background:#fff;padding:12px 4px;text-align:left;position:relative}
+.notifItem:first-child{border-top:0}
+.notifItem.unread{background:#f4fbfa}
+.notifIcon{font-size:19px;flex:none;margin-top:1px}
+.notifBody{flex:1;min-width:0}
+.notifBody b{display:block;font-size:13px}
+.notifBody div{font-size:12px;color:#555;margin-top:2px;line-height:1.4}
+.notifBody small{display:block;color:#999;margin-top:5px;font-size:11px}
+.notifDot{width:8px;height:8px;border-radius:50%;background:#5eead4;flex:none;margin-top:6px}
+.bottom{background:rgba(6,8,16,.82);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-top:1px solid rgba(94,234,212,.14)}
+
+/* ---------- Auth gate (shown before first sign-in) ---------- */
+.app.authGateMode header,.app.authGateMode .bottom{display:none}
+.authGate{position:fixed;inset:0;z-index:40;overflow:auto;padding:40px 22px;display:flex;flex-direction:column;align-items:center;color:#fff;
+  background:
+    radial-gradient(900px 560px at 20% 0%,rgba(94,234,212,.24),transparent 60%),
+    radial-gradient(800px 520px at 100% 100%,rgba(124,108,246,.26),transparent 55%),
+    linear-gradient(180deg,#05060f 0%,#0c1024 100%)}
+.authGateLogoRow{display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:6px}
+.authGateLogoMark{width:60px;height:60px}
+.authGateLogo{font-weight:800;font-size:28px;color:#5eead4;background:linear-gradient(90deg,var(--brand-teal),var(--brand-purple));-webkit-background-clip:text;background-clip:text}
+@supports (-webkit-background-clip:text) or (background-clip:text){.authGateLogo{color:transparent}}
+.authGateTag{color:#aaa;font-size:13px;margin-bottom:26px;text-align:center}
+.authGateCard{width:100%;max-width:420px;background:rgba(17,19,32,.86);border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.45)}
+.authGateTabs{display:flex;gap:5px;background:#1c1c1c;padding:4px;border-radius:12px;margin-bottom:16px}
+.authGateTabs button{flex:1;border:0;padding:10px;border-radius:9px;background:transparent;color:#999;font-weight:700}
+.authGateTabs button.on{background:linear-gradient(90deg,var(--brand-teal),var(--brand-purple));color:#04101a}
+.authGate .field{background:#1a1a1a;border:1px solid #333;color:#fff}
+.authGate .field::placeholder{color:#888}
+.passwordField{position:relative}
+.passwordField .field{padding-right:44px}
+.passwordToggle{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:transparent;border:0;color:inherit;font-size:16px;width:34px;height:34px;opacity:.85}
+.fieldError{color:#ff6b6b;font-size:12px;margin:-3px 0 8px 2px}
+.pwHint{display:block;font-size:11px;color:#888;margin:-4px 0 8px 2px;line-height:1.4}
+.authGateLinks{display:flex;justify-content:space-between;align-items:center;margin-top:6px}
+.authGateLinks button{background:transparent;border:0;color:#5eead4;font-size:12px}
+.termsRow{display:flex;align-items:flex-start;gap:8px;font-size:12px;color:#bbb;margin:10px 0}
+.termsRow input{margin-top:3px}
+.authGateHint{font-size:11px;color:#777;text-align:center;margin-top:14px;line-height:1.5}
+.bottom{position:fixed;z-index:30;bottom:0;left:0;right:0;height:70px;background:#090909;border-top:1px solid #292929;display:flex;justify-content:space-around;padding-bottom:env(safe-area-inset-bottom)}
+.nav{flex:1;border:0;background:none;color:#aaa;font-size:11px}
+.nav b{display:block;font-size:21px;margin-bottom:3px}
+.nav.active{color:#5eead4}
+
+/* ---------- Home feed / reels ---------- */
+.homeTabs{position:fixed;z-index:25;top:66px;left:50%;transform:translateX(-50%);display:flex;gap:4px;padding:4px;background:rgba(255,255,255,.92);border:1px solid #ddd;border-radius:24px;box-shadow:0 2px 10px rgba(0,0,0,.12)}
+.homeTab{border:0;background:transparent;color:#666;padding:8px 16px;border-radius:18px;font-size:13px;font-weight:700}
+.homeTab.active{background:#111;color:#fff}
+.feed{height:100vh;height:100dvh;overflow-y:auto;scroll-snap-type:y mandatory;padding-top:58px;padding-bottom:70px}
+.reel{height:calc(100vh - 128px);height:calc(100dvh - 128px);min-height:460px;scroll-snap-align:start;position:relative;background:#101010;border-bottom:1px solid #222;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.reel video{width:100%;height:100%;object-fit:cover;background:#111}
+.shade{position:absolute;inset:0;background:linear-gradient(transparent 42%,rgba(0,0,0,.82) 100%);pointer-events:none}
+.playPauseBtn{position:absolute;z-index:6;left:50%;top:50%;transform:translate(-50%,-50%);width:58px;height:58px;border:1px solid rgba(255,255,255,.75);border-radius:50%;background:rgba(0,0,0,.55);color:#fff;font-size:21px;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .15s}
+.reel.paused .playPauseBtn,.reel:active .playPauseBtn{opacity:1}
+.playPrompt{position:absolute;z-index:8;left:50%;top:50%;transform:translate(-50%,-50%);border:0;border-radius:999px;background:rgba(0,0,0,.85);color:#fff;padding:13px 18px;font-weight:700;box-shadow:0 3px 14px #0008}
+.info{position:absolute;left:15px;right:76px;bottom:18px;z-index:3}
+.creator{font-weight:700;font-size:16px;margin-bottom:8px;display:flex;align-items:center;flex-wrap:wrap;gap:7px}
+.follow{border:1px solid #5eead4;color:#5eead4;background:transparent;border-radius:14px;padding:4px 9px;font-size:12px}
+.follow.on{background:#5eead4;color:#042f2b;border-color:#5eead4}
+.title{font-size:18px;font-weight:700;margin:8px 0}
+.meta{font-size:13px;color:#ccc;line-height:1.4}
+.actions{position:absolute;right:10px;bottom:18px;z-index:4;display:flex;flex-direction:column;gap:12px}
+.act{width:52px;border:0;background:rgba(20,20,20,.78);color:#fff;border-radius:14px;padding:8px 4px}
+.act span{display:block;font-size:21px}
+.act small{font-size:10px;display:block;margin-top:2px}
+.act.liked{color:#ff5d73}
+.act.saved{color:#5eead4}
+.act.soundOn{color:#5eead4}
+
+/* ---------- Panels / generic UI ---------- */
+.panel{position:fixed;z-index:15;inset:58px 0 70px;background:linear-gradient(165deg,#f2fbf9 0%,#f6f4fd 45%,#fdf6ef 100%);color:#111;overflow:auto;padding:18px}
+.panel h2{margin-top:0}
+.chips{display:flex;gap:8px;overflow:auto;padding:5px 0 12px}
+.chip{white-space:nowrap;border:1px solid #ccc;background:#fff;color:#111;border-radius:18px;padding:8px 12px}
+.chip.on{background:#111;color:#fff}
+.cards{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.card{background:#fff;border:1px solid #ddd;border-radius:12px;padding:12px}
+.card button{margin-top:8px;border:0;border-radius:9px;padding:8px 10px;background:#111;color:#fff;width:100%}
+.field{width:100%;padding:12px;margin:7px 0;border:1px solid #ccc;border-radius:10px;background:#fff;color:#111}
+textarea.field{resize:vertical}
+.primary{background:#111;color:#fff;border:0;padding:12px 16px;border-radius:10px}
+.empty{padding:30px;text-align:center;color:#666}
+.modal{position:fixed;z-index:100;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:flex-end}
+.sheet{background:#fff;color:#111;width:100%;border-radius:20px 20px 0 0;padding:18px;max-height:82dvh;overflow:auto}
+.sheet h3{margin-top:0}
+.close{border:0;background:#f0f0f0;border-radius:50%;width:34px;height:34px;font-size:20px}
+.optionList button,.optionBtn{display:block;width:100%;border:1px solid #ddd;background:#fff;color:#111;border-radius:10px;padding:11px;text-align:left;margin:6px 0}
+.searchBox{display:flex;gap:8px}
+.hidden{display:none!important}
+.toast{position:fixed;z-index:200;bottom:88px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:11px 16px;border-radius:20px;border:1px solid #444;max-width:86vw;text-align:center;font-size:13px}
+
+.searchInput{width:100%;padding:13px 15px;border:1px solid #ccc;border-radius:12px;background:#fff;color:#111;caret-color:#111;outline:none;font-size:16px;margin-bottom:8px}
+.searchInput::placeholder{color:#888}
+.searchResults{margin-top:6px}
+.searchReel{display:flex;gap:12px;background:#fff;border:1px solid #ddd;border-radius:14px;padding:9px;margin:9px 0;overflow:hidden;cursor:pointer}
+.searchReel video{width:105px;height:145px;object-fit:cover;border-radius:10px;background:#111;flex:none}
+.searchReelInfo{padding:5px 3px;min-width:0}
+.searchReelInfo b{font-size:14px;line-height:1.25;display:block}
+.searchMeta{font-size:11px;color:#666;margin:6px 0}
+.searchDesc{font-size:12px;color:#444;line-height:1.3;margin-bottom:8px}
+.searchReelInfo .primary{font-size:12px;padding:8px 10px;width:auto}
+
+.commentHeader{padding:0 0 13px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.commentHeader h3,.commentHeader b{margin:0 0 3px;display:block}
+.commentHeader small{color:#777;display:block;max-width:280px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.commentList{max-height:45dvh;overflow:auto;padding:2px 0;min-height:120px}
+.commentRow{display:flex;gap:10px;padding:12px 0;border-bottom:1px solid #f0f0f0}
+.commentAvatar{width:38px;height:38px;flex:none;border-radius:50%;background:#e7e7e7;display:flex;align-items:center;justify-content:center;font-weight:700;color:#333}
+.commentBody{font-size:14px;line-height:1.4}
+.commentBody b{font-size:13px}
+.commentBody small{display:block;color:#999;margin-top:4px}
+.commentsEmpty{padding:35px 10px!important;line-height:1.8}
+.commentComposer{padding:12px 0 0;border-top:1px solid #eee;display:flex;gap:8px;margin-top:8px}
+.commentComposer input{flex:1;border:1px solid #ddd;border-radius:22px;padding:11px 14px;outline:none}
+.commentComposer button{width:44px;border:0;border-radius:50%;background:#111;color:#fff;font-size:18px}
+
+/* ---------- Profile / settings ---------- */
+.profileTopBar,.detailHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:-4px 0 14px}
+.profileTopBar h2,.detailHead h2{margin:0;flex:1}
+.profileBack,.profileGear,.detailHead button{border:0;background:#eee;color:#111;border-radius:10px;width:38px;height:38px;font-size:22px}
+.profileGear{font-size:18px}
+.profileHero{display:flex;align-items:center;gap:14px;padding:5px 0 14px}
+.profileHero h2{margin:0 0 4px}
+.profileAvatar{width:64px;height:64px;border-radius:50%;background:#111;color:#5eead4;display:flex;align-items:center;justify-content:center;font-size:25px;font-weight:800;flex:none}
+.profileAvatar.big{width:96px;height:96px}
+.erProfilePhoto{width:64px;height:64px;border-radius:50%;object-fit:cover;display:block;flex:none}
+.erProfilePhoto.big{width:96px;height:96px}
+.muted{color:#777}
+.profileStats{display:grid;grid-template-columns:repeat(4,1fr);background:#fff;border:1px solid #ddd;border-radius:13px;margin-bottom:12px;overflow:hidden}
+.profileStats button{border:0;background:#fff;border-right:1px solid #eee;padding:11px 3px;text-align:center}
+.profileStats button:last-child{border-right:0}
+.profileStats b{display:block;font-size:17px}
+.profileStats small{color:#777;font-size:10px}
+.profileActions{display:flex;gap:9px;margin:4px 0 13px}
+.profileActions button{flex:1;border:1px solid #ddd;background:#fff;border-radius:10px;padding:10px;font-weight:700}
+.filterNote{font-size:12px;color:#666;margin:7px 0 12px;line-height:1.5}
+.profileTabs{display:flex;border-bottom:1px solid #ddd;margin-bottom:14px}
+.profileTabs button{flex:1;border:0;background:none;padding:12px;font-weight:700;color:#777;border-bottom:2px solid transparent}
+.profileTabs button.selected{color:#111;border-bottom-color:#111}
+.profileGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.profileCard{background:#fff;border:1px solid #ddd;border-radius:12px;padding:8px;overflow:hidden}
+.profileCard b{display:block;font-size:13px;margin:7px 2px 3px}
+.profileCard small{display:block;color:#777;font-size:11px;margin:0 2px 7px}
+.profileCard button{width:100%;border:0;background:#111;color:#fff;border-radius:8px;padding:8px;font-size:12px}
+.thumb{height:120px;background:#111;border-radius:9px;overflow:hidden;position:relative}
+.thumb video{width:100%;height:100%;object-fit:cover}
+.thumb span{position:absolute;left:8px;bottom:7px;background:#000b;color:#fff;border-radius:12px;padding:3px 7px;font-size:11px}
+.profileEmpty{background:#fff;border:1px dashed #ccc;border-radius:12px;margin-bottom:18px}
+.historyMeta{color:#999!important}
+.historyClearBar{display:flex;justify-content:flex-end;margin-bottom:10px}
+.historyClearBar button{border:1px solid #ddd;background:#fff;border-radius:9px;padding:7px 11px;font-size:12px;color:#a33}
+
+/* ---------- Upload picker / camera ---------- */
+.uploadPicker{display:flex;flex-direction:column;align-items:center;gap:10px;background:#fff;border:1px dashed #ccc;border-radius:16px;padding:26px 16px;margin:8px 0 16px;text-align:center}
+.uploadCameraBtn{width:64px;height:64px;border-radius:50%;border:0;background:#111;color:#5eead4;font-size:26px;display:flex;align-items:center;justify-content:center}
+.uploadPickHint{font-size:13px;color:#555}
+.uploadPickHint b{display:block;color:#111;margin-bottom:2px}
+.uploadOption{display:flex;align-items:center;gap:12px;width:100%;border:1px solid #ddd;background:#fff;border-radius:11px;padding:13px;text-align:left;margin:6px 0;font-weight:700}
+.uploadOption span{font-size:22px}
+.fieldLabel{display:block;font-weight:700;font-size:13px;margin:14px 2px 2px}
+.profileMenuCard,.settingSection{background:#fff;border:1px solid #ddd;border-radius:14px;margin:14px 0;overflow:hidden}
+.profileMenuCard h3,.settingSection h3{padding:13px 14px;margin:0;background:#f5f5f5;font-size:14px}
+.settingRow{width:100%;display:flex;align-items:center;gap:12px;padding:13px 14px;border:0;border-top:1px solid #eee;background:#fff;color:#111;text-align:left}
+.settingRow:first-of-type{border-top:0}
+.settingIcon{width:28px;text-align:center;font-size:20px}
+.settingText{flex:1;min-width:0}
+.settingText b{display:block;font-size:14px}
+.settingText small{display:block;color:#777;font-size:11px;margin-top:3px}
+.chev{font-size:23px;color:#888}
+.detailBody{padding-bottom:24px}
+.toggleRow,.selectRow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0;border-bottom:1px solid #eee}
+.toggleRow:last-child,.selectRow:last-child{border-bottom:0}
+.toggleRow div{flex:1}
+.toggleRow b,.selectRow b{display:block;font-size:14px}
+.toggleRow small{display:block;color:#777;font-size:11px;margin-top:3px}
+.switch{width:48px;height:28px;border:0;border-radius:20px;background:#ccc;padding:3px;flex:none}
+.switch i{display:block;width:22px;height:22px;border-radius:50%;background:#fff;transition:.15s;font-style:normal}
+.switch.on{background:#111}
+.switch.on i{transform:translateX(20px)}
+.selectRow select{border:1px solid #ddd;border-radius:9px;padding:8px;max-width:52%;background:#fff}
+.deviceItem{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #f0f0f0}
+.deviceItem:last-child{border-bottom:0}
+.deviceItem>span{font-size:26px}
+.deviceItem div{flex:1}
+.deviceItem small{display:block;color:#777;margin-top:3px}
+.deviceItem em{font-style:normal;color:#167c44;font-size:12px}
+.statsLarge{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.statsLarge div{background:#fff;border:1px solid #ddd;border-radius:12px;padding:15px;text-align:center}
+.statsLarge b{display:block;font-size:21px}
+.statsLarge span{font-size:11px;color:#777}
+.infoBox{background:#f1f4f5;border-radius:10px;padding:11px;margin-top:12px;font-size:12px;color:#555}
+.trustBadge,.statusGood{background:#eaf7ee;color:#167c44;border-radius:10px;padding:12px;font-weight:700;margin-bottom:10px}
+
+/* ---------- Interests ---------- */
+.interestSheet{max-height:88dvh}
+.interestIntro{font-size:13px;color:#555;line-height:1.45;padding:0 0 8px}
+.interestTabs{display:flex;gap:6px;border-bottom:1px solid #ddd;margin:4px 0 10px}
+.interestTab{flex:1;border:0;background:transparent;padding:10px;font-weight:700;color:#777;border-bottom:2px solid transparent}
+.interestTab.active{color:#111;border-bottom-color:#111}
+.interestGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;max-height:36dvh;overflow:auto;padding:2px 1px}
+.interestItem{position:relative;border:1px solid #d7d7d7;background:#fff;color:#111;border-radius:11px;padding:10px 8px;text-align:left;font-size:13px;min-height:44px}
+.interestItem span{font-weight:800;margin-right:5px}
+.interestItem.on{background:#111;color:#fff;border-color:#111}
+.interestItem em{position:absolute;right:6px;top:5px;font-size:9px;font-style:normal;opacity:.65}
+.selectedInterestBox{border:1px solid #e1e1e1;background:#f7f7f7;border-radius:11px;padding:10px;margin-top:11px}
+.selectedInterestBox>b{font-size:12px}
+.selectedChip{border:1px solid #ccc;background:#fff;border-radius:18px;padding:6px 9px;margin:6px 4px 0 0;font-size:11px}
+.customInterest{display:flex;gap:7px;margin-top:10px}
+.customInterest input{flex:1;min-width:0;padding:11px;border:1px solid #ccc;border-radius:10px;color:#111;background:#fff}
+.customInterest .primary{width:auto;white-space:nowrap}
+.interestActions{display:flex;gap:8px;margin-top:12px}
+.interestActions>*{flex:1}
+.interestEmpty{padding:25px 10px!important}
+
+/* ---------- Followers / following ---------- */
+.networkQuick{display:flex;gap:8px;margin:4px 0 13px}
+.networkQuick button{flex:1;border:1px solid #ddd;background:#fff;border-radius:10px;padding:9px;font-weight:700}
+.networkTabs{display:flex;background:#eee;border-radius:11px;padding:4px;margin:4px 0 8px}
+.networkTabs button{flex:1;border:0;background:transparent;border-radius:8px;padding:10px;font-weight:700;color:#777}
+.networkTabs button.active{background:#fff;color:#111;box-shadow:0 1px 4px #ccc}
+.networkTabs b{font-size:11px}
+.networkHint{font-size:12px;color:#777;margin:9px 2px 12px}
+.personRow{display:flex;align-items:center;gap:10px;padding:12px 2px;border-bottom:1px solid #eee}
+.personAvatar{width:42px;height:42px;border-radius:50%;background:#111;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;flex:none}
+.personInfo{flex:1;min-width:0}
+.personInfo b{display:block;font-size:14px}
+.personInfo small{display:block;color:#777;font-size:11px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.networkBtn{border:1px solid #111;background:#111;color:#fff;border-radius:9px;padding:8px 10px;font-weight:700;font-size:11px;white-space:nowrap}
+.networkBtn.following{background:#fff;color:#111;border-color:#ccc}
+.youBadge{font-size:11px;color:#777;font-weight:700;padding:7px}
+
+/* ---------- Auth ---------- */
+.authCard{max-width:520px;margin:auto}
+.authTabs{display:flex;gap:5px;background:#eee;padding:4px;border-radius:12px;margin-bottom:14px}
+.authTabs button{flex:1;border:0;padding:10px;border-radius:9px;background:transparent;color:#555;font-weight:700}
+.authTabs button.on{background:#fff;color:#111;box-shadow:0 1px 4px #ccc}
+.userBadge{display:flex;align-items:center;gap:10px;background:#f4f4f4;border-radius:13px;padding:10px;margin:10px 0}
+.avatar{width:42px;height:42px;border-radius:50%;background:#111;color:#5eead4;display:flex;align-items:center;justify-content:center;font-weight:800;flex:none}
+
+/* ---------- Edit profile / photo ---------- */
+.erPhotoEditor{display:flex;align-items:center;gap:16px;margin-bottom:18px}
+.erPhotoActions{display:flex;flex-direction:column;gap:8px;min-width:0}
+.erUploadPhoto{position:relative;display:inline-flex;width:max-content;cursor:pointer}
+.erUploadPhoto input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.erPhotoActions small{font-size:11px;color:#777;line-height:1.35}
+
+@media(max-width:390px){
+  .homeTabs{top:62px}.homeTab{padding:7px 13px;font-size:12px}
+  .profileStats b{font-size:15px}.profileStats small{font-size:9px}
+  .interestGrid{grid-template-columns:1fr}
+  .networkQuick button{font-size:11px}
+}
+
+/* ---------- Premium ---------- */
+.premiumCrown{font-size:16px}
+.premiumBadgeRow{display:flex;align-items:center;gap:8px;background:linear-gradient(90deg,#fff7e0,#fff);border:1px solid #f2d98a;border-radius:12px;padding:10px 12px;margin:2px 0 12px;font-size:13px;cursor:pointer}
+.premiumBadgeRow span{margin-left:auto;color:#8a6d1a;font-size:12px}
+.upgradeBanner{display:flex;align-items:center;gap:8px;background:linear-gradient(90deg,#eafaf7,#f2effc);border:1px solid #cdeee7;border-radius:12px;padding:11px 12px;margin:2px 0 12px;font-size:13px;cursor:pointer}
+.upgradeBanner span{margin-left:auto;color:#555}
+.premiumActiveBanner{background:linear-gradient(90deg,#fff7e0,#fff);border:1px solid #f2d98a;border-radius:14px;padding:14px;margin-bottom:10px;font-size:14px}
+.premiumActiveBanner small{color:#8a6d1a}
+.compareTable{background:#fff;border:1px solid #ddd;border-radius:14px;overflow:hidden;margin:14px 0}
+.compareRow{display:grid;grid-template-columns:2.2fr 1fr 1fr;gap:6px;padding:10px 12px;border-top:1px solid #f0f0f0;font-size:12.5px;align-items:center}
+.compareRow:first-child{border-top:0}
+.compareHead{background:#f7f7f7;font-weight:700}
+.compareRow .yesCol{color:#167c44;font-weight:800}
+.planPicker{display:flex;flex-direction:column;gap:8px;margin:14px 0}
+.planCard{position:relative;text-align:left;border:1px solid #ddd;background:#fff;border-radius:13px;padding:13px}
+.planCard.on{border-color:#7c6cf6;box-shadow:0 0 0 2px #7c6cf633}
+.planPrice{font-size:18px;font-weight:800;margin-top:4px}
+.planPrice small{font-size:11px;font-weight:400;color:#777}
+.planBadge{position:absolute;right:12px;top:12px;background:#111;color:#fff;font-size:10px;border-radius:10px;padding:3px 8px}
+.checkoutSummary{display:flex;justify-content:space-between;align-items:center;background:#f7f7f7;border-radius:10px;padding:11px;margin:10px 0;font-size:14px}
+.paymentMethods{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.payMethod{display:flex;align-items:center;gap:7px;border:1px solid #ddd;background:#fff;border-radius:10px;padding:10px;font-size:13px;cursor:pointer}
+.payMethod input{margin:0}
+
+/* ---------- Ads ---------- */
+.adSlot{background:linear-gradient(160deg,#101826,#1a1230);flex-direction:column;padding:26px 22px;text-align:center}
+.adBadge{position:absolute;left:14px;top:14px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);border-radius:10px;padding:3px 9px;font-size:11px;letter-spacing:.03em}
+.adContent{max-width:340px}
+.adSponsor{color:#5eead4;font-weight:700;font-size:13px;margin-bottom:8px}
+.adHeadline{font-size:20px;font-weight:800;margin-bottom:18px;line-height:1.3}
+.adCta{width:auto;padding:11px 22px}
+.adDisclosure{margin-top:16px;font-size:11px;color:#999}
+.adRemoveLink{display:block;margin:8px auto 0;background:transparent;border:0;color:#5eead4;font-size:11px;text-decoration:underline}
+
+/* ---------- Owner dashboard (private) ---------- */
+.ownerPrivateNote{background:#fff7e0;border:1px solid #f2d98a;border-radius:11px;padding:10px 12px;font-size:12px;color:#7a5f10;margin-bottom:12px}
+.earningsHero{background:linear-gradient(135deg,#0f766e,#5b21b6);color:#fff;border-radius:16px;padding:18px;margin-bottom:12px;text-align:center}
+.earningsHero small{display:block;font-size:11px;opacity:.85}
+.earningsHero b{display:block;font-size:31px;margin:5px 0;letter-spacing:-.02em}
+.earningsHero span{font-size:11px;opacity:.85}
+.revenueRow{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:10px 0;border-top:1px solid #f0f0f0;font-size:13px}
+.revenueRow:first-of-type{border-top:0}
+.revenueRow b{white-space:nowrap}
+.revenueRow .negAmount{color:#c0392b}
+.revenueRow.totalRow{border-top:2px solid #ddd;font-weight:800;padding-top:12px}
+.detailHead button[title="Lock"]{background:#eee}
+
+/* ---------- Advertiser campaigns ---------- */
+.campaignRow{display:flex;align-items:center;gap:10px;justify-content:space-between;padding:12px 0;border-top:1px solid #f0f0f0;font-size:13px}
+.campaignRow:first-child{border-top:0}
+.campaignRow small{color:#777}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="headerLeft">
+      <button class="iconBtn" onclick="openMenu()" aria-label="Menu">☰</button>
+      <svg class="logoMark" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <defs><linearGradient id="eiGradHeader" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5eead4"/><stop offset="1" stop-color="#7c6cf6"/></linearGradient></defs>
+        <rect x="2" y="2" width="60" height="60" rx="16" fill="url(#eiGradHeader)"/>
+        <path d="M26 20 L46 32 L26 44 Z" fill="#ffffff"/>
+        <path d="M16 15 L30 9 L44 15 L30 21 Z" fill="#0b0f1e" opacity=".85"/>
+        <circle cx="44" cy="17" r="2.6" fill="#facc15"/>
+      </svg>
+      <div class="logo">EduInsta</div>
+    </div>
+    <div class="headerBtns">
+      <button class="iconBtn" onclick="openSearch()" aria-label="Search">⌕</button>
+      <button class="iconBtn" id="notifBellBtn" onclick="openNotifications()" aria-label="Notifications">🔔<span class="notifBadge" id="notifBadge"></span></button>
+    </div>
+  </header>
+  <main id="main"></main>
+  <nav class="bottom">
+    <button class="nav active" data-page="home" onclick="page('home')"><b>⌂</b>Home</button>
+    <button class="nav" data-page="explore" onclick="page('explore')"><b>⌕</b>Explore</button>
+    <button class="nav" data-page="upload" onclick="page('upload')"><b>＋</b>Upload</button>
+    <button class="nav" data-page="downloads" onclick="page('downloads')"><b>⇩</b>Downloads</button>
+    <button class="nav" data-page="profile" onclick="page('profile')"><b>◉</b>Profile</button>
+  </nav>
+  <div id="overlay"></div>
+</div>
+
+<script>
+/* =================================================================
+   EduInsta — consolidated single-pass prototype
+   (Rebuilt from a multi-layer patch history to remove duplicate/
+   conflicting logic. Every feature below has exactly one definition.)
+   ================================================================= */
+
+/* Explicit references, rather than relying on the browser's implicit
+   id-based global lookup (window.main / window.overlay). Both work in
+   practice, but explicit is safer and removes any doubt. */
+const main=document.getElementById('main');
+const overlay=document.getElementById('overlay');
+
+/* Defensive top-level error surface: if anything throws during startup or
+   at any point later, show it visibly in the page instead of silently
+   leaving a blank screen with no clue what happened. */
+window.addEventListener('error',function(e){
+  showFatalError((e && e.error && e.error.stack) || (e && e.message) || 'Unknown error');
+});
+window.addEventListener('unhandledrejection',function(e){
+  showFatalError((e && e.reason && e.reason.stack) || (e && e.reason) || 'Unknown promise rejection');
+});
+function showFatalError(details){
+  let box=document.getElementById('fatalErrorBox');
+  if(!box){
+    box=document.createElement('div');
+    box.id='fatalErrorBox';
+    box.style.cssText='position:fixed;inset:0;z-index:9999;background:#1a0000;color:#ffb4b4;padding:24px;overflow:auto;font-family:monospace;font-size:13px;white-space:pre-wrap;line-height:1.5';
+    box.innerHTML='<div style="font-family:Arial,sans-serif;font-size:16px;font-weight:800;color:#fff;margin-bottom:12px">⚠️ EduInsta hit an error and stopped</div><div id="fatalErrorDetails"></div><button type="button" style="margin-top:16px;padding:10px 16px;border:0;border-radius:8px;background:#fff;color:#000;font-weight:700" onclick="document.getElementById(\'fatalErrorBox\').remove()">Dismiss</button>';
+    document.body.appendChild(box);
+  }
+  const detailsEl=document.getElementById('fatalErrorDetails');
+  if(detailsEl)detailsEl.textContent=String(details);
+}
+
+/* ---------------- Demo content ---------------- */
+const reels=[
+  {id:1,cat:"School",sub:"Mathematics",creator:"@mathminute",title:"Why is the area of a circle πr²?",desc:"A quick visual explanation of the circle area formula.",src:"https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"},
+  {id:2,cat:"Engineering",sub:"Physics",creator:"@engineeringbytes",title:"Ohm's Law explained in one minute",desc:"Understand voltage, current and resistance with a simple example.",src:"https://www.w3schools.com/html/mov_bbb.mp4"},
+  {id:3,cat:"Medical",sub:"Biology",creator:"@medstudy",title:"DNA: the four bases",desc:"A short introduction to A, T, C and G.",src:"https://media.w3.org/2010/05/sintel/trailer.mp4"},
+  {id:4,cat:"Competitive Exams",sub:"General Knowledge",creator:"@upscquick",title:"Fundamental Rights – quick revision",desc:"A concise revision-style explainer for exam preparation.",src:"https://media.w3.org/2010/05/bunny/trailer.mp4"},
+  {id:5,cat:"Engineering",sub:"Aerospace",creator:"@aerospacelab",title:"Inside a jet engine: turbomachinery explained",desc:"A deep-dive into how turbomachinery powers modern jet engines.",src:"https://media.w3.org/2010/05/bunny/trailer.mp4"},
+  {id:6,cat:"Computer Science",sub:"Data Science",creator:"@datasciencehub",title:"Building your first machine learning model",desc:"A step-by-step walkthrough of a simple ML pipeline.",src:"https://www.w3schools.com/html/mov_bbb.mp4"}
+];
+
+const ER_INTEREST_LIBRARY=[
+  'Mathematics','Arithmetic','Algebra','Geometry','Trigonometry','Calculus','Statistics','Probability','Discrete Mathematics','Number Theory','Linear Algebra','Coordinate Geometry','Mensuration','Logical Reasoning','Quantitative Aptitude',
+  'Physics','Mechanics','Kinematics','Dynamics','Work Energy Power','Thermodynamics','Waves','Optics','Electromagnetism','Electricity','Magnetism','Modern Physics','Nuclear Physics','Astrophysics',
+  'Chemistry','Organic Chemistry','Inorganic Chemistry','Physical Chemistry','Analytical Chemistry','Electrochemistry','Chemical Bonding','Thermochemistry','Coordination Chemistry','Polymers',
+  'Biology','Botany','Zoology','Cell Biology','Genetics','Evolution','Ecology','Microbiology','Biotechnology','Plant Physiology','Animal Physiology',
+  'English','Grammar','Vocabulary','Writing','Reading Comprehension','Communication Skills','General Science','General Knowledge',
+  'Engineering','Mechanical Engineering','Electrical Engineering','Electronics Engineering','Electronics','ECE','CSE','Computer Engineering','Civil Engineering','Chemical Engineering','Biomedical Engineering','Aerospace Engineering','Aeronautical Engineering','Automotive Engineering','Industrial Engineering','Production Engineering','Manufacturing Engineering','Mechatronics','Instrumentation Engineering','Environmental Engineering','Materials Engineering',
+  'Engineering Drawing','Engineering Mathematics','Engineering Mechanics','Strength of Materials','Fluid Mechanics','Heat Transfer','Thermal Engineering','Machine Design','Theory of Machines','IC Engines','Automobile Engineering','HVAC','Refrigeration','Power Plant Engineering','Renewable Energy','Solar Energy','Wind Energy','Battery Technology','Electric Vehicles','EV Technology',
+  'Circuit Theory','Digital Electronics','Analog Electronics','Power Electronics','Control Systems','Signals and Systems','Communication Systems','Microwave Engineering','RF Engineering','Telecommunications','5G','6G','VLSI','FPGA','ASIC','Semiconductors','Microelectronics','Embedded Systems','Firmware','PCB Design','IoT','Sensors','Instrumentation','Robotics','Automation','Industrial Automation','PLC','SCADA','Motion Control','Computer Vision','Drones','UAV','Avionics','Flight Control Systems','Aircraft Systems','Aircraft Structures','Propulsion','Jet Engines','Rocket Science','Spacecraft','Satellites','Space Technology','Astronautics','Astronomy','Orbital Mechanics',
+  'Computer Science','Programming','C Programming','C++','Java','Python','JavaScript','TypeScript','Go Programming','Rust','SQL','HTML','CSS','Web Development','Frontend Development','Backend Development','Mobile App Development','Flutter','Dart','Android Development','iOS Development','Software Engineering','Software Testing','QA Engineering','DevOps','Cloud Computing','AWS','Microsoft Azure','Google Cloud','Linux','Networking','Cybersecurity','Ethical Hacking','Information Security','Cryptography','Databases','PostgreSQL','MySQL','Data Structures','Algorithms','Operating Systems','Computer Networks','System Design','API Development','Git','GitHub','Artificial Intelligence','AI','Machine Learning','Deep Learning','Natural Language Processing','Generative AI','Large Language Models','Data Science','Data Analytics','Big Data','MLOps','Prompt Engineering','Digital Twin','Edge Computing','Quantum Computing','AR/VR','3D Printing','CAD','CAM','CNC','Additive Manufacturing','Industry 4.0','Smart Factory','Digital Manufacturing','Quality Engineering','Six Sigma','Lean Manufacturing','Supply Chain Technology','Metrology','NDT','Welding Technology','Materials Science','Metallurgy','Nanotechnology',
+  'Medical','Medicine','Anatomy','Physiology','Biochemistry','Pathology','Pharmacology','Microbiology','Immunology','Genomics','Medical Genetics','Neuroscience','Cardiology','Neurology','Oncology','Pediatrics','Dermatology','Radiology','Orthopedics','Psychiatry','Public Health','Epidemiology','Nutrition Science','Medical Devices','Medical Imaging','First Aid','Nursing','Dental Science','Veterinary Science',
+  'UPSC','IAS','IPS','IFS','UPSC Prelims','UPSC Mains','UPSC Optional','Polity','Indian Constitution','History','Ancient History','Medieval History','Modern History','World History','Geography','Indian Geography','World Geography','Economics','Indian Economy','Environment','Ecology','Current Affairs','International Relations','Governance','Social Issues','Ethics','Essay Writing','CSAT','Government Jobs','Competitive Exams','SSC','SSC CGL','SSC CHSL','Banking','IBPS','SBI PO','SBI Clerk','RBI','Insurance Exams','Railway Exams','Teaching Exams','Defence Exams','NDA','CDS','AFCAT','State PSC','KPSC','KCET','IIT/JEE','JEE Main','JEE Advanced','NEET','CAT','GATE','GRE','GMAT','IELTS','TOEFL','UGC NET','CTET','Professional Certifications','Interview Preparation','Career Guidance','Study Skills','Time Management','Exam Strategy','Question Solving','Revision Techniques','Memory Techniques',
+  'Business','Entrepreneurship','Startups','Management','Project Management','Product Management','Operations Management','Marketing','Digital Marketing','Sales','Human Resources','Leadership','Communication','Public Speaking','Finance','Personal Finance','Accounting','Investment Basics','Stock Market Education','Financial Literacy','Business Analytics','Statistics for Business','General Awareness','News Analysis','Civics','Law Basics','Legal Education','Psychology','Sociology','Philosophy','Education','Teaching Methods','Learning Science','Research Methods','Technical Writing',
+  'Earth Science','Geology','Meteorology','Climate Science','Climate Change','Environmental Science','Oceanography','Marine Science','Hydrology','Soil Science','Agriculture Technology','Agriculture','Food Science','Energy','Nuclear Energy','Hydrogen Energy','Sustainability','Waste Management','Water Management','Disaster Management','Earth Observation','Remote Sensing','GIS','Geospatial Technology','Ocean Engineering',
+  'Aircraft Maintenance','Aircraft Certification','Aviation Safety','Air Traffic Management','Airport Operations','Flight Operations','Flight Testing','Aircraft Performance','Aerodynamics','Computational Fluid Dynamics','CFD','Aviation Electronics','Aerospace Materials','Composite Materials','Gas Turbines','Turbomachinery','Space Missions','Space Exploration','Planetary Science','Exoplanets','Cosmology','Space Weather','Earth Observation Satellites','Satellite Communication','Navigation Systems','GNSS','GPS Technology','Rocket Propulsion','Launch Vehicles','Spacecraft Systems','Space Robotics',
+  'Projects','Science Experiments','Engineering Projects','Coding Projects','DIY Electronics','DIY Science','Laboratory Skills','Technical Tutorials','How Things Work','Problem Solving','Case Studies','Practical Demonstrations','Career Skills','Professional Skills','Workplace Skills'
+];
+
+const PEOPLE=[
+  {u:'@mathminute',name:'Math Minute',role:'Mathematics Educator'},
+  {u:'@engineeringbytes',name:'Engineering Bytes',role:'Engineering Educator'},
+  {u:'@medstudy',name:'Med Study',role:'Medical & Biology Educator'},
+  {u:'@upscquick',name:'UPSC Quick',role:'UPSC Educator'},
+  {u:'@aerospacelab',name:'Aerospace Lab',role:'Aerospace Creator'},
+  {u:'@pythonpath',name:'Python Path',role:'Programming Educator'},
+  {u:'@roboticsdaily',name:'Robotics Daily',role:'Robotics Educator'},
+  {u:'@manufacturing101',name:'Manufacturing 101',role:'Manufacturing Educator'},
+  {u:'@physicsworld',name:'Physics World',role:'Physics Educator'},
+  {u:'@jeeacademy',name:'JEE Academy',role:'Competitive Exam Educator'},
+  {u:'@neetscience',name:'NEET Science',role:'NEET Educator'},
+  {u:'@techmentor',name:'Tech Mentor',role:'Technology Educator'},
+  {u:'@civilinsights',name:'Civil Insights',role:'Civil Engineering Educator'},
+  {u:'@eceexplained',name:'ECE Explained',role:'Electronics Educator'},
+  {u:'@datasciencehub',name:'Data Science Hub',role:'Data Science Educator'},
+  {u:'@spaceclassroom',name:'Space Classroom',role:'Space Science Educator'}
+];
+const FOLLOWERS_DEFAULT=['@aerospacelab','@physicsworld','@jeeacademy','@techmentor','@spaceclassroom'];
+
+/* ---------------- Small utilities ---------------- */
+function escapeHtml(x){return String(x??'').replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+function escapeAttr(x){return escapeHtml(x)}
+function uniq(a){return [...new Set((a||[]).map(x=>String(x).trim()).filter(Boolean))]}
+function norm(x){return String(x??'').trim().toLowerCase().replace(/\s+/g,' ')}
+/* Safe localStorage wrappers - some browsing contexts (sandboxed iframes,
+   strict privacy modes, certain file:// setups) throw on localStorage
+   access entirely. Every read/write in this app goes through these so a
+   blocked localStorage degrades to "nothing persists" instead of a fatal
+   error that takes the whole page down. */
+function lsSet(key,value){try{localStorage.setItem(key,value)}catch{}}
+function lsGetRaw(key){try{return localStorage.getItem(key)}catch{return null}}
+function readJSON(key,fallback){try{const v=lsGetRaw(key);return v===null?fallback:JSON.parse(v)}catch{return fallback}}
+function toast(t){
+  const x=document.createElement("div");
+  x.className="toast";
+  x.textContent=t;
+  document.body.appendChild(x);
+  setTimeout(()=>x.remove(),1800);
+}
+
+/* ---------------- Persistent state ---------------- */
+var comments=readJSON('er_comments',{});
+var following=readJSON('er_following',[]);
+var saved=readJSON('er_saved',[]);
+var likes=readJSON('er_likes',[]);
+var profile=readJSON('er_profile',{name:"Your Name",username:"@student",role:"Student / Creator"});
+var interests=readJSON('er_interests',[]);
+var customInterests=readJSON('er_custom_interests',[]);
+var account=readJSON('er_account',{loggedIn:false,email:"",name:""});
+var followers=uniq(readJSON('er_followers',FOLLOWERS_DEFAULT));
+var erSettings=readJSON('er_settings',{});
+/* NOTE: named watchHistory, not "history" - `window.history` is the browser's
+   built-in navigation API and a var/global named `history` cannot shadow it,
+   so assignments to a plain `history` variable here would silently vanish. */
+var watchHistory=readJSON('er_history',[]);
+/* registeredAccount is the persisted "account record" (name/email/password) created at
+   signup. It survives logout, unlike `account`, which is just the current session's
+   logged-in state. This lets a returning user actually log back in with the same
+   credentials instead of any password being silently accepted. Plaintext local storage
+   is fine here only because this is an offline prototype with no server. */
+var registeredAccount=readJSON('er_registered_account',null);
+var profileTab='uploads';
+
+/* ================= Notifications =================
+   Real events, not decorative filler: notifications are generated from
+   actual things that happen in the app (uploads publishing, payments,
+   subscription changes, security actions), and generation is gated by the
+   same category toggles already exposed in Settings > Notifications /
+   Settings > Sign-in & security, so disabling a category there actually
+   stops future notifications of that kind. */
+var notifications=readJSON('er_notifications',[]);
+var __notifSeq=0;
+function saveNotifications(){lsSet('er_notifications',JSON.stringify(notifications))}
+const NOTIF_PREF_KEY={follower:'notifyFollowers',comment:'notifyComments',learning:'notifyLearning',system:'notifySystem',security:'loginAlerts'};
+function addNotification(type,title,body){
+  const prefKey=NOTIF_PREF_KEY[type];
+  if(prefKey&&!erGet(prefKey,true))return; // this category is disabled in Settings
+  notifications=[{id:Date.now()+'_'+(__notifSeq++),type,title,body,at:Date.now(),read:false},...notifications];
+  if(notifications.length>50)notifications.length=50;
+  saveNotifications();
+  updateNotificationBadge();
+}
+function updateNotificationBadge(){
+  const badge=document.getElementById('notifBadge'); if(!badge)return;
+  const count=notifications.filter(n=>!n.read).length;
+  if(count>0){badge.textContent=count>9?'9+':String(count);badge.style.display='flex';}
+  else{badge.style.display='none';}
+}
+function notifIcon(type){return {follower:'👥',comment:'💬',learning:'🎓',system:'🔔',security:'🔒'}[type]||'🔔'}
+function renderNotificationItems(){
+  if(!notifications.length)return '<div class="empty commentsEmpty">🔔<br><b>No notifications yet</b><br><span>Updates about your account and activity will appear here.</span></div>';
+  return `<div class="notifList" id="notifList">${notifications.map(n=>`<button type="button" class="notifItem ${n.read?'':'unread'}" onclick="markNotificationRead('${n.id}')"><span class="notifIcon">${notifIcon(n.type)}</span><span class="notifBody"><b>${escapeHtml(n.title)}</b><div>${escapeHtml(n.body)}</div><small>${relativeTime(n.at)}</small></span>${n.read?'':'<span class="notifDot"></span>'}</button>`).join('')}</div>`;
+}
+function refreshNotificationPanel(){
+  const list=document.getElementById('notifList');
+  if(list)list.outerHTML=renderNotificationItems();
+  const count=document.getElementById('notifUnreadCount');
+  if(count)count.textContent=`${notifications.filter(n=>!n.read).length} unread`;
+}
+function openNotifications(){
+  overlay.innerHTML=`<div class="modal" onclick="closeOverlay()"><div class="sheet" onclick="event.stopPropagation()">
+    <div class="commentHeader"><div><b>Notifications</b><div class="commentCount" id="notifUnreadCount">${notifications.filter(n=>!n.read).length} unread</div></div><button type="button" class="close" onclick="closeOverlay()">×</button></div>
+    <div class="notifActions"><button type="button" onclick="markAllNotificationsRead()">Mark all as read</button><button type="button" onclick="clearAllNotifications()">Clear all</button></div>
+    ${renderNotificationItems()}
+  </div></div>`;
+}
+function markNotificationRead(id){
+  const n=notifications.find(x=>x.id===id);
+  if(n&&!n.read){n.read=true;saveNotifications();updateNotificationBadge()}
+  refreshNotificationPanel();
+}
+function markAllNotificationsRead(){
+  notifications.forEach(n=>n.read=true);
+  saveNotifications(); updateNotificationBadge();
+  refreshNotificationPanel();
+  toast('All notifications marked as read');
+}
+function clearAllNotifications(){
+  if(!confirm('Clear all notifications?'))return;
+  notifications=[]; saveNotifications(); updateNotificationBadge();
+  closeOverlay(); toast('Notifications cleared');
+}
+
+/* ================= Premium subscription (admin/config) =================
+   Simplified to exactly two states: Free (sees ads) and Premium (ad-free).
+   There is a single Premium plan/price - the price itself is still fully
+   configurable (Settings > Admin / demo config), it's just no longer a
+   multi-tier picker. */
+const PREMIUM_DEFAULTS={
+  currency:'₹',
+  billingCycleDays:30,
+  plan:{id:'premium',label:'EduInsta Premium',price:149,interval:'month'}
+};
+const PREMIUM_FEATURES=[
+  {icon:'🚫',text:'Ad-free experience',free:'Ads shown'}
+];
+/* Merge a persisted admin price override on top of the code default, so a
+   future code update to PREMIUM_DEFAULTS still applies to anyone who hasn't
+   customized pricing, while an admin edit still sticks for those who have. */
+function loadPremiumConfig(){
+  const overrides=readJSON('er_premium_config_overrides',null);
+  const plan={...PREMIUM_DEFAULTS.plan,price:overrides?.plan?.price||PREMIUM_DEFAULTS.plan.price};
+  return {...PREMIUM_DEFAULTS,plan};
+}
+var PREMIUM_CONFIG=loadPremiumConfig();
+function savePremiumConfigOverrides(){
+  lsSet('er_premium_config_overrides',JSON.stringify({plan:{price:PREMIUM_CONFIG.plan.price}}));
+}
+var subscription=readJSON('er_subscription',{status:'free',planId:null,paymentMethod:null,startedAt:null,expiresAt:null,renewsAt:null,cancelAtPeriodEnd:false,history:[]});
+
+/* ================= Advertising system (admin/config) =================
+   AdManager is the single place that knows how ads are sourced/tracked; the
+   feed only ever calls buildFeedWithAds()/AdManager methods, so a real ad SDK
+   can later be dropped in here without touching feed-rendering code.
+
+   Ad inventory has two sources, exactly like most ad-supported apps:
+   1) Paid advertiser campaigns (see "Advertise on EduInsta" below) - real
+      bookings with a price, a duration, and a payment behind them.
+   2) A small pool of house creatives that fill any remaining slots when no
+      paid campaign is currently active, so the feed always has something to
+      show rather than going empty. */
+const AD_DEFAULTS={enabled:true,frequency:4,simulateFailureRate:0.15};
+function loadAdConfig(){return {...AD_DEFAULTS,...readJSON('er_ad_config_overrides',{})}}
+var AdConfig=loadAdConfig();
+function saveAdConfigOverrides(){lsSet('er_ad_config_overrides',JSON.stringify({enabled:AdConfig.enabled,frequency:AdConfig.frequency}))}
+const AD_CREATIVES=[
+  {id:'ad1',sponsor:'BrightMind Tutoring',headline:'Personalized tutoring for competitive exams',cta:'Learn more'},
+  {id:'ad2',sponsor:'StudySpace Notebooks',headline:'Notebooks designed for focused learners',cta:'Shop now'},
+  {id:'ad3',sponsor:'CalcPro Calculators',headline:'The calculator recommended by engineering students',cta:'See details'},
+  {id:'ad4',sponsor:'QuietDesk Lamps',headline:'Warm, flicker-free light for late-night study',cta:'Explore'}
+];
+var adState=readJSON('er_ad_state',{consent:null,impressions:{},clicks:{}});
+function saveAdState(){lsSet('er_ad_state',JSON.stringify(adState))}
+
+/* ---- Advertiser rate card ("how much I can charge for each advertisement")
+   Standard flat-rate-by-duration model, the same pattern most small/medium
+   apps use for self-serve sponsored placements (pay X per day, run for N
+   days) rather than a full real-time bidding auction, which needs server
+   infrastructure this static prototype doesn't have. Fully admin-configurable. */
+const AD_RATE_CARD_DEFAULTS={pricePerDay:49,minDurationDays:1,maxDurationDays:30};
+function loadAdRateCard(){return {...AD_RATE_CARD_DEFAULTS,...readJSON('er_ad_rate_card_overrides',{})}}
+var AdRateCard=loadAdRateCard();
+function saveAdRateCardOverrides(){lsSet('er_ad_rate_card_overrides',JSON.stringify({pricePerDay:AdRateCard.pricePerDay,minDurationDays:AdRateCard.minDurationDays,maxDurationDays:AdRateCard.maxDurationDays}))}
+
+/* ---- Advertiser campaigns (paid bookings) ---- */
+var adCampaigns=readJSON('er_ad_campaigns',[]);
+function saveAdCampaigns(){lsSet('er_ad_campaigns',JSON.stringify(adCampaigns))}
+function refreshCampaignStatuses(){
+  let changed=false;
+  adCampaigns.forEach(c=>{if(c.status==='active'&&Date.now()>c.endAt){c.status='completed';changed=true}});
+  if(changed)saveAdCampaigns();
+}
+function activeCampaigns(){refreshCampaignStatuses();return adCampaigns.filter(c=>c.status==='active')}
+
+const AdManager={
+  nextCreativeIndex:0,
+  getAdForSlot(){
+    /* Simulated ad-network call: occasionally "fails" so the feed's graceful
+       degradation (skip the slot, never show broken/blank ad content) is a
+       real, exercised code path rather than a theoretical one. */
+    if(Math.random()<AdConfig.simulateFailureRate)return null;
+    const paid=activeCampaigns();
+    if(paid.length){
+      const c=paid[this.nextCreativeIndex%paid.length];
+      this.nextCreativeIndex++;
+      return {id:'campaign_'+c.id,sponsor:c.sponsor,headline:c.headline,cta:c.cta,campaignId:c.id};
+    }
+    const creative=AD_CREATIVES[this.nextCreativeIndex%AD_CREATIVES.length];
+    this.nextCreativeIndex++;
+    return creative;
+  },
+  recordImpression(adId){
+    adState.impressions[adId]=(adState.impressions[adId]||0)+1;saveAdState();
+    const campaignId=String(adId).startsWith('campaign_')?Number(String(adId).slice(9)):null;
+    if(campaignId){const c=adCampaigns.find(x=>x.id===campaignId);if(c){c.impressions=(c.impressions||0)+1;saveAdCampaigns()}}
+  },
+  recordClick(adId){
+    adState.clicks[adId]=(adState.clicks[adId]||0)+1;saveAdState();
+    const campaignId=String(adId).startsWith('campaign_')?Number(String(adId).slice(9)):null;
+    if(campaignId){const c=adCampaigns.find(x=>x.id===campaignId);if(c){c.clicks=(c.clicks||0)+1;saveAdCampaigns()}}
+    toast('Opening sponsor link (demo)');
+  }
+};
+var activeHomeTab='For You';
+var interestTab='library';
+
+function saveState(){
+  lsSet('er_comments',JSON.stringify(comments));
+  lsSet('er_following',JSON.stringify(following));
+  lsSet('er_saved',JSON.stringify(saved));
+  lsSet('er_likes',JSON.stringify(likes));
+  lsSet('er_profile',JSON.stringify(profile));
+  lsSet('er_followers',JSON.stringify(followers));
+}
+function saveInterestsState(){
+  interests=uniq(interests);
+  customInterests=uniq(customInterests);
+  lsSet('er_interests',JSON.stringify(interests));
+  lsSet('er_custom_interests',JSON.stringify(customInterests));
+}
+function erGet(k,d){return Object.prototype.hasOwnProperty.call(erSettings,k)?erSettings[k]:d}
+function erSet(k,v){erSettings[k]=v;lsSet('er_settings',JSON.stringify(erSettings))}
+
+/* ---------------- Watch history ---------------- */
+const HISTORY_LIMIT=60, HISTORY_COOLDOWN_MS=5000;
+let lastRecordedId=null, lastRecordedAt=0;
+function saveHistoryState(){lsSet('er_history',JSON.stringify(watchHistory))}
+function recordHistory(id){
+  const now=Date.now();
+  if(id===lastRecordedId && (now-lastRecordedAt)<HISTORY_COOLDOWN_MS)return; // avoid spam from rapid play/pause
+  lastRecordedId=id; lastRecordedAt=now;
+  watchHistory=watchHistory.filter(h=>h.id!==id);
+  watchHistory.unshift({id,watchedAt:now});
+  if(watchHistory.length>HISTORY_LIMIT)watchHistory.length=HISTORY_LIMIT;
+  saveHistoryState();
+}
+function clearHistory(){
+  if(!confirm('Clear your watch history on this device?'))return;
+  watchHistory=[]; saveHistoryState(); toast('Watch history cleared');
+  if(profileTab==='history')profilePage();
+}
+function relativeTime(ms){
+  const diff=Math.max(0,Date.now()-ms), m=Math.floor(diff/60000);
+  if(m<1)return 'Just now';
+  if(m<60)return `${m} min ago`;
+  const h=Math.floor(m/60);
+  if(h<24)return `${h} hour${h===1?'':'s'} ago`;
+  const d=Math.floor(h/24);
+  if(d<7)return `${d} day${d===1?'':'s'} ago`;
+  return new Date(ms).toLocaleDateString();
+}
+
+/* Recover any custom interests a user already picked that aren't in the library. */
+(function migrateCustomInterests(){
+  const libKeys=new Set(ER_INTEREST_LIBRARY.map(norm));
+  customInterests=uniq(customInterests.concat((interests||[]).filter(x=>!libKeys.has(norm(x)))));
+  lsSet('er_custom_interests',JSON.stringify(customInterests));
+})();
+
+/* ---------------- IndexedDB (uploaded reels) ---------------- */
+const ER_DB="EduInstaDB", ER_STORE="uploads";
+function dbOpen(){
+  return new Promise((resolve,reject)=>{
+    const r=indexedDB.open(ER_DB,1);
+    r.onupgradeneeded=()=>r.result.createObjectStore(ER_STORE,{keyPath:"id"});
+    r.onsuccess=()=>resolve(r.result);
+    r.onerror=()=>reject(r.error);
+  });
+}
+async function dbPut(obj){
+  const db=await dbOpen();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(ER_STORE,"readwrite");
+    tx.objectStore(ER_STORE).put(obj);
+    tx.oncomplete=resolve; tx.onerror=()=>reject(tx.error);
+  });
+}
+async function dbAll(){
+  const db=await dbOpen();
+  return new Promise((resolve,reject)=>{
+    const req=db.transaction(ER_STORE,"readonly").objectStore(ER_STORE).getAll();
+    req.onsuccess=()=>resolve(req.result||[]); req.onerror=()=>reject(req.error);
+  });
+}
+async function dbGet(id){
+  const db=await dbOpen();
+  return new Promise((resolve,reject)=>{
+    const req=db.transaction(ER_STORE,"readonly").objectStore(ER_STORE).get(id);
+    req.onsuccess=()=>resolve(req.result); req.onerror=()=>reject(req.error);
+  });
+}
+const objectUrlCache=new Map();
+function blobUrlFor(obj){
+  if(!objectUrlCache.has(obj.id))objectUrlCache.set(obj.id,URL.createObjectURL(obj.blob));
+  return objectUrlCache.get(obj.id);
+}
+async function allReels(){
+  const uploads=await dbAll();
+  return reels.concat(uploads.map(u=>({...u,uploaded:true,src:blobUrlFor(u)})));
+}
+
+/* ---------------- Navigation ---------------- */
+function page(p){
+  document.querySelectorAll(".nav").forEach(x=>x.classList.toggle("active",x.dataset.page===p));
+  closeOverlay();
+  if(p==="home")home();
+  else if(p==="explore")explore();
+  else if(p==="upload")upload();
+  else if(p==="downloads")downloads();
+  else if(p==="profile")profilePage();
+}
+function closeOverlay(){document.getElementById('overlay').innerHTML=''}
+
+/* Quick-access menu, reachable from the hamburger icon on every page. Any
+   destination that doesn't go through page() needs its own nav-highlight
+   sync so the bottom nav doesn't keep showing the page you jumped FROM. */
+function setNavActive(p){document.querySelectorAll(".nav").forEach(x=>x.classList.toggle("active",x.dataset.page===p))}
+function gotoProfileArea(renderFn){setNavActive('profile');renderFn()}
+function openMenu(){
+  overlay.innerHTML=`<div class="modal" onclick="closeOverlay()"><div class="sheet" onclick="event.stopPropagation()">
+    <div class="commentHeader"><div><b>Menu</b><div class="commentCount">${escapeHtml(profile.name)} · ${escapeHtml(profile.username)}</div></div><button type="button" class="close" onclick="closeOverlay()">×</button></div>
+    <div class="optionList">
+      <button type="button" onclick="closeOverlay();page('profile')">👤 Profile</button>
+      <button type="button" onclick="closeOverlay();openNotifications()">🔔 Notifications${notifications.filter(n=>!n.read).length?` (${notifications.filter(n=>!n.read).length})`:''}</button>
+      <button type="button" onclick="closeOverlay();interestsPage()">🎯 Manage interests</button>
+      <button type="button" onclick="closeOverlay();gotoProfileArea(()=>networkPage('followers'))">👥 Followers & following</button>
+      <button type="button" onclick="closeOverlay();profileTab='history';page('profile')">🕘 Watch history</button>
+      <button type="button" onclick="closeOverlay();page('downloads')">🔖 Saved reels</button>
+      <button type="button" onclick="closeOverlay();gotoProfileArea(()=>settingsPage())">⚙️ Settings & preferences</button>
+      <button type="button" onclick="closeOverlay();authPage()">${account.loggedIn?'🔐 Account & sign-in':'🔐 Log in / Sign up'}</button>
+    </div>
+  </div></div>`;
+}
+
+/* ---------------- Feed filtering ---------------- */
+function reelMatchesInterests(r){
+  if(!interests.length)return true;
+  const hay=[r.title,r.desc,r.cat,r.sub,r.creator].join(" ").toLowerCase();
+  return interests.some(i=>hay.includes(String(i).toLowerCase()));
+}
+
+/* ---------------- Home feed ---------------- */
+async function home(tab){
+  if(tab)activeHomeTab=tab;
+  const active=activeHomeTab==="Following"?"Following":"For You";
+  activeHomeTab=active;
+  const all=await allReels();
+  const list=active==="Following"
+    ? all.filter(r=>following.includes(r.creator))
+    : all.filter(r=>reelMatchesInterests(r));
+  const renderList=buildFeedWithAds(list);
+  main.innerHTML=`
+    <div class="homeTabs" role="tablist" aria-label="Home feed">
+      <button type="button" class="homeTab ${active==="For You"?"active":""}" onclick="home('For You')" role="tab" aria-selected="${active==="For You"}">For You</button>
+      <button type="button" class="homeTab ${active==="Following"?"active":""}" onclick="home('Following')" role="tab" aria-selected="${active==="Following"}">Following</button>
+    </div>
+    <div class="feed" id="feed">
+      ${renderList.length?renderList.map(item=>item.type==='ad'?adSlotHTML(item.data):reelHTML(item.data)).join(""):`<div class="empty" style="margin-top:110px;color:#fff"><h3>No matching reels</h3><p>${active==="Following"?"Follow educational creators to see their reels here.":"Adjust your interests or age filter in Profile."}</p></div>`}
+    </div>`;
+  observeVideos();
+  if(!isPremium())maybeShowAdConsent();
+}
+/* Inserts sponsored slots between organic reels - additional slots, not
+   replacements, so ads never crowd out educational content. Premium users
+   (or a disabled ad config) get the plain list back untouched. A slot that
+   "fails to load" (AdManager.getAdForSlot() returning null) is simply
+   skipped so the feed keeps scrolling without any gap or broken card. */
+function buildFeedWithAds(list){
+  if(!shouldShowAds()||!list.length)return list.map(r=>({type:'reel',data:r}));
+  const out=[];
+  list.forEach((r,i)=>{
+    out.push({type:'reel',data:r});
+    const position=i+1;
+    if(position%AdConfig.frequency===0&&i!==list.length-1){
+      const ad=AdManager.getAdForSlot();
+      if(ad)out.push({type:'ad',data:ad});
+    }
+  });
+  return out;
+}
+function shouldShowAds(){return AdConfig.enabled&&!isPremium()}
+function adSlotHTML(ad){
+  return `<section class="reel adSlot" data-ad-id="${escapeAttr(ad.id)}">
+    <div class="adBadge">Sponsored</div>
+    <div class="adContent">
+      <div class="adSponsor">${escapeHtml(ad.sponsor)}</div>
+      <div class="adHeadline">${escapeHtml(ad.headline)}</div>
+      <button type="button" class="primary adCta" onclick="AdManager.recordClick('${escapeAttr(ad.id)}')">${escapeHtml(ad.cta)}</button>
+      <div class="adDisclosure">Sponsored educational content, not verified by EduInsta. <button type="button" class="adRemoveLink" onclick="event.stopPropagation();premiumPage()">Remove ads with Premium</button></div>
+    </div>
+  </section>`;
+}
+
+function reelHTML(r){
+  const liked=likes.includes(r.id), isSaved=saved.includes(r.id), isFollowing=following.includes(r.creator);
+  return `<section class="reel" data-id="${r.id}" data-creator="${escapeAttr(r.creator)}">
+    <video src="${escapeAttr(r.src)}" playsinline loop preload="metadata" muted></video>
+    <div class="shade"></div>
+    <button type="button" class="playPauseBtn" aria-label="Play or pause" onclick="togglePlay(event,this)">▶</button>
+    <div class="info">
+      <div class="creator">${escapeHtml(r.creator)}<button type="button" class="follow ${isFollowing?'on':''}" onclick="followCreator('${escapeAttr(r.creator)}',event)">${isFollowing?"Following":"Follow"}</button></div>
+      <div class="title">${escapeHtml(r.title)}</div>
+      <div class="meta">${escapeHtml(r.cat)} • ${escapeHtml(r.sub)}<br>${escapeHtml(r.desc||"Educational video on EduInsta.")}</div>
+    </div>
+    <div class="actions">
+      <button type="button" class="act soundBtn" onclick="toggleSound(event,this)"><span>🔇</span><small>Sound</small></button>
+      <button type="button" class="act likeBtn ${liked?"liked":""}" onclick="toggleLike(${r.id},event)"><span>♥</span><small>${liked?"Liked":"Like"}</small></button>
+      <button type="button" class="act" onclick="commentsPanel(${r.id},event)"><span>💬</span><small>Comment</small></button>
+      <button type="button" class="act saveBtn ${isSaved?"saved":""}" onclick="toggleSave(${r.id},event)"><span>🔖</span><small>${isSaved?"Saved":"Save"}</small></button>
+      <button type="button" class="act" onclick="shareReel(${r.id},event)"><span>↗</span><small>Share</small></button>
+      <button type="button" class="act" onclick="reportReel(${r.id},event)"><span>⋮</span><small>More</small></button>
+    </div>
+  </section>`;
+}
+
+/* One IntersectionObserver instance, reused for every feed render. */
+let feedObserver=null;
+const impressedAdElements=new WeakSet();
+function observeVideos(){
+  if(feedObserver)feedObserver.disconnect();
+  feedObserver=new IntersectionObserver(entries=>{
+    entries.forEach(entry=>{
+      if(entry.target.classList.contains('adSlot')){
+        if(entry.isIntersecting&&!impressedAdElements.has(entry.target)){
+          impressedAdElements.add(entry.target);
+          const adId=entry.target.dataset.adId;
+          if(adId)AdManager.recordImpression(adId);
+        }
+        return;
+      }
+      const v=entry.target.querySelector("video");
+      if(!v)return;
+      if(entry.isIntersecting){
+        document.querySelectorAll(".reel video").forEach(x=>{if(x!==v)x.pause()});
+        v.play().catch(()=>{});
+      }else{
+        v.pause();
+      }
+      updatePlayIcon(v);
+    });
+  },{threshold:.65});
+  document.querySelectorAll(".reel").forEach(sec=>{
+    feedObserver.observe(sec);
+    const v=sec.querySelector("video");
+    if(v){
+      v.onclick=()=>{v.paused?v.play().catch(()=>{}):v.pause();updatePlayIcon(v)};
+    }
+  });
+}
+function updatePlayIcon(v){
+  const reel=v?.closest('.reel'); if(!reel)return;
+  const btn=reel.querySelector('.playPauseBtn');
+  if(btn){btn.textContent=v.paused?'▶':'❚❚';btn.setAttribute('aria-label',v.paused?'Play reel':'Pause reel')}
+  reel.classList.toggle('paused',v.paused);
+}
+function togglePlay(e,btn){
+  e?.stopPropagation();
+  const v=btn?.closest('.reel')?.querySelector('video'); if(!v)return;
+  if(v.paused)v.play().catch(()=>{}); else v.pause();
+  updatePlayIcon(v);
+}
+function toggleSound(e,btn){
+  e?.stopPropagation();
+  const reel=btn.closest('.reel'), v=reel?.querySelector('video'); if(!v)return;
+  v.muted=!v.muted; v.volume=1;
+  btn.classList.toggle('soundOn',!v.muted);
+  btn.querySelector('span').textContent=v.muted?'🔇':'🔊';
+  btn.querySelector('small').textContent=v.muted?'Sound':'Muted';
+  if(!v.muted && v.paused)v.play().catch(()=>showPlaybackPrompt(reel,v));
+}
+function showPlaybackPrompt(reel,v){
+  if(reel.querySelector('.playPrompt'))return;
+  const p=document.createElement('button');
+  p.type='button'; p.className='playPrompt'; p.textContent='▶ Tap to play with sound';
+  p.onclick=(e)=>{e.stopPropagation();v.muted=false;v.volume=1;v.play().then(()=>{p.remove();updatePlayIcon(v)}).catch(()=>toast('Playback was blocked by the browser.'))};
+  reel.appendChild(p);
+}
+document.addEventListener('error',e=>{if(e.target?.tagName==='VIDEO')toast('This video could not be loaded')},true);
+/* Record watch history only for videos inside the main feed (.reel) - not the
+   muted autoplay previews inside search results or profile thumbnails. */
+document.addEventListener('play',e=>{
+  if(e.target?.tagName!=='VIDEO')return;
+  const reelEl=e.target.closest('.reel');
+  if(!reelEl)return;
+  const id=Number(reelEl.dataset.id);
+  if(Number.isFinite(id))recordHistory(id);
+},true);
+
+/* In-place updates so liking/saving/following never resets scroll position. */
+function updateLikeUI(id){
+  const liked=likes.includes(id);
+  document.querySelectorAll('.reel').forEach(sec=>{
+    if(Number(sec.dataset.id)!==id)return;
+    const b=sec.querySelector('.likeBtn'); if(!b)return;
+    b.classList.toggle('liked',liked);
+    b.querySelector('small').textContent=liked?'Liked':'Like';
+  });
+}
+function updateSaveUI(id){
+  const isSaved=saved.includes(id);
+  document.querySelectorAll('.reel').forEach(sec=>{
+    if(Number(sec.dataset.id)!==id)return;
+    const b=sec.querySelector('.saveBtn'); if(!b)return;
+    b.classList.toggle('saved',isSaved);
+    b.querySelector('small').textContent=isSaved?'Saved':'Save';
+  });
+}
+function updateFollowUI(creator){
+  const isFollowing=following.includes(creator);
+  document.querySelectorAll('.reel').forEach(sec=>{
+    if(sec.dataset.creator!==creator)return;
+    const b=sec.querySelector('.follow'); if(!b)return;
+    b.classList.toggle('on',isFollowing);
+    b.textContent=isFollowing?'Following':'Follow';
+  });
+}
+
+function toggleLike(id,e){
+  e?.stopPropagation();
+  likes.includes(id)?likes=likes.filter(x=>x!==id):likes.push(id);
+  saveState(); updateLikeUI(id);
+}
+function toggleSave(id,e){
+  e?.stopPropagation();
+  const nowSaved=!saved.includes(id);
+  saved=nowSaved?[...saved,id]:saved.filter(x=>x!==id);
+  saveState(); updateSaveUI(id);
+  toast(nowSaved?"Saved to Downloads":"Removed from Downloads");
+}
+function followCreator(creator,e){
+  e?.stopPropagation();
+  const nowFollowing=!following.includes(creator);
+  following=nowFollowing?[...following,creator]:following.filter(x=>x!==creator);
+  saveState(); updateFollowUI(creator);
+  if(activeHomeTab==='Following')home('Following');
+}
+async function shareReel(id,e){
+  e?.stopPropagation();
+  const all=await allReels();
+  const r=all.find(x=>x.id===id); if(!r)return;
+  const text=`${r.title} – EduInsta`;
+  try{
+    if(navigator.share){await navigator.share({title:"EduInsta",text})}
+    else if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(text);toast("Copied share text")}
+    else{prompt('Copy this share text',text)}
+  }catch{}
+}
+/* Report flow: a proper dropdown of reasons (spam, copyright, etc.) plus an
+   optional detail box, matching how mainstream apps handle reports. Reports
+   are stored locally so the owner dashboard can show a moderation queue. */
+const REPORT_REASONS=[
+  'Spam or misleading',
+  'Copyright / intellectual property issue',
+  'Not educational content',
+  'Inappropriate or adult content',
+  'Violence or dangerous content',
+  'Hate speech or harassment',
+  'Child safety concern',
+  'Misinformation / factually incorrect',
+  'Impersonation',
+  'Other'
+];
+var reports=readJSON('er_reports',[]);
+function saveReports(){lsSet('er_reports',JSON.stringify(reports))}
+function reportReel(id,e){
+  e?.stopPropagation();
+  overlay.innerHTML=`<div class="modal" onclick="closeOverlay()"><div class="sheet" onclick="event.stopPropagation()">
+    <div class="commentHeader"><div><b>Report this reel</b><div class="commentCount">Tell us what's wrong with this content</div></div><button type="button" class="close" onclick="closeOverlay()">×</button></div>
+    <label class="fieldLabel">Reason for reporting</label>
+    <select class="field" id="reportReason">
+      <option value="">Select a reason…</option>
+      ${REPORT_REASONS.map(r=>`<option value="${escapeAttr(r)}">${escapeHtml(r)}</option>`).join('')}
+    </select>
+    <textarea class="field" id="reportDetails" rows="3" placeholder="Add any details (optional)"></textarea>
+    <div class="fieldError" id="reportError"></div>
+    <button type="button" class="primary" style="width:100%" onclick="submitReport(${id})">Submit report</button>
+    <button type="button" onclick="closeOverlay()">Cancel</button>
+  </div></div>`;
+}
+function submitReport(id){
+  const reason=document.getElementById('reportReason')?.value;
+  const details=document.getElementById('reportDetails')?.value.trim()||'';
+  const err=document.getElementById('reportError');
+  if(!reason){if(err)err.textContent='Please select a reason for your report.';return}
+  reports=[{id:Date.now(),reelId:id,reason,details,at:Date.now(),status:'open'},...reports];
+  saveReports();
+  closeOverlay();
+  toast('Report submitted — thank you');
+  addNotification('system','Report received','Thanks for reporting. Our team will review this content.');
+}
+
+/* ================= Owner / admin mode =================
+   Everything owner-only (earnings, ad rate card, Premium pricing, moderation
+   queue) is hidden behind this gate so ordinary users never see it.
+
+   IMPORTANT SECURITY NOTE: this is a CLIENT-SIDE gate only. It hides the UI,
+   which is enough to keep the owner panel out of normal users' way, but it is
+   NOT real security - anyone who opens devtools could flip the flag. Real
+   protection requires the owner check to live on the backend (see server.js),
+   where the earnings API refuses to return data without a valid owner token.
+   Never treat this flag alone as protecting real financial data. */
+var ownerMode=readJSON('er_owner_mode',false);
+function isOwner(){return ownerMode===true}
+function setOwnerMode(v){ownerMode=!!v;lsSet('er_owner_mode',JSON.stringify(ownerMode))}
+const OWNER_PIN_DEFAULT='246810';
+function ownerPin(){return readJSON('er_owner_pin',OWNER_PIN_DEFAULT)}
+function promptOwnerLogin(){
+  overlay.innerHTML=`<div class="modal" onclick="closeOverlay()"><div class="sheet" onclick="event.stopPropagation()">
+    <div class="commentHeader"><div><b>Owner sign-in</b><div class="commentCount">Restricted area — app owner only</div></div><button type="button" class="close" onclick="closeOverlay()">×</button></div>
+    <p class="filterNote">Enter your owner PIN to access earnings and app configuration. Regular users never see this area.</p>
+    <div class="passwordField"><input class="field" id="ownerPinInput" type="password" inputmode="numeric" placeholder="Owner PIN"><button type="button" class="passwordToggle" onclick="togglePasswordVisibility('ownerPinInput',this)">👁</button></div>
+    <div class="fieldError" id="ownerPinError"></div>
+    <button type="button" class="primary" style="width:100%" onclick="submitOwnerPin()">Unlock owner tools</button>
+    <div class="authGateHint">Demo PIN: ${escapeHtml(OWNER_PIN_DEFAULT)} — change it from the owner dashboard.</div>
+  </div></div>`;
+}
+function submitOwnerPin(){
+  const val=document.getElementById('ownerPinInput')?.value||'';
+  const err=document.getElementById('ownerPinError');
+  if(val!==ownerPin()){if(err)err.textContent='Incorrect PIN.';return}
+  setOwnerMode(true);
+  closeOverlay();
+  toast('Owner tools unlocked');
+  ownerDashboardPage();
+}
+function ownerLogout(){
+  setOwnerMode(false);
+  toast('Owner tools locked');
+  settingsPage();
+}
+function changeOwnerPin(){
+  const v=prompt('Enter a new owner PIN (4-8 digits)');
+  if(v===null)return;
+  if(!/^[0-9]{4,8}$/.test(v)){toast('PIN must be 4-8 digits');return}
+  lsSet('er_owner_pin',JSON.stringify(v));
+  toast('Owner PIN updated');
+}
+
+/* ---- Earnings model ----
+   Revenue has two sources: Premium subscription payments and advertiser
+   campaign payments. Both are read from records the app already keeps
+   (subscription.history and adCampaigns), so the dashboard reflects real
+   recorded transactions rather than invented numbers. Payment-gateway fees
+   are estimated so the owner sees net, not just gross. */
+const GATEWAY_FEE_RATE=0.0236; // ~2% + 18% GST, typical Indian gateway rate
+function computeEarnings(){
+  const subPayments=(subscription.history||[]).filter(h=>h.type==='purchased'||h.type==='renewed');
+  const subGross=subPayments.reduce((sum,h)=>sum+(h.price||PREMIUM_CONFIG.plan.price),0);
+  const adPayments=adCampaigns.filter(c=>c.price);
+  const adGross=adPayments.reduce((sum,c)=>sum+c.price,0);
+  const gross=subGross+adGross;
+  const fees=Math.round(gross*GATEWAY_FEE_RATE);
+  const now=Date.now(), monthAgo=now-30*86400000;
+  const recent=[
+    ...subPayments.filter(h=>h.at>=monthAgo).map(h=>({at:h.at,amount:h.price||PREMIUM_CONFIG.plan.price})),
+    ...adPayments.filter(c=>c.startAt>=monthAgo).map(c=>({at:c.startAt,amount:c.price}))
+  ];
+  return {
+    subGross,adGross,gross,fees,net:gross-fees,
+    subCount:subPayments.length,adCount:adPayments.length,
+    last30:recent.reduce((s,r)=>s+r.amount,0),
+    transactions:[
+      ...subPayments.map(h=>({at:h.at,type:'Premium subscription',amount:h.price||PREMIUM_CONFIG.plan.price,method:h.method||'—'})),
+      ...adPayments.map(c=>({at:c.startAt,type:'Ad campaign — '+c.sponsor,amount:c.price,method:c.method||'—'}))
+    ].sort((a,b)=>b.at-a.at)
+  };
+}
+function ownerDashboardPage(){
+  if(!isOwner()){promptOwnerLogin();return}
+  const e=computeEarnings();
+  const cur=PREMIUM_CONFIG.currency;
+  const openReports=reports.filter(r=>r.status==='open').length;
+  main.innerHTML=`<div class="panel" id="ownerPanel"><div class="detailHead"><button type="button" onclick="settingsPage()">‹</button><h2>Owner dashboard</h2><button type="button" onclick="ownerLogout()" title="Lock">🔓</button></div>
+    <div class="ownerPrivateNote">🔒 Private — visible only to you. Regular users cannot see this screen.</div>
+    <div class="earningsHero">
+      <small>Net earnings (after est. gateway fees)</small>
+      <b>${cur}${e.net.toLocaleString('en-IN')}</b>
+      <span>Gross ${cur}${e.gross.toLocaleString('en-IN')} · Fees ~${cur}${e.fees.toLocaleString('en-IN')}</span>
+    </div>
+    <div class="statsLarge">
+      <div><b>${cur}${e.subGross.toLocaleString('en-IN')}</b><span>Subscriptions (${e.subCount})</span></div>
+      <div><b>${cur}${e.adGross.toLocaleString('en-IN')}</b><span>Advertising (${e.adCount})</span></div>
+      <div><b>${cur}${e.last30.toLocaleString('en-IN')}</b><span>Last 30 days</span></div>
+    </div>
+    <div class="card"><h3>Revenue breakdown</h3>
+      <div class="revenueRow"><span>👑 Premium subscriptions</span><b>${cur}${e.subGross.toLocaleString('en-IN')}</b></div>
+      <div class="revenueRow"><span>📢 Advertiser campaigns</span><b>${cur}${e.adGross.toLocaleString('en-IN')}</b></div>
+      <div class="revenueRow"><span>💳 Est. gateway fees (${(GATEWAY_FEE_RATE*100).toFixed(2)}%)</span><b class="negAmount">−${cur}${e.fees.toLocaleString('en-IN')}</b></div>
+      <div class="revenueRow totalRow"><span>Net payable to your bank</span><b>${cur}${e.net.toLocaleString('en-IN')}</b></div>
+    </div>
+    <div class="card"><h3>Transactions</h3>${e.transactions.length?e.transactions.slice(0,25).map(t=>`<div class="revenueRow"><span>${escapeHtml(t.type)}<br><small class="muted">${new Date(t.at).toLocaleString()} · ${escapeHtml(t.method)}</small></span><b>${cur}${t.amount.toLocaleString('en-IN')}</b></div>`).join(''):'<p class="muted">No transactions recorded yet.</p>'}</div>
+    <div class="card"><h3>Moderation queue</h3>
+      <p class="filterNote">${openReports} open report${openReports===1?'':'s'}.</p>
+      ${reports.length?reports.slice(0,15).map(r=>`<div class="revenueRow"><span><b>${escapeHtml(r.reason)}</b><br><small class="muted">Reel #${r.reelId} · ${relativeTime(r.at)}${r.details?' · '+escapeHtml(r.details):''}</small></span>${r.status==='open'?`<button type="button" class="networkBtn" onclick="resolveReport(${r.id})">Resolve</button>`:'<small class="muted">Resolved</small>'}</div>`).join(''):'<p class="muted">No reports submitted.</p>'}
+    </div>
+    <div class="profileMenuCard"><h3>Owner controls</h3>
+      ${settingsRow('🛠️','App configuration','Ad frequency, advertiser rates and Premium pricing','adminConfig')}
+      ${settingsRow('📢','Advertiser campaigns','View and manage booked ad campaigns','ads')}
+    </div>
+    ${btnHtml('Change owner PIN','changeOwnerPin()')}
+    ${btnHtml('Lock owner tools','ownerLogout()')}
+    <div class="infoBox">Earnings shown are from transactions recorded in this prototype. Once a real payment gateway and backend are connected, these figures come from the gateway's settlement API instead.</div>
+  </div>`;
+}
+function resolveReport(id){
+  const r=reports.find(x=>x.id===id); if(!r)return;
+  r.status='resolved'; saveReports(); toast('Report resolved'); ownerDashboardPage();
+}
+
+/* ---------------- Comments ---------------- */
+function commentsPanel(id,e){
+  e?.stopPropagation();
+  const arr=comments[id]||[];
+  overlay.innerHTML=`<div class="modal" onclick="closeOverlay()"><div class="sheet" onclick="event.stopPropagation()">
+    <div class="commentHeader"><div><h3>Comments</h3><small>${arr.length} comment${arr.length===1?'':'s'}</small></div><button type="button" class="close" onclick="closeOverlay()">×</button></div>
+    <div class="commentList">${arr.length?arr.map(c=>`<div class="commentRow"><div class="commentAvatar">${escapeHtml((c.user||"S").replace("@","").charAt(0).toUpperCase())}</div><div class="commentBody"><b>${escapeHtml(c.user||"@student")}</b><div>${escapeHtml(c.text)}</div><small>Just now</small></div></div>`).join(""):`<div class="empty commentsEmpty">💬<br><b>No comments yet</b><br><span>Be the first to share your thoughts.</span></div>`}</div>
+    <div class="commentComposer"><input id="commentInput" maxlength="300" placeholder="Add a thoughtful comment…" onkeydown="if(event.key==='Enter'){event.preventDefault();addComment(${id})}"><button type="button" onclick="addComment(${id})">➤</button></div>
+  </div></div>`;
+}
+function addComment(id){
+  const x=document.getElementById("commentInput"), t=x&&x.value.trim();
+  if(!t)return;
+  comments[id]=comments[id]||[];
+  comments[id].push({user:profile.username||"@student",text:t});
+  saveState();
+  commentsPanel(id,null);
+  toast("Comment posted");
+}
+
+/* ---------------- Explore ---------------- */
+async function explore(){
+  const all=await allReels();
+  const cats=["All","School","Engineering","Medical","Competitive Exams","UPSC / IAS","Government Jobs"];
+  const subs=["Mathematics","Physics","Chemistry","Computer Science","Biology","General Knowledge","ECE","CSE","Mechanical","Civil","IIT/JEE","NEET","CAT","Banking","Polity","History","Geography","Economy"];
+  main.innerHTML=`<div class="panel">
+    <h2>Explore</h2>
+    <div class="chips" id="exploreCatChips">${cats.map(c=>`<button type="button" class="chip ${c==='All'?'on':''}" onclick="filterExplore('${escapeAttr(c)}',this)">${escapeHtml(c)}</button>`).join("")}</div>
+    <h3>Topics</h3>
+    <div class="chips" id="exploreSubChips">${subs.map(s=>`<button type="button" class="chip" onclick="filterExplore('${escapeAttr(s)}',this)">${escapeHtml(s)}</button>`).join("")}</div>
+    <div id="exploreResults">${cards(all)}</div>
+  </div>`;
+}
+async function filterExplore(q,btn){
+  document.querySelectorAll('#exploreCatChips .chip,#exploreSubChips .chip').forEach(c=>c.classList.remove('on'));
+  btn?.classList.add('on');
+  const all=await allReels();
+  const list=all.filter(r=>q==="All"||r.cat===q||r.sub===q||r.title.toLowerCase().includes(q.toLowerCase()));
+  document.getElementById("exploreResults").innerHTML=cards(list);
+}
+function cards(list){
+  return list.length?`<div class="cards">${list.map(r=>`<div class="card"><b>${escapeHtml(r.title)}</b><p>${escapeHtml(r.creator)}</p><small>${escapeHtml(r.cat)} • ${escapeHtml(r.sub)}</small><button type="button" onclick="openReel(${r.id})">Watch</button></div>`).join("")}</div>`:'<div class="empty">No reels found.</div>';
+}
+async function openReel(id,srcHint){
+  await home('For You');
+  requestAnimationFrame(()=>{
+    const reelEl=document.querySelector(`.reel[data-id="${id}"]`);
+    if(!reelEl)return;
+    reelEl.scrollIntoView({behavior:"smooth",block:"start"});
+    const v=reelEl.querySelector("video");
+    if(!v)return;
+    document.querySelectorAll(".reel video").forEach(x=>{if(x!==v){x.pause()}});
+    v.muted=false; v.volume=1;
+    const attempt=v.play();
+    if(attempt&&typeof attempt.catch==='function')attempt.catch(()=>showPlaybackPrompt(reelEl,v));
+    const soundBtn=reelEl.querySelector('.soundBtn');
+    if(soundBtn){soundBtn.classList.add('soundOn');soundBtn.querySelector('span').textContent='🔊';soundBtn.querySelector('small').textContent='Muted'}
+  });
+}
+
+/* ---------------- Upload ---------------- */
+function upload(){
+  main.innerHTML=`<div class="panel">
+    <h2>Upload Reel</h2>
+    <p>Select a video from your device. It's stored locally in this browser after publishing.</p>
+    <div class="uploadPicker">
+      <button type="button" class="uploadCameraBtn" onclick="openUploadPicker()" aria-label="Add a video">📷</button>
+      <div class="uploadPickHint" id="uploadPickHint"><b>Add a reel</b>Camera, gallery or files</div>
+    </div>
+    <div id="preview"></div>
+    <input class="field" id="upTitle" placeholder="Video title">
+    <select class="field" id="upCat"><option>School</option><option>Engineering</option><option>Medical</option><option>Competitive Exams</option><option>UPSC / IAS</option><option>Government Jobs</option></select>
+    <input class="field" id="upSub" placeholder="Subject / topic (e.g. Mathematics)">
+    <input id="upFilePicker" type="file" accept="video/*" class="hidden" onchange="onUploadFileChosen()">
+    <button type="button" class="primary" onclick="checkUpload()">Submit for Education Check</button>
+    <div id="check"></div>
+  </div>`;
+}
+/* Camera / gallery / other-location chooser, mirroring the picker pattern used
+   by native reel apps. The browser can't truly distinguish "gallery" from
+   "other files" (both open the OS file picker), but `capture` reliably routes
+   straight to the device camera, so that option is meaningfully different. */
+function openUploadPicker(){
+  overlay.innerHTML=`<div class="modal" onclick="closeOverlay()"><div class="sheet" onclick="event.stopPropagation()">
+    <h3>Add a reel</h3>
+    <button type="button" class="uploadOption" onclick="pickUploadSource('camera')"><span>📷</span>Record with camera</button>
+    <button type="button" class="uploadOption" onclick="pickUploadSource('gallery')"><span>🖼️</span>Choose from gallery</button>
+    <button type="button" class="uploadOption" onclick="pickUploadSource('files')"><span>📁</span>Choose other location</button>
+    <button type="button" onclick="closeOverlay()">Cancel</button>
+  </div></div>`;
+}
+function pickUploadSource(source){
+  const input=document.getElementById('upFilePicker'); if(!input)return;
+  if(source==='camera')input.setAttribute('capture','environment');
+  else input.removeAttribute('capture');
+  closeOverlay();
+  input.click();
+}
+function onUploadFileChosen(){
+  const f=document.getElementById("upFilePicker")?.files[0], p=document.getElementById("preview"), hint=document.getElementById("uploadPickHint");
+  if(!f){if(p)p.innerHTML="";return}
+  if(!f.type.startsWith("video/")){if(p)p.innerHTML="<p>❌ Please choose a video file.</p>";return}
+  const u=URL.createObjectURL(f);
+  if(p)p.innerHTML=`<video src="${u}" controls playsinline style="width:100%;max-height:260px;border-radius:12px;background:#000"></video>`;
+  if(hint)hint.innerHTML=`<b>Selected</b>${escapeHtml(f.name)}`;
+}
+function checkUpload(){
+  const fileInput=document.getElementById("upFilePicker"), f=fileInput?.files[0], t=document.getElementById("upTitle").value.trim();
+  if(!f){toast("Add a video first (camera, gallery or files)");return}
+  if(!t){toast("Enter a title");return}
+  if(!f.type.startsWith("video/")){toast("Please select a video file");return}
+  document.getElementById("check").innerHTML='<p>🔎 Education Check running…</p>';
+  setTimeout(()=>{
+    document.getElementById("check").innerHTML=`<p>✅ <b>Education Check passed.</b></p>
+      <button type="button" class="primary" onclick="publishUpload()">Publish Reel</button>
+      <p style="font-size:12px;color:#666">Prototype check: a production build will analyze frames, audio/transcript and metadata with AI before publication.</p>`;
+  },700);
+}
+async function publishUpload(){
+  const f=document.getElementById("upFilePicker")?.files[0], title=document.getElementById("upTitle")?.value.trim();
+  if(!f||!title){toast("Video/title missing");return}
+  const id=Date.now();
+  const cat=document.getElementById("upCat").value;
+  const sub=document.getElementById("upSub").value.trim()||cat;
+  await dbPut({id,cat,sub,creator:profile.username,title,desc:"Uploaded by "+profile.name,blob:f});
+  toast("🎉 Reel published successfully");
+  addNotification('system','Reel published',`"${title}" is now live on EduInsta.`);
+  await openReel(id);
+}
+
+/* ---------------- Downloads ---------------- */
+async function downloads(){
+  const all=await allReels();
+  const list=all.filter(r=>saved.includes(r.id));
+  main.innerHTML=`<div class="panel"><h2>Downloads / Saved</h2>${cards(list)}</div>`;
+}
+
+/* ---------------- Search ---------------- */
+function openSearch(){
+  overlay.innerHTML=`<div class="modal" onclick="closeOverlay()"><div class="sheet" onclick="event.stopPropagation()">
+    <div class="commentHeader"><div><b>Search EduInsta</b><div class="commentCount">Subjects, creators, topics and titles</div></div><button type="button" class="close" onclick="closeOverlay()">×</button></div>
+    <input class="searchInput" id="searchInput" autocomplete="off" placeholder="Search e.g. aerospace, Python, NEET…" oninput="doSearch()" onkeydown="if(event.key==='Enter')doSearch()">
+    <div id="searchResults" class="searchResults"><div class="empty">Start typing to search.</div></div>
+  </div></div>`;
+  setTimeout(()=>document.getElementById("searchInput")?.focus(),50);
+}
+async function doSearch(){
+  const q=(document.getElementById("searchInput")?.value||"").trim().toLowerCase();
+  const results=document.getElementById("searchResults"); if(!results)return;
+  if(!q){results.innerHTML='<div class="empty">Start typing to search.</div>';return}
+  let all=[];
+  try{all=await allReels()}catch{results.innerHTML='<div class="empty">Search is temporarily unavailable.</div>';return}
+  const terms=q.split(/\s+/).filter(Boolean);
+  const scored=all.map(r=>{
+    const title=(r.title||"").toLowerCase(), sub=(r.sub||"").toLowerCase(), cat=(r.cat||"").toLowerCase();
+    const desc=(r.desc||"").toLowerCase(), creator=(r.creator||"").toLowerCase();
+    const hay=[title,sub,cat,desc,creator].join(" ");
+    let score=0;
+    terms.forEach(t=>{
+      if(title.includes(t))score+=8;
+      if(sub.includes(t))score+=7;
+      if(cat.includes(t))score+=6;
+      if(desc.includes(t))score+=4;
+      if(creator.includes(t))score+=2;
+      if(hay.includes(t))score+=1;
+    });
+    return {r,score};
+  }).filter(x=>x.score>0).sort((a,b)=>b.score-a.score).map(x=>x.r);
+
+  if(!scored.length){
+    results.innerHTML=`<div class="empty">No reels found for "${escapeHtml(q)}".<br><br>Try a subject, technology, exam, creator or topic.</div>`;
+    return;
+  }
+  results.innerHTML=scored.map(r=>`<div class="searchReel" onclick="closeOverlay();openReel(${r.id})">
+    <video src="${escapeAttr(r.src)}" muted playsinline loop preload="metadata"></video>
+    <div class="searchReelInfo">
+      <b>${escapeHtml(r.title)}</b>
+      <div class="searchMeta">${escapeHtml(r.creator)} • ${escapeHtml(r.cat)} • ${escapeHtml(r.sub)}</div>
+      <div class="searchDesc">${escapeHtml(r.desc||"Educational reel")}</div>
+      <button type="button" class="primary" onclick="event.stopPropagation();closeOverlay();openReel(${r.id})">▶ Open Reel</button>
+    </div>
+  </div>`).join("");
+}
+
+/* ================= Profile ================= */
+function photoSrc(){return profile?.avatarData||profile?.avatar||''}
+function avatarMarkup(size){
+  const src=photoSrc();
+  return src?`<img class="erProfilePhoto ${size||''}" src="${escapeAttr(src)}" alt="Profile photo">`:`<div class="profileAvatar ${size||''}">${escapeHtml((profile?.name||'Y').charAt(0).toUpperCase())}</div>`;
+}
+async function profilePage(){
+  const [uploads,allR]=await Promise.all([dbAll(),allReels()]);
+  const downloadsList=allR.filter(r=>saved.includes(r.id));
+  const premium=isPremium();
+  main.innerHTML=`<div class="panel profilePanel">
+    <div class="profileTopBar"><button type="button" class="profileBack" onclick="page('home')">‹</button><h2>Profile</h2><button type="button" class="profileGear" onclick="settingsPage()">⚙</button></div>
+    <div class="profileHero">${avatarMarkup()}<div><h2>${escapeHtml(profile.name)} ${premium?'<span class="premiumCrown">👑</span>':''}</h2><div class="muted">${escapeHtml(profile.username)} · ${escapeHtml(profile.role)}</div></div></div>
+    ${premium
+      ?`<div class="premiumBadgeRow" onclick="manageSubscriptionPage()">👑 <b>EduInsta Premium</b><span>Manage ›</span></div>`
+      :`<div class="upgradeBanner" onclick="premiumPage()">✨ <b>Go Premium</b> — remove ads from your feed<span>›</span></div>`}
+    <div class="profileStats">
+      <button type="button" onclick="profileTab='uploads';profilePage()"><b>${uploads.length}</b><small>Uploads</small></button>
+      <button type="button" onclick="profileTab='downloads';profilePage()"><b>${downloadsList.length}</b><small>Saved</small></button>
+      <button type="button" onclick="networkPage('followers')"><b>${followers.length}</b><small>Followers</small></button>
+      <button type="button" onclick="networkPage('following')"><b>${following.length}</b><small>Following</small></button>
+    </div>
+    <div class="profileActions"><button type="button" onclick="editProfilePage()">Edit profile</button><button type="button" onclick="shareProfile()">Share profile</button></div>
+    <p class="filterNote">🎯 Interests: ${interests.length?escapeHtml(interests.join(' • ')):'None selected — your For You feed shows all educational reels.'}</p>
+    <div class="profileTabs">
+      <button type="button" class="${profileTab==='uploads'?'selected':''}" onclick="profileTab='uploads';profilePage()">Uploads</button>
+      <button type="button" class="${profileTab==='downloads'?'selected':''}" onclick="profileTab='downloads';profilePage()">Saved</button>
+      <button type="button" class="${profileTab==='history'?'selected':''}" onclick="profileTab='history';profilePage()">History</button>
+    </div>
+    <div id="profileContent">${profileTab==='uploads'?profileUploads(uploads):profileTab==='history'?await profileHistory(allR):profileDownloads(downloadsList)}</div>
+    <div class="profileMenuCard"><h3>EduInsta controls</h3>
+      ${settingsRow('🎯','Manage interests','Choose subjects and topics for your For You feed','interests')}
+      ${settingsRow('👥','Followers & following','See who follows you and who you follow','network')}
+      ${settingsRow('⚙️','Settings & preferences','Account, privacy, feed, media and accessibility','settings')}
+      ${settingsRow('🔐','Account & sign-in','Login, account details and device sessions','account')}
+    </div>
+  </div>`;
+}
+function profileUploads(list){
+  if(!list.length)return `<div class="empty profileEmpty">🎬<br><b>No uploads yet</b><br>Published reels will appear here.</div>`;
+  return `<div class="profileGrid">${list.map(r=>`<div class="profileCard"><div class="thumb"><video src="${escapeAttr(blobUrlFor(r))}" muted></video><span>▶</span></div><b>${escapeHtml(r.title)}</b><small>${escapeHtml(r.cat)} · ${escapeHtml(r.sub)}</small><button type="button" onclick="openReel(${r.id})">Watch Reel</button></div>`).join("")}</div>`;
+}
+function profileDownloads(list){
+  if(!list.length)return `<div class="empty profileEmpty">🔖<br><b>No downloads yet</b><br>Tap Save on a reel and it will appear here.</div>`;
+  return `<div class="profileGrid">${list.map(r=>`<div class="profileCard"><div class="thumb"><video src="${escapeAttr(r.src)}" muted></video><span>▶</span></div><b>${escapeHtml(r.title)}</b><small>${escapeHtml(r.creator)} · ${escapeHtml(r.sub)}</small><button type="button" onclick="openReel(${r.id})">Watch Reel</button></div>`).join("")}</div>`;
+}
+function profileHistory(allR){
+  const byId=new Map(allR.map(r=>[r.id,r]));
+  const list=watchHistory.map(h=>({...byId.get(h.id),watchedAt:h.watchedAt})).filter(r=>r&&r.id!==undefined);
+  if(!list.length)return `<div class="empty profileEmpty">🕘<br><b>No watch history yet</b><br>Reels you play will appear here.</div>`;
+  return `<div class="historyClearBar"><button type="button" onclick="clearHistory()">Clear history</button></div>
+    <div class="profileGrid">${list.map(r=>`<div class="profileCard"><div class="thumb"><video src="${escapeAttr(r.src)}" muted></video><span>▶</span></div><b>${escapeHtml(r.title)}</b><small>${escapeHtml(r.creator)} · ${escapeHtml(r.sub)}</small><small class="historyMeta">Watched ${relativeTime(r.watchedAt)}</small><button type="button" onclick="openReel(${r.id})">Watch again</button></div>`).join("")}</div>`;
+}
+function saveProfile(){
+  profile={
+    name:document.getElementById("pname").value.trim()||"Your Name",
+    username:document.getElementById("puser").value.trim()||"@student",
+    role:document.getElementById("prole").value,
+    avatarData:profile.avatarData,
+    avatar:profile.avatar
+  };
+  saveState();
+  toast("Profile saved");
+  profilePage();
+}
+function editProfilePage(){
+  main.innerHTML=`<div class="panel"><div class="detailHead"><button type="button" onclick="profilePage()">‹</button><h2>Edit profile</h2></div>
+    <div class="card">
+      <div class="erPhotoEditor">${avatarMarkup('big')}
+        <div class="erPhotoActions">
+          <label class="primary erUploadPhoto">Upload profile photo<input id="profilePhotoInput" type="file" accept="image/*" onchange="handleProfilePhoto(this)"></label>
+          ${photoSrc()?'<button type="button" class="optionBtn" onclick="removeProfilePhoto()">Remove photo</button>':''}
+          <small>Choose an image up to 10 MB. It's resized for local prototype storage.</small>
+        </div>
+      </div>
+      <input class="field" id="pname" value="${escapeAttr(profile.name)}" placeholder="Name" autocomplete="name">
+      <input class="field" id="puser" value="${escapeAttr(profile.username)}" placeholder="@username" autocomplete="username">
+      <select class="field" id="prole">
+        <option ${profile.role==='Student'?'selected':''}>Student</option>
+        <option ${profile.role==='Teacher'?'selected':''}>Teacher</option>
+        <option ${profile.role==='Student / Creator'?'selected':''}>Student / Creator</option>
+        <option ${profile.role==='Teacher / Creator'?'selected':''}>Teacher / Creator</option>
+      </select>
+      <button type="button" class="primary" onclick="saveProfile()">Save changes</button>
+    </div></div>`;
+}
+function handleProfilePhoto(input){
+  const file=input?.files?.[0]; if(!file)return;
+  if(!file.type.startsWith('image/')){toast('Please select an image file');input.value='';return}
+  if(file.size>10*1024*1024){toast('Please choose an image smaller than 10 MB');input.value='';return}
+  const reader=new FileReader();
+  reader.onerror=()=>toast('Could not read the image');
+  reader.onload=()=>{
+    const img=new Image();
+    img.onerror=()=>toast('Could not process the image');
+    img.onload=()=>{
+      const max=512, scale=Math.min(1,max/Math.max(img.naturalWidth||1,img.naturalHeight||1));
+      const c=document.createElement('canvas');
+      c.width=Math.max(1,Math.round((img.naturalWidth||1)*scale));
+      c.height=Math.max(1,Math.round((img.naturalHeight||1)*scale));
+      const ctx=c.getContext('2d');
+      if(!ctx){toast('Image processing is unavailable');return}
+      ctx.drawImage(img,0,0,c.width,c.height);
+      profile.avatarData=c.toDataURL('image/jpeg',.84);
+      saveState(); toast('Profile photo updated'); editProfilePage();
+    };
+    img.src=reader.result;
+  };
+  reader.readAsDataURL(file);
+}
+function removeProfilePhoto(){
+  if(!confirm('Remove your EduInsta profile photo?'))return;
+  delete profile.avatarData; delete profile.avatar;
+  saveState(); toast('Profile photo removed'); editProfilePage();
+}
+function shareProfile(){
+  const text=`${profile.name} — ${profile.username} on EduInsta`;
+  if(navigator.share){navigator.share({title:'EduInsta profile',text}).catch(()=>{})}
+  else if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(text).then(()=>toast('Profile text copied')).catch(()=>toast(text))}
+  else{prompt('Copy this profile text',text)}
+}
+
+/* ================= Interests ================= */
+function interestsPage(){
+  overlay.innerHTML=`<div class="modal" onclick="closeOverlay()"><div class="sheet interestSheet" onclick="event.stopPropagation()">
+    <div class="commentHeader"><div><b>🎯 Manage interests</b><div class="commentCount">Build your learning feed your way</div></div><button type="button" class="close" onclick="closeOverlay()">×</button></div>
+    <div class="interestIntro">Select as many subjects as you want. Search the library or add any educational topic that isn't listed.</div>
+    <input id="interestSearch" class="searchInput" autocomplete="off" placeholder="Search subjects, skills, exams or topics…" oninput="renderInterestChooser()" onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomInterest()}">
+    <div class="interestTabs">
+      <button type="button" id="interestTabLibrary" class="interestTab ${interestTab==='library'?'active':''}" onclick="setInterestTab('library')">Library <span id="libraryCount"></span></button>
+      <button type="button" id="interestTabCustom" class="interestTab ${interestTab==='custom'?'active':''}" onclick="setInterestTab('custom')">My topics <span id="customCount"></span></button>
+    </div>
+    <div id="interestChooser"></div>
+    <div class="selectedInterestBox"><b>Selected</b><div id="selectedInterests"></div></div>
+    <div class="customInterest"><input id="customInterest" placeholder="Add any topic, e.g. Aircraft Certification" onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomInterest()}"><button type="button" class="primary" onclick="addCustomInterest()">Add topic</button></div>
+    <div class="interestActions"><button type="button" class="primary" onclick="commitInterests()">Save Interests</button><button type="button" onclick="closeOverlay()">Cancel</button></div>
+  </div></div>`;
+  renderInterestChooser();
+}
+function setInterestTab(tab){interestTab=tab;renderInterestChooser()}
+function renderInterestChooser(){
+  const root=document.getElementById('interestChooser'); if(!root)return;
+  const q=norm(document.getElementById('interestSearch')?.value||'');
+  document.getElementById('interestTabLibrary')?.classList.toggle('active',interestTab==='library');
+  document.getElementById('interestTabCustom')?.classList.toggle('active',interestTab==='custom');
+  const library=uniq(ER_INTEREST_LIBRARY.concat(interests.filter(x=>!customInterests.some(c=>norm(c)===norm(x))))).sort((a,b)=>a.localeCompare(b));
+  /* "My topics" shows the topics the user has actually SELECTED (not just the
+     custom ones they typed in) so it's a quick place to review/remove picks. */
+  const mine=uniq(interests).sort((a,b)=>a.localeCompare(b));
+  let items=interestTab==='custom'?mine:library;
+  if(q)items=items.filter(x=>norm(x).includes(q));
+  const lc=document.getElementById('libraryCount'), cc=document.getElementById('customCount');
+  if(lc)lc.textContent=library.length;
+  if(cc)cc.textContent=mine.length;
+  root.innerHTML=items.length?`<div class="interestGrid">${items.map(i=>{
+    const on=interests.some(x=>norm(x)===norm(i));
+    const isCustom=customInterests.some(x=>norm(x)===norm(i));
+    return `<button type="button" class="interestItem ${on?'on':''}" data-value="${escapeAttr(i)}" onclick="toggleInterestValue(this.dataset.value)"><span>${on?'✓':'＋'}</span>${escapeHtml(i)}${isCustom?'<em>custom</em>':''}</button>`;
+  }).join('')}</div>`:`<div class="empty interestEmpty">${interestTab==='custom'?(q?`No selected topic matches "${escapeHtml(q)}".`:'No topics selected yet. Pick some from the Library tab, or add your own below.'):(q?`No topic matches "${escapeHtml(q)}". Add it below as your own topic.`:'No topics in the library.')}</div>`;
+  renderSelectedInterests();
+}
+function renderSelectedInterests(){
+  const box=document.getElementById('selectedInterests'); if(!box)return;
+  box.innerHTML=interests.length?interests.map(i=>`<button type="button" class="selectedChip" data-value="${escapeAttr(i)}" onclick="removeInterestValue(this.dataset.value)">${escapeHtml(i)} ×</button>`).join(''):'<span class="muted">No interests selected yet.</span>';
+}
+function toggleInterestValue(v){
+  const idx=interests.findIndex(x=>norm(x)===norm(v));
+  if(idx>=0)interests.splice(idx,1); else interests.push(String(v).trim());
+  interests=uniq(interests);
+  renderInterestChooser();
+}
+function removeInterestValue(v){
+  interests=interests.filter(x=>norm(x)!==norm(v));
+  renderInterestChooser();
+}
+function addCustomInterest(){
+  const a=document.getElementById('customInterest'), b=document.getElementById('interestSearch');
+  const raw=(a?.value||b?.value||'').trim();
+  if(!raw){toast('Enter a topic first');return}
+  const existing=[...ER_INTEREST_LIBRARY,...customInterests,...interests].find(x=>norm(x)===norm(raw));
+  const value=existing||raw;
+  if(!existing){customInterests.push(value);customInterests=uniq(customInterests)}
+  if(!interests.some(x=>norm(x)===norm(value)))interests.push(value);
+  interests=uniq(interests);
+  if(a)a.value=''; if(b)b.value='';
+  interestTab=existing?interestTab:'custom';
+  renderInterestChooser();
+  toast(existing?'Topic selected':'Custom topic added');
+}
+function commitInterests(){
+  saveInterestsState();
+  closeOverlay();
+  toast('Interests saved — For You feed updated');
+  home(activeHomeTab);
+}
+
+/* ================= Followers / Following ================= */
+function personMap(){return Object.fromEntries(PEOPLE.map(p=>[p.u,p]))}
+function personRow(u,mode){
+  const p=personMap()[u]||{u,name:u.replace(/^@/,''),role:'EduInsta learner'};
+  const isFollowing=following.some(x=>norm(x)===norm(u));
+  const isSelf=norm(u)===norm(profile.username);
+  const action=mode==='followers'
+    ? (isFollowing?`<button type="button" class="networkBtn following" onclick="unfollowUser('${escapeAttr(u)}')">Following</button>`:`<button type="button" class="networkBtn" onclick="followUser('${escapeAttr(u)}')">Follow back</button>`)
+    : `<button type="button" class="networkBtn following" onclick="unfollowUser('${escapeAttr(u)}')">Following</button>`;
+  return `<div class="personRow"><div class="personAvatar">${escapeHtml((p.name||p.u).charAt(0).toUpperCase())}</div><div class="personInfo"><b>${escapeHtml(p.name)}</b><small>${escapeHtml(p.u)} · ${escapeHtml(p.role)}</small></div>${!isSelf?action:'<span class="youBadge">You</span>'}</div>`;
+}
+function followUser(u){
+  if(!following.includes(u))following.push(u);
+  saveState(); toast('Following '+u); networkPage('following');
+}
+function unfollowUser(u){
+  following=following.filter(x=>norm(x)!==norm(u));
+  saveState(); toast('Unfollowed '+u); networkPage(document.querySelector('.networkTabs .active')?.textContent.startsWith('Followers')?'followers':'following');
+}
+function networkPage(tab){
+  tab=tab==='followers'?'followers':'following';
+  const list=tab==='followers'?followers:following;
+  main.innerHTML=`<div class="panel networkPanel"><div class="detailHead"><button type="button" onclick="profilePage()">‹</button><h2>People</h2></div>
+    <div class="networkTabs">
+      <button type="button" class="${tab==='followers'?'active':''}" onclick="networkPage('followers')">Followers <b>${followers.length}</b></button>
+      <button type="button" class="${tab==='following'?'active':''}" onclick="networkPage('following')">Following <b>${following.length}</b></button>
+    </div>
+    <div class="networkHint">${tab==='followers'?'People who follow your EduInsta profile.':'Creators and learners you currently follow.'}</div>
+    <div>${list.length?list.map(u=>personRow(u,tab)).join(''):`<div class="empty">${tab==='followers'?'No followers yet.':'You are not following anyone yet.'}</div>`}</div>
+  </div>`;
+}
+
+/* ================= Settings ================= */
+function settingsRow(icon,title,sub,key){
+  return `<button type="button" class="settingRow" onclick="settingDetail('${escapeAttr(key)}')"><span class="settingIcon">${icon}</span><span class="settingText"><b>${escapeHtml(title)}</b>${sub?`<small>${escapeHtml(sub)}</small>`:''}</span><span class="chev">›</span></button>`;
+}
+function settingsPage(){
+  main.innerHTML=`<div class="panel settingsPanel"><div class="detailHead"><button type="button" onclick="profilePage()">‹</button><h2>EduInsta settings</h2></div>
+    <input class="searchInput" id="settingsSearch" placeholder="Find a setting" oninput="filterSettings()">
+    <div id="settingsList">
+      <div class="settingSection"><h3>Membership</h3>${settingsRow('👑','EduInsta Premium',isPremium()?'Manage your active Premium subscription':'Ad-free, unlimited saves, quizzes & more','premium')}</div>
+      <div class="settingSection"><h3>Account & security</h3>${settingsRow('👤','Account details','Email, username and account type','accountDetails')}${settingsRow('🔒','Sign-in & security','Password, sessions and sign-in controls','security')}${settingsRow('📱','Active devices','Demo sessions stored on this device','devices')}</div>
+      <div class="settingSection"><h3>Community</h3>${settingsRow('👥','Followers & following','People following you and accounts you follow','network')}</div>
+      <div class="settingSection"><h3>Your EduInsta activity</h3>${settingsRow('🔖','Saved learning','Manage saved educational reels','saved')}${settingsRow('📊','Your activity','Likes, comments and follows','activity')}${settingsRow('🔔','Notifications','Choose which EduInsta alerts you receive','notifications')}${settingsRow('⏱️','Learning time','Daily reminder and focus controls','time')}</div>
+      <div class="settingSection"><h3>Feed & learning</h3>${settingsRow('🎯','Interests','Subjects and topics used for recommendations','interests')}${settingsRow('🧠','Learning preferences','Education level, languages and feed topics','content')}${settingsRow('💬','Engagement display','Show or hide like/share counts','counts')}${settingsRow('🚫','Muted creators','Creators hidden from your feed','muted')}</div>
+      <div class="settingSection"><h3>App & media</h3>${settingsRow('⬇️','Downloads & media','Quality, storage and offline behavior','downloads')}${settingsRow('♿','Accessibility','Captions, motion and readable controls','accessibility')}${settingsRow('🌐','Language','Choose the app display language','language')}${settingsRow('📶','Data & playback','Data saver and autoplay behavior','data')}</div>
+      <div class="settingSection"><h3>Privacy & community</h3>${settingsRow('🛡️','Privacy','Control profile visibility and interactions','privacy')}${settingsRow('⭐','Study circle','A private list for sharing learning posts','circle')}${settingsRow('🗨️','Comment controls','Choose who can comment on your reels','comments')}${settingsRow('⚠️','Blocked accounts','Manage accounts you blocked','blocked')}</div>
+      <div class="settingSection"><h3>Creator tools</h3>${settingsRow('🎥','Creator settings','Upload defaults and education-check behavior','creator')}${settingsRow('✓','Creator trust','View your demo education-trust status','trust')}</div>
+      <div class="settingSection"><h3>Help & information</h3>${settingsRow('❓','Help centre','Common questions and quick guidance','help')}${settingsRow('🐞','Report a problem','Send feedback about the prototype','problem')}${settingsRow('✅','Account status','See whether your account has restrictions','status')}${settingsRow('ℹ️','About EduInsta','Version and product information','about')}</div>
+      ${isOwner()
+        ?`<div class="settingSection"><h3>Owner tools 🔒</h3>${settingsRow('📊','Owner dashboard','Earnings, transactions and moderation','ownerDashboard')}${settingsRow('📢','Advertiser campaigns','Manage booked sponsored placements','ads')}${settingsRow('🛠️','App configuration','Ad frequency, advertiser rates and Premium pricing','adminConfig')}</div>`
+        :`<div class="settingSection"><h3>App owner</h3>${settingsRow('🔒','Owner sign-in','Restricted — app owner access only','ownerLogin')}</div>`}
+      <div class="settingSection loginSection">${settingsRow('➕','Add another account','Switch between local demo accounts','addAccount')}${settingsRow('🚪','Log out','Sign out of this device','logout')}</div>
+    </div>
+  </div>`;
+}
+function filterSettings(){
+  const q=(document.getElementById('settingsSearch')?.value||'').toLowerCase();
+  document.querySelectorAll('.settingSection').forEach(sec=>{
+    let any=false;
+    sec.querySelectorAll('.settingRow').forEach(row=>{
+      const ok=row.textContent.toLowerCase().includes(q);
+      row.style.display=ok?'flex':'none';
+      if(ok)any=true;
+    });
+    sec.style.display=any?'block':'none';
+  });
+}
+function detailHead(title){return `<div class="detailHead"><button type="button" onclick="settingsPage()">‹</button><h2>${escapeHtml(title)}</h2></div>`}
+function detail(title,body){main.innerHTML=`<div class="panel detailPanel">${detailHead(title)}<div class="detailBody">${body}</div></div>`}
+function toggleLine(key,label,desc,def){
+  const on=erGet(key,!!def);
+  return `<div class="toggleRow"><div><b>${escapeHtml(label)}</b><small>${escapeHtml(desc)}</small></div><button type="button" class="switch ${on?'on':''}" aria-label="${escapeAttr(label)}" onclick="toggleSetting('${key}',this)"><i></i></button></div>`;
+}
+function toggleSetting(key,btn){
+  /* Read the CURRENT displayed state off the button itself rather than
+     re-deriving it from erGet() with a guessed default - the row may have
+     been rendered with a default of true, and a mismatched default here
+     would silently no-op the very first tap on an "on-by-default" switch. */
+  const next=!btn.classList.contains('on');
+  erSet(key,next);
+  btn.classList.toggle('on',next);
+  toast(next?'Enabled':'Disabled');
+}
+function selectLine(key,label,options,def){
+  const v=erGet(key,def);
+  return `<label class="selectRow"><span><b>${escapeHtml(label)}</b></span><select onchange="erSet('${key}',this.value);toast('Preference saved')">${options.map(o=>`<option ${o===v?'selected':''}>${escapeHtml(o)}</option>`).join('')}</select></label>`;
+}
+const btnHtml=(label,fn)=>`<button type="button" class="optionBtn" onclick="${fn}">${escapeHtml(label)}</button>`;
+
+function settingDetail(key){
+  if(key==='interests'){interestsPage();return}
+  if(key==='network'){networkPage('followers');return}
+  if(key==='settings'){settingsPage();return}
+  if(key==='saved'){page('downloads');return}
+  if(key==='account'){authPage();return}
+  if(key==='addAccount'){authPage(true);authForm('signup');return}
+  if(key==='logout'){logout();return}
+  if(key==='premium'){premiumPage();return}
+  if(key==='ownerLogin'){promptOwnerLogin();return}
+  if(key==='ownerDashboard'){ownerDashboardPage();return}
+  if(key==='adminConfig'){if(!isOwner()){promptOwnerLogin();return}adminConfigPage();return}
+  if(key==='ads'){if(!isOwner()){promptOwnerLogin();return}adCampaignsPage();return}
+
+  const titleMap={accountDetails:'Account details',security:'Sign-in & security',devices:'Active devices',activity:'Your activity',notifications:'Notifications',time:'Learning time',content:'Learning preferences',counts:'Engagement display',muted:'Muted creators',downloads:'Downloads & media',accessibility:'Accessibility',language:'Language',data:'Data & playback',privacy:'Privacy',circle:'Study Circle',comments:'Comment controls',blocked:'Blocked accounts',creator:'Creator settings',trust:'Creator trust',help:'Help centre',problem:'Report a problem',status:'Account status',about:'About EduInsta'};
+  let body='';
+  if(key==='accountDetails') body=`<div class="card"><p><b>Name</b><br>${escapeHtml(profile.name)}</p><p><b>Username</b><br>${escapeHtml(profile.username)}</p><p><b>Role</b><br>${escapeHtml(profile.role)}</p><p><b>Login</b><br>${account.loggedIn?escapeHtml(account.email):'Not signed in'}</p><p><b>Phone number</b><br>${profile.phone?escapeHtml(maskPhone(profile.phone)):'Not added'}</p>${btnHtml(profile.phone?'Update phone number':'Add phone number',"updatePhonePage()")}${btnHtml('Edit profile',"editProfilePage()")}${btnHtml('Open account / sign-in',"authPage()")}</div>`;
+  if(key==='security') body=`<div class="card">${toggleLine('loginAlerts','New sign-in alerts','Save a preference for new-device alerts.',true)}${toggleLine('rememberDevice','Remember this device','Keep the local demo session active.',true)}${btnHtml('Change password',"securityAction('password')")}${btnHtml('Sign out other sessions',"securityAction('sessions')")}</div>`;
+  if(key==='devices') body=`<div class="card"><div class="deviceItem"><span>📱</span><div><b>This device</b><small>Current EduInsta browser session</small></div><em>Active</em></div>${btnHtml('Refresh device status',"toast('Device status refreshed')")}${btnHtml('Sign out this device',"logout()")}</div>`;
+  if(key==='activity') body=`<div class="statsLarge"><div><b>${likes.length}</b><span>Liked reels</span></div><div><b>${Object.values(comments).reduce((a,x)=>a+x.length,0)}</b><span>Comments</span></div><div><b>${following.length}</b><span>Following</span></div></div>${btnHtml('Open saved learning',"page('downloads')")}${btnHtml('View profile uploads',"profileTab='uploads';profilePage()")}${btnHtml('Clear local activity',"clearActivity()")}`;
+  if(key==='notifications') body=`<div class="card">${toggleLine('notifyFollowers','New followers','Alerts when someone follows your learning profile.',true)}${toggleLine('notifyComments','Comments & replies','Alerts about conversations on your reels.',true)}${toggleLine('notifyLearning','Learning reminders','Recommended learning reminders and new-topic alerts.',true)}${toggleLine('notifySystem','EduInsta updates','Important product and account notices.',true)}${btnHtml('View notifications',"openNotifications()")}</div>`;
+  if(key==='time') body=`<div class="card">${toggleLine('focusReminder','Learning reminder','Remind me to take a focused learning session.',false)}${selectLine('reminderTime','Reminder time',['08:00','12:00','18:00','21:00'],erGet('reminderTime','18:00'))}<div class="infoBox">${erGet('focusReminder',false)?'Reminder preference is ON.':'Reminder preference is OFF.'}</div></div>`;
+  if(key==='content') body=`<div class="card">${selectLine('educationLevel','Preferred level',['All levels','School','College / Engineering','Medical','Competitive exams','Professional'],erGet('educationLevel','All levels'))}${selectLine('contentLanguage','Content language',['English','Kannada','Hindi','Tamil','Telugu','Any language'],erGet('contentLanguage','English'))}${toggleLine('showExamContent','Prioritize exam preparation','Give exam-oriented reels more weight in your feed.',false)}${toggleLine('showPractical','Prioritize practical learning','Prefer demonstrations, examples and projects.',true)}${btnHtml('Manage interests',"interestsPage()")}</div>`;
+  if(key==='counts') body=`<div class="card">${toggleLine('showLikeCounts','Show like counts','Display engagement totals on reels.',true)}${toggleLine('showShareCounts','Show share counts','Display how often learning reels were shared.',true)}</div>`;
+  if(key==='muted') body=`<div class="card">${(erGet('mutedCreators',[]).length?erGet('mutedCreators',[]).map(x=>`<div class="deviceItem"><div><b>${escapeHtml(x)}</b><small>Hidden from your feed</small></div>${btnHtml('Unmute',`unmuteCreator('${escapeAttr(x)}')`)}</div>`).join(''):'<div class="empty">No muted creators.</div>')}${btnHtml('Mute a creator',"muteCreator()")}</div>`;
+  if(key==='downloads') body=`<div class="card">${toggleLine('wifiOnly','Wi-Fi only for media','Avoid background media downloads on mobile data.',true)}${selectLine('mediaQuality','Preferred media quality',['Auto','Data saver','Standard','High'],erGet('mediaQuality','Auto'))}${toggleLine('autoSave','Auto-save published reels','Keep a local copy of your own newly published reels.',false)}${btnHtml('Open saved reels',"page('downloads')")}</div>`;
+  if(key==='accessibility') body=`<div class="card">${toggleLine('captions','Always show captions','Prefer captions when a reel provides them.',true)}${toggleLine('reducedMotion','Reduce motion','Use calmer transitions in menus and navigation.',false)}${toggleLine('largeText','Larger text','Increase readable text sizes where supported.',false)}${toggleLine('highContrast','Higher contrast controls','Strengthen borders and control contrast.',false)}</div>`;
+  if(key==='language') body=`<div class="card">${selectLine('appLanguage','App language',['English','Kannada','Hindi','Tamil','Telugu'],erGet('appLanguage','English'))}<div class="infoBox">The selected language is stored and can drive full translations when language packs are added.</div></div>`;
+  if(key==='data') body=`<div class="card">${toggleLine('dataSaver','Data saver','Reduce video quality and background loading.',false)}${toggleLine('autoplay','Autoplay reels','Start the visible reel automatically.',true)}${toggleLine('preload','Preload next reel','Load the next reel early for smoother scrolling.',true)}<div class="infoBox">If autoplay with sound is blocked by the browser, tap the reel or use the sound button to start playback.</div></div>`;
+  if(key==='privacy') body=`<div class="card">${selectLine('privacyMode','Profile visibility',['Public','Followers only','Private'],erGet('privacyMode','Public'))}${selectLine('messageWho','Who can message you',['Anyone','People you follow','Nobody'],erGet('messageWho','People you follow'))}${toggleLine('activityStatus','Show active status','Let followers see when you are active.',false)}${toggleLine('allowMentions','Allow mentions','Allow other users to mention your profile.',true)}</div>`;
+  if(key==='circle') body=`<div class="card"><p>Use a private Study Circle to share selected educational posts with trusted learners.</p><div class="infoBox">${erGet('circleMembers',[]).length} members</div>${btnHtml('Add a learner',"addCircleMember()")}${btnHtml('View members',"viewCircleMembers()")}${btnHtml('Clear circle',"clearCircle()")}</div>`;
+  if(key==='comments') body=`<div class="card">${selectLine('commentPermission','Who can comment',['Everyone','Followers','People I follow','Nobody'],erGet('commentPermission','Everyone'))}${toggleLine('filterKeywords','Filter unwanted words','Hide comments matching your local keyword list.',true)}${toggleLine('approveComments','Approve comments first','Hold new comments for approval in a future server version.',false)}</div>`;
+  if(key==='blocked') body=`<div class="card">${(erGet('blockedAccounts',[]).length?erGet('blockedAccounts',[]).map(x=>`<div class="deviceItem"><div><b>${escapeHtml(x)}</b><small>Blocked account</small></div>${btnHtml('Unblock',`unblockAccount('${escapeAttr(x)}')`)}</div>`).join(''):'<div class="empty">No blocked accounts.</div>')}${btnHtml('Block an account',"blockAccount()")}</div>`;
+  if(key==='creator') body=`<div class="card">${selectLine('defaultUploadCategory','Default upload category',['School','Engineering','Medical','Competitive Exams','UPSC / IAS','Government Jobs'],erGet('defaultUploadCategory','Engineering'))}${toggleLine('educationCheck','Require Education Check','Keep the education check before publishing every reel.',true)}${toggleLine('allowCommentsOnOwn','Allow comments on my reels','Enable comments on newly published reels.',true)}${btnHtml('Open upload studio',"page('upload')")}</div>`;
+  if(key==='trust') body=`<div class="card"><div class="trustBadge">✓ Education creator — demo status</div><p>Your creator trust status is calculated from the prototype profile and education-check flow.</p>${btnHtml('Request trust review',"requestTrustReview()")}</div>`;
+  if(key==='help') body=`<div class="card"><h3>EduInsta Help</h3><p>Search educational reels, choose interests, save useful content, and publish only education-focused videos.</p>${btnHtml('Getting started',"helpArticle('start')")}${btnHtml('How upload works',"helpArticle('upload')")}${btnHtml('How to report content',"helpArticle('report')")}</div>`;
+  if(key==='problem') body=`<div class="card"><textarea class="field" id="problemText" rows="5" placeholder="Describe the issue or suggestion"></textarea><button type="button" class="primary" onclick="submitProblem()">Send feedback</button><div class="infoBox">Feedback is saved locally in this prototype.</div></div>`;
+  if(key==='status') body=`<div class="card"><div class="statusGood">✓ No current restrictions</div><p>Your demo account has no restrictions.</p>${btnHtml('Review status details',"toast('No restrictions found')")}</div>`;
+  if(key==='about') body=`<div class="card"><h3>EduInsta</h3><p>Education-first short video learning platform.</p><p><b>Prototype version:</b> Stability build</p><p>Original EduInsta product concept and interface.</p></div>`;
+  detail(titleMap[key]||'Setting',body||'<div class="empty">This setting is ready for expansion.</div>');
+}
+
+function securityAction(type){
+  toast(type==='password'?'Password change requires the production account service.':'Other demo sessions signed out');
+  if(type==='sessions')erSet('otherSessionsSignedOut',true);
+}
+function clearActivity(){
+  if(!confirm('Clear likes, comments and follows on this device?'))return;
+  likes=[]; comments={}; following=[]; saveState();
+  toast('Activity cleared'); settingDetail('activity');
+}
+function muteCreator(){
+  const n=prompt('Enter creator username, e.g. @creator'); if(!n||!n.trim())return;
+  const a=erGet('mutedCreators',[]); if(!a.includes(n.trim()))a.push(n.trim());
+  erSet('mutedCreators',a); toast('Creator muted'); settingDetail('muted');
+}
+function unmuteCreator(n){
+  erSet('mutedCreators',erGet('mutedCreators',[]).filter(x=>x!==n));
+  toast('Creator unmuted'); settingDetail('muted');
+}
+function blockAccount(){
+  const n=prompt('Enter username to block'); if(!n||!n.trim())return;
+  const a=erGet('blockedAccounts',[]); if(!a.includes(n.trim()))a.push(n.trim());
+  erSet('blockedAccounts',a); toast('Account blocked'); settingDetail('blocked');
+}
+function unblockAccount(n){
+  erSet('blockedAccounts',erGet('blockedAccounts',[]).filter(x=>x!==n));
+  toast('Account unblocked'); settingDetail('blocked');
+}
+function addCircleMember(){
+  const n=prompt('Enter learner username'); if(!n||!n.trim())return;
+  const a=erGet('circleMembers',[]); if(!a.includes(n.trim()))a.push(n.trim());
+  erSet('circleMembers',a); toast('Learner added'); settingDetail('circle');
+}
+function viewCircleMembers(){
+  const a=erGet('circleMembers',[]);
+  alert(a.length?a.join('\\n'):'No Study Circle members yet.');
+}
+function clearCircle(){erSet('circleMembers',[]);toast('Study Circle cleared');settingDetail('circle')}
+function requestTrustReview(){erSet('trustReviewRequested',true);toast('Trust review request saved');settingDetail('trust')}
+function helpArticle(type){
+  const text={start:'Start with Explore or Search. Select interests in Profile → Manage interests, then save useful reels.',upload:'Open Upload, select a video, enter title/category/topic, complete Education Check, then publish.',report:'Open a reel and use More to choose the reason for your report.'}[type]||'Help';
+  alert(text);
+}
+function submitProblem(){
+  const x=document.getElementById('problemText')?.value.trim();
+  if(!x){toast('Please describe the issue');return}
+  erSet('lastFeedback',x); toast('Feedback saved on this device'); settingsPage();
+}
+
+/* ================= Premium subscription logic ================= */
+function saveSubscription(){lsSet('er_subscription',JSON.stringify(subscription))}
+/* Runs on every read of subscription status. If a paid period has actually
+   elapsed (per stored timestamps) since we last checked, this either
+   auto-renews (simulating a successful recurring charge) or, if the user
+   already cancelled, flips the status to expired. In production this
+   reconciliation would be driven by the payment provider's webhook/receipt,
+   not just a local timestamp - this is the offline-prototype stand-in for
+   that server-side verification step. */
+function checkSubscriptionExpiry(){
+  if(subscription.status==='active'&&subscription.expiresAt&&Date.now()>subscription.expiresAt){
+    if(subscription.cancelAtPeriodEnd){
+      subscription.status='expired';
+      subscription.history=[...(subscription.history||[]),{type:'expired',at:Date.now()}];
+      saveSubscription();
+      addNotification('system','Subscription expired','Your EduInsta Premium has expired. Renew anytime from Premium settings.');
+    }else{
+      subscription.expiresAt=Date.now()+PREMIUM_CONFIG.billingCycleDays*86400000;
+      subscription.renewsAt=subscription.expiresAt;
+      subscription.history=[...(subscription.history||[]),{type:'renewed',at:Date.now(),planId:subscription.planId}];
+      saveSubscription();
+      addNotification('system','Subscription renewed',`Your EduInsta Premium was renewed for another ${PREMIUM_CONFIG.billingCycleDays} days.`);
+    }
+  }
+}
+function isPremium(){checkSubscriptionExpiry();return subscription.status==='active'}
+
+/* ---- Payment gateway (SIMULATED) ----
+   In production this would load the Razorpay Checkout.js SDK
+   (https://checkout.razorpay.com/v1/checkout.js), create a secure order via a
+   backend endpoint, and open Razorpay's real hosted checkout, then verify the
+   payment signature server-side. No backend or live payment keys exist in
+   this static prototype, so checkout is simulated locally with explicit
+   Pay / Fail / Cancel outcomes, which also makes every outcome
+   deterministically testable (a real gateway's result can't be).
+   Shared by BOTH the Premium subscription checkout and advertiser campaign
+   payments, including a standard set of payment methods (Card / UPI / Net
+   Banking / Wallet), same as any mainstream Indian payment gateway offers. */
+var __checkoutOnCancel=null;
+function openCheckout({title,amount,intervalLabel,onSuccess,onFailure,onCancel}){
+  __checkoutOnCancel=onCancel;
+  overlay.innerHTML=`<div class="modal"><div class="sheet" onclick="event.stopPropagation()">
+    <h3>Checkout</h3>
+    <p class="filterNote">Simulated payment sheet (Razorpay-style). No real charge occurs in this prototype.</p>
+    <div class="checkoutSummary"><b>${escapeHtml(title)}</b><span>${PREMIUM_CONFIG.currency}${amount}${intervalLabel?('/'+escapeHtml(intervalLabel)):''}</span></div>
+    <div class="paymentMethods">
+      <label class="payMethod"><input type="radio" name="payMethod" value="card" checked> 💳 Card</label>
+      <label class="payMethod"><input type="radio" name="payMethod" value="upi"> 📱 UPI</label>
+      <label class="payMethod"><input type="radio" name="payMethod" value="netbanking"> 🏦 Net Banking</label>
+      <label class="payMethod"><input type="radio" name="payMethod" value="wallet"> 👛 Wallet</label>
+    </div>
+    <input class="field" placeholder="Card / UPI ID / bank details (demo only)" disabled>
+    <button type="button" class="primary" id="checkoutPayBtn">Pay ${PREMIUM_CONFIG.currency}${amount}</button>
+    <button type="button" class="optionBtn" id="checkoutFailBtn">Simulate payment failure</button>
+    <button type="button" id="checkoutCancelBtn">Cancel</button>
+  </div></div>`;
+  document.getElementById('checkoutPayBtn').onclick=()=>{
+    const method=document.querySelector('input[name="payMethod"]:checked')?.value||'card';
+    closeOverlay();__checkoutOnCancel=null;onSuccess(method);
+  };
+  document.getElementById('checkoutFailBtn').onclick=()=>{closeOverlay();__checkoutOnCancel=null;onFailure()};
+  document.getElementById('checkoutCancelBtn').onclick=()=>cancelCheckout();
+}
+function cancelCheckout(){
+  closeOverlay();
+  const cb=__checkoutOnCancel; __checkoutOnCancel=null;
+  if(cb)cb();
+}
+function activateSubscription(paymentMethod){
+  const plan=PREMIUM_CONFIG.plan;
+  const now=Date.now();
+  subscription={
+    status:'active',
+    planId:plan.id,
+    paymentMethod:paymentMethod||subscription.paymentMethod||'card',
+    startedAt:subscription.status==='active'?subscription.startedAt:now,
+    expiresAt:now+PREMIUM_CONFIG.billingCycleDays*86400000,
+    renewsAt:now+PREMIUM_CONFIG.billingCycleDays*86400000,
+    cancelAtPeriodEnd:false,
+    history:[...(subscription.history||[]),{type:'purchased',at:now,planId:plan.id,price:plan.price,method:paymentMethod}]
+  };
+  saveSubscription();
+  addNotification('system','Welcome to Premium 👑','Your subscription is now active — enjoy an ad-free EduInsta.');
+}
+function recordPaymentFailure(){
+  subscription.history=[...(subscription.history||[]),{type:'payment_failed',at:Date.now()}];
+  saveSubscription();
+  addNotification('system','Payment failed',"We couldn't process your Premium payment. Please try again.");
+}
+function cancelSubscription(){
+  if(subscription.status!=='active')return;
+  subscription.cancelAtPeriodEnd=true;
+  subscription.history=[...(subscription.history||[]),{type:'cancelled',at:Date.now()}];
+  saveSubscription();
+  toast('Subscription will end on '+new Date(subscription.expiresAt).toLocaleDateString());
+  addNotification('system','Subscription cancelled',`Your Premium will remain active until ${new Date(subscription.expiresAt).toLocaleDateString()}.`);
+}
+function resumeSubscription(){
+  if(subscription.status!=='active'||!subscription.cancelAtPeriodEnd)return;
+  subscription.cancelAtPeriodEnd=false;
+  subscription.history=[...(subscription.history||[]),{type:'resumed',at:Date.now()}];
+  saveSubscription();
+  toast('Subscription resumed — it will auto-renew');
+  addNotification('system','Subscription resumed','Your Premium will continue to renew automatically.');
+}
+/* Re-reads the persisted subscription record - in a real app this would
+   query the App Store / Play Store / payment provider for prior purchases
+   tied to the account. Here it demonstrates the same UX pattern against
+   this device's local storage. */
+function restorePurchases(){
+  toast('Restoring purchases…');
+  setTimeout(()=>{
+    checkSubscriptionExpiry();
+    const stored=readJSON('er_subscription',null);
+    if(stored&&stored.status==='active'){
+      subscription=stored;
+      toast('Purchase restored — Premium is active');
+    }else{
+      toast('No active purchase found for this account');
+    }
+    if(document.getElementById('managePanel'))manageSubscriptionPage();
+  },500);
+}
+/* Prototype-only tools so renewal/expiry can be demonstrated and tested
+   without waiting for 30 real days to pass. Clearly labelled in the UI. */
+function devSimulateRenewal(){
+  if(subscription.status!=='active')return;
+  subscription.expiresAt=Date.now()-1000;
+  checkSubscriptionExpiry();
+  toast('Simulated renewal — new billing period started');
+  manageSubscriptionPage();
+}
+function devSimulateExpiry(){
+  if(subscription.status!=='active')return;
+  subscription.cancelAtPeriodEnd=true;
+  subscription.expiresAt=Date.now()-1000;
+  checkSubscriptionExpiry();
+  toast('Simulated expiry — account reverted to the free plan');
+  manageSubscriptionPage();
+}
+
+function showUpgradePrompt(message){
+  overlay.innerHTML=`<div class="modal" onclick="closeOverlay()"><div class="sheet" onclick="event.stopPropagation()">
+    <h3>✨ Upgrade to Premium</h3>
+    <p class="filterNote">${escapeHtml(message)}</p>
+    <button type="button" class="primary" style="width:100%" onclick="closeOverlay();premiumPage()">See Premium</button>
+    <button type="button" onclick="closeOverlay()">Not now</button>
+  </div></div>`;
+}
+function startCheckout(){
+  const plan=PREMIUM_CONFIG.plan;
+  openCheckout({
+    title:plan.label,
+    amount:plan.price,
+    intervalLabel:plan.interval,
+    onSuccess:(method)=>{activateSubscription(method);toast('🎉 Welcome to EduInsta Premium!');premiumPage()},
+    onFailure:()=>{recordPaymentFailure();toast('Payment failed — please try again.')},
+    onCancel:()=>{toast('Checkout cancelled')}
+  });
+}
+function premiumPage(){
+  checkSubscriptionExpiry();
+  const premium=isPremium();
+  const plan=PREMIUM_CONFIG.plan;
+  main.innerHTML=`<div class="panel premiumPanel"><div class="detailHead"><button type="button" onclick="page('profile')">‹</button><h2>EduInsta Premium</h2></div>
+    ${premium?`<div class="premiumActiveBanner">👑 <b>You're Premium</b><br><small>${subscription.cancelAtPeriodEnd?`Active until ${new Date(subscription.expiresAt).toLocaleDateString()} (won't renew)`:`Renews ${new Date(subscription.renewsAt).toLocaleDateString()}`}</small></div>
+      <button type="button" class="primary" style="width:100%" onclick="manageSubscriptionPage()">Manage subscription</button>`
+      :`<p class="filterNote">Go Premium to remove ads from your EduInsta feed.</p>`}
+    <div class="compareTable">
+      <div class="compareRow compareHead"><span>Feature</span><span>Free</span><span>Premium</span></div>
+      ${PREMIUM_FEATURES.map(f=>`<div class="compareRow"><span>${f.icon} ${escapeHtml(f.text)}</span><span>${escapeHtml(f.free)}</span><span class="yesCol">✓</span></div>`).join('')}
+    </div>
+    ${premium?'':`<div class="planPicker"><div class="planCard on"><b>${escapeHtml(plan.label)}</b><div class="planPrice">${PREMIUM_CONFIG.currency}${plan.price}<small>/${plan.interval}</small></div></div></div>
+    <button type="button" class="primary" style="width:100%" onclick="startCheckout()">Subscribe now</button>`}
+  </div>`;
+}
+function manageSubscriptionPage(){
+  checkSubscriptionExpiry();
+  const plan=PREMIUM_CONFIG.plan;
+  main.innerHTML=`<div class="panel" id="managePanel"><div class="detailHead"><button type="button" onclick="premiumPage()">‹</button><h2>Manage subscription</h2></div>
+    <div class="card">
+      <p><b>Status</b><br>${subscription.status==='active'?(subscription.cancelAtPeriodEnd?'Active (will not renew)':'Active'):subscription.status==='expired'?'Expired':'Free plan'}</p>
+      ${subscription.status==='active'?`<p><b>Plan</b><br>${escapeHtml(plan.label)} — ${PREMIUM_CONFIG.currency}${plan.price}/${plan.interval}</p><p><b>${subscription.cancelAtPeriodEnd?'Ends on':'Next renewal'}</b><br>${new Date(subscription.expiresAt).toLocaleDateString()}</p>`:''}
+    </div>
+    ${subscription.status==='active'?(subscription.cancelAtPeriodEnd?btnHtml('Resume subscription','resumeSubscription();manageSubscriptionPage()'):btnHtml('Cancel subscription','cancelSubscription();manageSubscriptionPage()')):btnHtml('View Premium','premiumPage()')}
+    ${btnHtml('Restore purchases','restorePurchases()')}
+    <div class="card"><h3>Billing history</h3>${(subscription.history||[]).length?subscription.history.slice().reverse().map(h=>`<p style="font-size:12px;margin:4px 0">${new Date(h.at).toLocaleString()} — ${escapeHtml(h.type)}${h.price?` (${PREMIUM_CONFIG.currency}${h.price})`:''}</p>`).join(''):'<p class="muted">No billing history yet.</p>'}</div>
+    <div class="infoBox">🛠️ Prototype tools, for demoing renewal/expiry without waiting for real time to pass:<br>${btnHtml('Simulate renewal now','devSimulateRenewal()')}${btnHtml('Simulate expiry now','devSimulateExpiry()')}</div>
+  </div>`;
+}
+
+/* ---- Advertising: consent + advertiser self-serve campaigns + admin config ---- */
+function maybeShowAdConsent(){
+  if(isPremium()||adState.consent)return;
+  overlay.innerHTML=`<div class="modal"><div class="sheet" onclick="event.stopPropagation()">
+    <h3>Sponsored content</h3>
+    <p class="filterNote">EduInsta shows a limited amount of sponsored content to keep the app free. Do you consent to personalized sponsored content based on your activity?</p>
+    <button type="button" class="primary" style="width:100%" onclick="setAdConsent('granted')">Accept</button>
+    <button type="button" onclick="setAdConsent('declined')">Decline (non-personalized ads only)</button>
+  </div></div>`;
+}
+function setAdConsent(v){
+  adState.consent=v; saveAdState(); closeOverlay();
+  toast(v==='granted'?'Thanks — you may see more relevant sponsored content':"Got it — you'll see non-personalized sponsored content");
+}
+
+/* ---- Advertiser portal: create a paid campaign (sponsor, headline, CTA,
+   duration) at the admin-set rate card, pay for it, and track it. This is
+   the standard flat-rate-by-duration flow used by most small/medium apps'
+   self-serve sponsored-placement products. ---- */
+var newCampaignDays=AdRateCard.minDurationDays;
+function adCampaignsPage(){
+  refreshCampaignStatuses();
+  main.innerHTML=`<div class="panel"><div class="detailHead"><button type="button" onclick="settingsPage()">‹</button><h2>Advertise on EduInsta</h2></div>
+    <p class="filterNote">Rate card: ${PREMIUM_CONFIG.currency}${AdRateCard.pricePerDay}/day · ${AdRateCard.minDurationDays}-${AdRateCard.maxDurationDays} day campaigns · shown only to free (ad-supported) users.</p>
+    <button type="button" class="primary" style="width:100%" onclick="createAdCampaignPage()">+ New campaign</button>
+    <div class="card"><h3>Your campaigns</h3>${adCampaigns.length?adCampaigns.slice().reverse().map(c=>`
+      <div class="campaignRow">
+        <div><b>${escapeHtml(c.sponsor)}</b> — ${escapeHtml(c.headline)}<br>
+        <small>${new Date(c.startAt).toLocaleDateString()} – ${new Date(c.endAt).toLocaleDateString()} · ${escapeHtml(c.status)} · ${PREMIUM_CONFIG.currency}${c.price} (${escapeHtml(c.method||'card')})</small><br>
+        <small>👁 ${c.impressions||0} impressions · 🖱 ${c.clicks||0} clicks</small></div>
+        ${c.status==='active'?btnHtml('End campaign early',`endCampaign(${c.id})`):''}
+      </div>`).join(''):'<p class="muted">No campaigns yet.</p>'}</div>
+  </div>`;
+}
+function createAdCampaignPage(){
+  newCampaignDays=AdRateCard.minDurationDays;
+  main.innerHTML=`<div class="panel"><div class="detailHead"><button type="button" onclick="adCampaignsPage()">‹</button><h2>Create ad campaign</h2></div>
+    <p class="filterNote">Run a sponsored placement in the EduInsta feed. Rate: ${PREMIUM_CONFIG.currency}${AdRateCard.pricePerDay}/day.</p>
+    <input class="field" id="campSponsor" placeholder="Business / sponsor name">
+    <input class="field" id="campHeadline" placeholder="Ad headline">
+    <input class="field" id="campCta" placeholder="Call to action, e.g. Learn more">
+    <div class="fieldError" id="campError"></div>
+    <label class="fieldLabel">Campaign duration</label>
+    <div class="chips" id="durationChips"></div>
+    <div class="checkoutSummary" id="campPriceSummary"></div>
+    <button type="button" class="primary" onclick="startAdCampaignCheckout()">Continue to payment</button>
+  </div>`;
+  renderDurationChips();
+}
+function renderDurationChips(){
+  const presets=[3,7,14,30].filter(d=>d>=AdRateCard.minDurationDays&&d<=AdRateCard.maxDurationDays);
+  if(!presets.length)presets.push(AdRateCard.minDurationDays);
+  if(!presets.includes(newCampaignDays))newCampaignDays=presets[0];
+  const root=document.getElementById('durationChips'); if(!root)return;
+  root.innerHTML=presets.map(d=>`<button type="button" class="chip ${d===newCampaignDays?'on':''}" onclick="setCampaignDuration(${d})">${d} days</button>`).join('');
+  updateCampaignPriceSummary();
+}
+function setCampaignDuration(d){newCampaignDays=d;renderDurationChips()}
+function updateCampaignPriceSummary(){
+  const el=document.getElementById('campPriceSummary'); if(!el)return;
+  el.innerHTML=`<b>${newCampaignDays} day${newCampaignDays===1?'':'s'}</b><span>${PREMIUM_CONFIG.currency}${AdRateCard.pricePerDay*newCampaignDays} total</span>`;
+}
+function startAdCampaignCheckout(){
+  const sponsor=document.getElementById('campSponsor')?.value.trim();
+  const headline=document.getElementById('campHeadline')?.value.trim();
+  const cta=document.getElementById('campCta')?.value.trim()||'Learn more';
+  const err=document.getElementById('campError');
+  if(!sponsor||!headline){if(err)err.textContent='Enter a sponsor name and headline.';return}
+  if(err)err.textContent='';
+  const price=AdRateCard.pricePerDay*newCampaignDays;
+  openCheckout({
+    title:'Ad campaign — '+sponsor,
+    amount:price,
+    onSuccess:(method)=>{
+      const now=Date.now();
+      adCampaigns=[...adCampaigns,{id:now,sponsor,headline,cta,days:newCampaignDays,price,method,startAt:now,endAt:now+newCampaignDays*86400000,status:'active',impressions:0,clicks:0}];
+      saveAdCampaigns();
+      toast('🎉 Campaign is live!');
+      addNotification('system','Campaign is live 📢',`Your "${headline}" campaign is now running for ${newCampaignDays} day${newCampaignDays===1?'':'s'}.`);
+      adCampaignsPage();
+    },
+    onFailure:()=>{toast('Payment failed — campaign was not created.')},
+    onCancel:()=>{toast('Checkout cancelled — no campaign created')}
+  });
+}
+function endCampaign(id){
+  const c=adCampaigns.find(x=>x.id===id); if(!c)return;
+  c.status='completed'; c.endAt=Date.now();
+  saveAdCampaigns();
+  toast('Campaign ended');
+  addNotification('system','Campaign ended',`Your campaign "${c.headline}" was ended early.`);
+  adCampaignsPage();
+}
+
+/* ---- Admin / demo config ---- */
+function toggleAdEnabled(btn){
+  AdConfig.enabled=!AdConfig.enabled;
+  btn.classList.toggle('on',AdConfig.enabled);
+  saveAdConfigOverrides();
+  toast('Ads '+(AdConfig.enabled?'enabled':'disabled'));
+}
+function updateAdFrequency(v){
+  const n=Math.max(1,Math.min(20,Number(v)||AD_DEFAULTS.frequency));
+  AdConfig.frequency=n;
+  saveAdConfigOverrides();
+  toast('Ad frequency set to 1 per '+n+' reels');
+}
+function updateAdPricePerDay(v){
+  AdRateCard.pricePerDay=Math.max(1,Number(v)||AdRateCard.pricePerDay);
+  saveAdRateCardOverrides();
+  toast('Advertiser rate updated');
+}
+function updateAdMinDuration(v){
+  AdRateCard.minDurationDays=Math.max(1,Number(v)||AdRateCard.minDurationDays);
+  if(AdRateCard.maxDurationDays<AdRateCard.minDurationDays)AdRateCard.maxDurationDays=AdRateCard.minDurationDays;
+  saveAdRateCardOverrides();
+  toast('Minimum campaign duration updated');
+}
+function updateAdMaxDuration(v){
+  AdRateCard.maxDurationDays=Math.max(AdRateCard.minDurationDays,Number(v)||AdRateCard.maxDurationDays);
+  saveAdRateCardOverrides();
+  toast('Maximum campaign duration updated');
+}
+function updatePremiumPrice(v){
+  PREMIUM_CONFIG.plan.price=Math.max(1,Number(v)||PREMIUM_CONFIG.plan.price);
+  savePremiumConfigOverrides();
+  toast('Premium price updated');
+}
+function adminConfigPage(){
+  main.innerHTML=`<div class="panel"><div class="detailHead"><button type="button" onclick="settingsPage()">‹</button><h2>Admin / demo config</h2></div>
+    <div class="card"><h3>Advertising</h3>
+      <div class="toggleRow"><div><b>Ads enabled</b><small>Master switch for the whole ad system</small></div><button type="button" class="switch ${AdConfig.enabled?'on':''}" onclick="toggleAdEnabled(this)"><i></i></button></div>
+      <div class="selectRow"><b>Ad frequency (1 sponsored slot per N reels)</b><input class="field" style="width:70px" type="number" min="1" max="20" id="adFreqInput" value="${AdConfig.frequency}" onchange="updateAdFrequency(this.value)"></div>
+      <p class="filterNote">Impressions: ${Object.values(adState.impressions).reduce((a,b)=>a+b,0)} · Clicks: ${Object.values(adState.clicks).reduce((a,b)=>a+b,0)}</p>
+    </div>
+    <div class="card"><h3>Advertiser rate card</h3>
+      <div class="selectRow"><b>Price per day</b><input class="field" style="width:90px" type="number" min="1" id="adRateInput" value="${AdRateCard.pricePerDay}" onchange="updateAdPricePerDay(this.value)"></div>
+      <div class="selectRow"><b>Minimum campaign duration (days)</b><input class="field" style="width:90px" type="number" min="1" id="adMinDurInput" value="${AdRateCard.minDurationDays}" onchange="updateAdMinDuration(this.value)"></div>
+      <div class="selectRow"><b>Maximum campaign duration (days)</b><input class="field" style="width:90px" type="number" min="1" id="adMaxDurInput" value="${AdRateCard.maxDurationDays}" onchange="updateAdMaxDuration(this.value)"></div>
+      <p class="filterNote">${adCampaigns.length} campaign${adCampaigns.length===1?'':'s'} booked to date.</p>
+    </div>
+    <div class="card"><h3>Premium pricing</h3>
+      <div class="selectRow"><b>${escapeHtml(PREMIUM_CONFIG.plan.label)}</b><input class="field" style="width:90px" type="number" min="1" id="premiumPriceInput" value="${PREMIUM_CONFIG.plan.price}" onchange="updatePremiumPrice(this.value)"></div>
+      <p class="filterNote">Changes apply immediately and persist on this device — no code changes needed.</p>
+    </div>
+  </div>`;
+}
+
+
+const EMAIL_RE=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_RE=/^\+?[0-9]{7,15}$/;
+function isValidEmail(v){return EMAIL_RE.test(String(v||'').trim())}
+function isValidPhone(v){return PHONE_RE.test(String(v||'').trim())}
+function isValidIdentifier(v){v=String(v||'').trim();return isValidEmail(v)||PHONE_RE.test(v)}
+function digitsOnly(v){return String(v||'').replace(/\D/g,'')}
+
+/* ---- Password policy ----
+   8-32 characters, must start with a letter, and must contain at least one
+   number and one special character. Enforced everywhere a password is
+   CREATED (signup, reset) - not on login, which only ever checks it against
+   what's already stored. */
+const PASSWORD_MIN=8, PASSWORD_MAX=32;
+function isValidPassword(pw){
+  pw=String(pw||'');
+  if(pw.length<PASSWORD_MIN||pw.length>PASSWORD_MAX)return false;
+  if(!/^[A-Za-z]/.test(pw))return false;      // must start with a letter
+  if(!/[0-9]/.test(pw))return false;          // at least one number
+  if(!/[^A-Za-z0-9]/.test(pw))return false;   // at least one special character
+  return true;
+}
+const PASSWORD_HINT=`${PASSWORD_MIN}-${PASSWORD_MAX} characters, start with a letter, and include at least one number and one special character.`;
+
+function maskEmail(email){
+  const [user,domain]=String(email||'').split('@');
+  if(!domain)return email||'';
+  return `${user.slice(0,1)}${'*'.repeat(Math.max(2,user.length-1))}@${domain}`;
+}
+function maskPhone(phone){
+  const d=digitsOnly(phone);
+  return d.length<4?(phone||''):`••••${d.slice(-4)}`;
+}
+
+/* Toggle a password-style input between hidden/visible text, used throughout
+   the sign-in gate and the in-app account settings form. */
+function togglePasswordVisibility(id,btn){
+  const input=document.getElementById(id); if(!input)return;
+  const show=input.type==='password';
+  input.type=show?'text':'password';
+  btn.textContent=show?'🙈':'👁';
+  btn.setAttribute('aria-label',show?'Hide password':'Show password');
+}
+
+/* Best-effort, non-blocking location permission check performed right after a
+   successful login/signup. Never blocks or fails the auth flow itself. */
+function requestLocationPermission(){
+  try{
+    if(!('geolocation' in navigator))return;
+    navigator.geolocation.getCurrentPosition(
+      pos=>{
+        erSet('locationPermission','granted');
+        erSet('lastLocation',{lat:pos.coords.latitude,lng:pos.coords.longitude,at:Date.now()});
+        toast('Location access granted — nearby learning suggestions enabled');
+      },
+      ()=>{ erSet('locationPermission','denied'); toast('Location permission denied — some local recommendations may be limited'); },
+      {timeout:8000,maximumAge:60000}
+    );
+  }catch{ /* geolocation unsupported in this environment - ignore silently */ }
+}
+
+/* ---- One-time-password (OTP) infrastructure ----
+   There is no backend or SMS/email provider wired into this static prototype,
+   so delivery is SIMULATED: the "sent" code is surfaced via toast instead of a
+   real message. Everything else (expiry, attempt limits, resend, verify) works
+   exactly like a real OTP flow, so swapping in a real provider (e.g. an SMS/
+   email API called from a backend) later only means replacing the body of
+   sendOtp() - every caller and the UI around it stay the same. */
+var pendingOtp=null; // {code,target,purpose,expiresAt,attempts}
+const OTP_TTL_MS=5*60*1000, OTP_MAX_ATTEMPTS=5;
+function sendOtp(target,purpose){
+  const code=String(Math.floor(100000+Math.random()*900000));
+  pendingOtp={code,target,purpose,expiresAt:Date.now()+OTP_TTL_MS,attempts:0};
+  toast(`Demo OTP for ${target}: ${code} (simulated — no real SMS/email is sent in this prototype)`);
+  return code;
+}
+function verifyOtpCode(input){
+  if(!pendingOtp)return{ok:false,error:'No code was requested. Please request a new one.'};
+  if(Date.now()>pendingOtp.expiresAt)return{ok:false,error:'This code has expired. Please request a new one.'};
+  pendingOtp.attempts++;
+  if(pendingOtp.attempts>OTP_MAX_ATTEMPTS)return{ok:false,error:'Too many incorrect attempts. Please request a new code.'};
+  if(String(input||'').trim()!==pendingOtp.code)return{ok:false,error:'Incorrect code. Please try again.'};
+  return{ok:true,purpose:pendingOtp.purpose,target:pendingOtp.target};
+}
+function clearOtp(){pendingOtp=null}
+/* Generic OTP-entry step, reusable inside any container (the full-screen gate,
+   an in-app modal, or a settings sub-page) so verification logic never drifts
+   between the different places OTP is used (signup, forgot password, phone
+   number change). */
+function renderOtpStep(container,target,purpose,onSuccess,onBack){
+  if(!container)return;
+  container.innerHTML=`
+    <p class="filterNote">We sent a 6-digit verification code to <b>${escapeHtml(target)}</b>. (Demo mode: the code appears in the notification banner — no real SMS/email is sent.)</p>
+    <input class="field" id="otpCodeInput" maxlength="6" inputmode="numeric" placeholder="6-digit code" autocomplete="one-time-code">
+    <div class="fieldError" id="otpError"></div>
+    <button type="button" class="primary" style="width:100%" id="otpVerifyBtn">Verify code</button>
+    <div class="authGateLinks"><button type="button" id="otpResendBtn">Resend code</button><button type="button" id="otpBackBtn">Back</button></div>`;
+  container.querySelector('#otpVerifyBtn').onclick=()=>{
+    const result=verifyOtpCode(container.querySelector('#otpCodeInput')?.value);
+    const err=container.querySelector('#otpError');
+    if(!result.ok){if(err)err.textContent=result.error;return}
+    if(err)err.textContent='';
+    clearOtp();
+    onSuccess();
+  };
+  container.querySelector('#otpResendBtn').onclick=()=>{sendOtp(target,purpose);toast('New code sent')};
+  container.querySelector('#otpBackBtn').onclick=onBack;
+}
+
+/* ---- Shared signup/login logic used by BOTH the full-screen gate and the
+   in-app "Account & sign-in" modal, so credential handling never drifts
+   between the two surfaces. Validation is split out from account creation so
+   the OTP step can sit in between: fields are checked BEFORE an OTP is sent,
+   and the account is only actually created once the code is verified. ---- */
+function validateSignupFields({name,email,password,confirmPassword}){
+  name=(name||'').trim(); email=(email||'').trim(); password=password||''; confirmPassword=confirmPassword||'';
+  const errors={};
+  if(name.length<2)errors.name='Enter your full name.';
+  if(!isValidEmail(email))errors.email='Enter a valid email address.';
+  if(!isValidPassword(password))errors.password='Password must be '+PASSWORD_HINT;
+  if(confirmPassword!==password)errors.confirmPassword='Passwords do not match.';
+  return Object.keys(errors).length?{ok:false,errors}:{ok:true};
+}
+function performSignup({name,email,password}){
+  name=(name||'').trim(); email=(email||'').trim();
+  registeredAccount={name,email,password,phone:registeredAccount?.phone||null};
+  lsSet('er_registered_account',JSON.stringify(registeredAccount));
+  account={loggedIn:true,email,name};
+  lsSet('er_account',JSON.stringify(account));
+  profile.name=name;
+  profile.username="@"+name.toLowerCase().replace(/[^a-z0-9]+/g,"").slice(0,20)||"@student";
+  saveState();
+  requestLocationPermission();
+  addNotification('system','Welcome to EduInsta 🎉','Your account was created successfully.');
+  addNotification('learning','Personalize your feed','Pick a few interests in your profile to fine-tune your For You feed.');
+  FOLLOWERS_DEFAULT.forEach(u=>{
+    const p=personMap()[u];
+    addNotification('follower','New follower',`${p?p.name:u} started following you.`);
+  });
+  return{ok:true};
+}
+function performLogin({identifier,password}){
+  identifier=(identifier||'').trim(); password=password||'';
+  if(!identifier||!password)return{ok:false,error:'Enter your email/mobile and password.'};
+  if(!registeredAccount)return{ok:false,error:'No account found on this device yet — please sign up first.'};
+  const matchesEmail=norm(identifier)===norm(registeredAccount.email);
+  const idDigits=digitsOnly(identifier);
+  const matchesPhone=!!registeredAccount.phone && idDigits.length>=7 && idDigits===digitsOnly(registeredAccount.phone);
+  if(!(matchesEmail||matchesPhone)||password!==registeredAccount.password)
+    return{ok:false,error:'Incorrect email/mobile or password.'};
+  account={loggedIn:true,email:registeredAccount.email,name:registeredAccount.name};
+  lsSet('er_account',JSON.stringify(account));
+  if(!profile.name||profile.name==='Your Name')profile.name=registeredAccount.name;
+  saveState();
+  requestLocationPermission();
+  addNotification('security','New sign-in','Your account was signed in on this device.');
+  return{ok:true};
+}
+
+/* ---- In-app account modal (Settings > Account & sign-in / Add another account) ----
+   `forceForm` shows the login/signup form even while already logged in - needed for
+   "Add another account", which otherwise had no way to reach the form since the
+   logged-in view never renders the #authForm container it depends on. */
+function authPage(forceForm){
+  const logged=account.loggedIn && !forceForm;
+  overlay.innerHTML=`<div class="modal" onclick="closeOverlay()"><div class="sheet" onclick="event.stopPropagation()">
+    <div class="authCard"><div class="commentHeader"><div><b>Account</b><div class="commentCount">EduInsta account settings</div></div><button type="button" class="close" onclick="closeOverlay()">×</button></div>
+    ${logged?`<div class="userBadge"><div class="avatar">${escapeHtml((account.name||"U").charAt(0).toUpperCase())}</div><div><b>${escapeHtml(account.name)}</b><div style="font-size:12px;color:#666">${escapeHtml(account.email)}</div></div></div>
+    <div class="optionList"><button type="button" onclick="closeOverlay();page('profile')">👤 Profile</button><button type="button" onclick="closeOverlay();interestsPage()">🎯 Interests</button><button type="button" onclick="logout()">🚪 Log out</button></div>`:
+    `<div class="authTabs"><button type="button" class="on" id="authTabLogin" onclick="authForm('login')">Log in</button><button type="button" id="authTabSignup" onclick="authForm('signup')">Sign up</button></div><div id="authForm"></div>`}
+    </div></div></div>`;
+  if(!logged)authForm("login");
+}
+function authForm(mode){
+  const holder=document.getElementById("authForm"); if(!holder)return;
+  document.getElementById('authTabLogin')?.classList.toggle('on',mode==='login');
+  document.getElementById('authTabSignup')?.classList.toggle('on',mode==='signup');
+  holder.innerHTML=mode==="login"
+    ? `<input class="field" id="authEmail" type="email" placeholder="Email or mobile number"><div class="passwordField"><input class="field" id="authPass" type="password" placeholder="Password"><button type="button" class="passwordToggle" onclick="togglePasswordVisibility('authPass',this)">👁</button></div><div class="fieldError" id="authError"></div><button type="button" class="primary" onclick="modalLogin()">Log in</button><p class="filterNote">This prototype stores account state only on this device.</p>`
+    : `<input class="field" id="authName" placeholder="Full name"><input class="field" id="authEmail" type="email" placeholder="Email address"><div class="passwordField"><input class="field" id="authPass" type="password" placeholder="Create password"><button type="button" class="passwordToggle" onclick="togglePasswordVisibility('authPass',this)">👁</button></div><small class="pwHint">${escapeHtml(PASSWORD_HINT)}</small><input class="field" id="authPass2" type="password" placeholder="Confirm password"><div class="fieldError" id="authError"></div><button type="button" class="primary" onclick="modalSignup()">Create account</button><p class="filterNote">This prototype stores account state only on this device.</p>`;
+}
+function modalLogin(){
+  const result=performLogin({identifier:document.getElementById("authEmail")?.value,password:document.getElementById("authPass")?.value});
+  const err=document.getElementById("authError");
+  if(!result.ok){if(err)err.textContent=result.error;return}
+  if(err)err.textContent='';
+  closeOverlay(); toast("Logged in"); page('profile');
+}
+var pendingModalSignupData=null;
+function modalSignup(){
+  const fields={name:document.getElementById("authName")?.value,email:document.getElementById("authEmail")?.value,password:document.getElementById("authPass")?.value,confirmPassword:document.getElementById("authPass2")?.value};
+  const check=validateSignupFields(fields);
+  const err=document.getElementById("authError");
+  if(!check.ok){if(err)err.textContent=Object.values(check.errors)[0];return}
+  if(err)err.textContent='';
+  pendingModalSignupData=fields;
+  sendOtp(fields.email,'signup');
+  renderOtpStep(document.getElementById("authForm"),fields.email,'signup',completeModalSignup,()=>authForm('signup'));
+}
+function completeModalSignup(){
+  const result=performSignup(pendingModalSignupData);
+  pendingModalSignupData=null;
+  if(!result.ok){toast('Something went wrong — please try again');authForm('signup');return}
+  closeOverlay(); toast("Account created"); page('profile');
+}
+function logout(){
+  account={loggedIn:false,email:"",name:""};
+  lsSet('er_account',JSON.stringify(account));
+  closeOverlay(); toast("Logged out");
+  renderAuthGate('login');
+}
+
+/* ================= Full-screen sign-in gate (first launch / after logout) ================= */
+let gateTab='login';
+function renderAuthGate(mode){
+  gateTab=mode==='signup'?'signup':'login';
+  document.querySelector('.app').classList.add('authGateMode');
+  closeOverlay();
+  main.innerHTML=`<div class="authGate">
+    <div class="authGateLogoRow">
+      <svg class="authGateLogoMark" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <defs><linearGradient id="eiGradGate" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5eead4"/><stop offset="1" stop-color="#7c6cf6"/></linearGradient></defs>
+        <rect x="2" y="2" width="60" height="60" rx="16" fill="url(#eiGradGate)"/>
+        <path d="M26 20 L46 32 L26 44 Z" fill="#ffffff"/>
+        <path d="M16 15 L30 9 L44 15 L30 21 Z" fill="#0b0f1e" opacity=".85"/>
+        <circle cx="44" cy="17" r="2.6" fill="#facc15"/>
+      </svg>
+      <div class="authGateLogo">EduInsta</div>
+    </div>
+    <div class="authGateTag">Sign in to continue your learning feed</div>
+    <div class="authGateCard">
+      <div class="authGateTabs">
+        <button type="button" id="gateTabLogin" class="${gateTab==='login'?'on':''}" onclick="renderAuthGate('login')">Log in</button>
+        <button type="button" id="gateTabSignup" class="${gateTab==='signup'?'on':''}" onclick="renderAuthGate('signup')">Sign up</button>
+      </div>
+      <div id="gateForm"></div>
+      <div class="authGateHint">This is a local prototype — your account, profile and content are stored only on this device.</div>
+    </div>
+  </div>`;
+  renderGateForm();
+}
+function renderGateForm(){
+  const holder=document.getElementById('gateForm'); if(!holder)return;
+  if(gateTab==='login'){
+    holder.innerHTML=`
+      <input class="field" id="gateEmail" type="email" placeholder="Email or mobile number" autocomplete="username">
+      <div class="passwordField"><input class="field" id="gatePass" type="password" placeholder="Password" autocomplete="current-password"><button type="button" class="passwordToggle" onclick="togglePasswordVisibility('gatePass',this)">👁</button></div>
+      <div class="fieldError" id="gateError"></div>
+      <div class="authGateLinks"><span></span><button type="button" onclick="openForgotPassword()">Forgot password?</button></div>
+      <button type="button" class="primary" style="width:100%;margin-top:12px" onclick="gateLogin()">Log in</button>`;
+  }else{
+    holder.innerHTML=`
+      <input class="field" id="gateName" placeholder="Full name" autocomplete="name">
+      <input class="field" id="gateEmail" type="email" placeholder="Email address" autocomplete="username">
+      <div class="passwordField"><input class="field" id="gatePass" type="password" placeholder="Create password" autocomplete="new-password"><button type="button" class="passwordToggle" onclick="togglePasswordVisibility('gatePass',this)">👁</button></div>
+      <small class="pwHint">${escapeHtml(PASSWORD_HINT)}</small>
+      <input class="field" id="gatePass2" type="password" placeholder="Confirm password" autocomplete="new-password">
+      <div class="fieldError" id="gateError"></div>
+      <label class="termsRow"><input type="checkbox" id="gateTerms"><span>I agree to EduInsta's Terms of Use and Privacy Policy.</span></label>
+      <button type="button" class="primary" style="width:100%" onclick="gateSignup()">Create account</button>`;
+  }
+}
+function gateLogin(){
+  const result=performLogin({identifier:document.getElementById('gateEmail')?.value,password:document.getElementById('gatePass')?.value});
+  const err=document.getElementById('gateError');
+  if(!result.ok){if(err)err.textContent=result.error;return}
+  if(err)err.textContent='';
+  exitAuthGate(); toast('Welcome back');
+}
+var pendingSignupData=null;
+function gateSignup(){
+  if(!document.getElementById('gateTerms')?.checked){
+    const err=document.getElementById('gateError'); if(err)err.textContent='Please accept the Terms of Use and Privacy Policy to continue.';
+    return;
+  }
+  const fields={name:document.getElementById('gateName')?.value,email:document.getElementById('gateEmail')?.value,password:document.getElementById('gatePass')?.value,confirmPassword:document.getElementById('gatePass2')?.value};
+  const check=validateSignupFields(fields);
+  const err=document.getElementById('gateError');
+  if(!check.ok){if(err)err.textContent=Object.values(check.errors)[0];return}
+  if(err)err.textContent='';
+  pendingSignupData=fields;
+  sendOtp(fields.email,'signup');
+  renderOtpStep(document.getElementById('gateForm'),fields.email,'signup',completeGateSignup,()=>renderGateForm());
+}
+function completeGateSignup(){
+  const result=performSignup(pendingSignupData);
+  pendingSignupData=null;
+  if(!result.ok){toast('Something went wrong — please try again');gateTab='signup';renderGateForm();return}
+  exitAuthGate(); toast('Account created — welcome to EduInsta');
+}
+
+/* ---- Forgot password (OTP via email or phone) ---- */
+function openForgotPassword(){
+  const holder=document.getElementById('gateForm'); if(!holder)return;
+  if(!registeredAccount){
+    holder.innerHTML=`<p class="filterNote">No account was found on this device yet. Please sign up first.</p>
+      <button type="button" class="primary" style="width:100%" onclick="gateTab='signup';renderGateForm()">Go to sign up</button>
+      <button type="button" onclick="renderGateForm()">Back to login</button>`;
+    return;
+  }
+  holder.innerHTML=`
+    <p class="filterNote">Choose how you'd like to receive your verification code.</p>
+    <div class="optionList">
+      <button type="button" onclick="chooseForgotMethod('email')">📧 Email — ${escapeHtml(maskEmail(registeredAccount.email))}</button>
+      <button type="button" ${registeredAccount.phone?'':'disabled'} onclick="chooseForgotMethod('phone')">📱 Phone ${registeredAccount.phone?'— '+escapeHtml(maskPhone(registeredAccount.phone)):'(not added to this account)'}</button>
+    </div>
+    <button type="button" onclick="renderGateForm()">Back to login</button>`;
+}
+function chooseForgotMethod(method){
+  const target=method==='email'?registeredAccount?.email:registeredAccount?.phone;
+  if(!target){toast('No phone number on file for this account');return}
+  sendOtp(target,'reset');
+  renderOtpStep(document.getElementById('gateForm'),target,'reset',showResetPasswordStep,openForgotPassword);
+}
+function showResetPasswordStep(){
+  const holder=document.getElementById('gateForm'); if(!holder)return;
+  holder.innerHTML=`
+    <p class="filterNote">Choose a new password for your account.</p>
+    <div class="passwordField"><input class="field" id="resetPass" type="password" placeholder="New password" autocomplete="new-password"><button type="button" class="passwordToggle" onclick="togglePasswordVisibility('resetPass',this)">👁</button></div>
+    <small class="pwHint">${escapeHtml(PASSWORD_HINT)}</small>
+    <input class="field" id="resetPass2" type="password" placeholder="Confirm new password" autocomplete="new-password">
+    <div class="fieldError" id="resetError"></div>
+    <button type="button" class="primary" style="width:100%" onclick="submitPasswordReset()">Update password</button>`;
+}
+function submitPasswordReset(){
+  const p1=document.getElementById('resetPass')?.value||'', p2=document.getElementById('resetPass2')?.value||'';
+  const err=document.getElementById('resetError');
+  if(!isValidPassword(p1)){if(err)err.textContent='Password must be '+PASSWORD_HINT;return}
+  if(p1!==p2){if(err)err.textContent='Passwords do not match.';return}
+  registeredAccount.password=p1;
+  lsSet('er_registered_account',JSON.stringify(registeredAccount));
+  if(err)err.textContent='';
+  toast('Password updated — please log in with your new password');
+  addNotification('security','Password changed','Your password was reset successfully.');
+  gateTab='login'; renderGateForm();
+  const emailField=document.getElementById('gateEmail'); if(emailField)emailField.value=registeredAccount.email;
+}
+function exitAuthGate(){
+  document.querySelector('.app').classList.remove('authGateMode');
+  page('home');
+  updateNotificationBadge();
+}
+
+/* ---- Update phone number (Settings > Account details), OTP-verified ---- */
+function updatePhonePage(){
+  main.innerHTML=`<div class="panel"><div class="detailHead"><button type="button" onclick="settingDetail('accountDetails')">‹</button><h2>Phone number</h2></div>
+    <div class="detailBody" id="phoneStepContainer">
+      <p class="filterNote">${profile.phone?`Current number: <b>${escapeHtml(maskPhone(profile.phone))}</b>`:'No phone number added yet.'}</p>
+      <input class="field" id="newPhoneInput" placeholder="e.g. +919876543210" inputmode="tel">
+      <div class="fieldError" id="phoneError"></div>
+      <button type="button" class="primary" onclick="requestPhoneOtp()">Send verification code</button>
+    </div>
+  </div>`;
+}
+function requestPhoneOtp(){
+  const val=document.getElementById('newPhoneInput')?.value;
+  const err=document.getElementById('phoneError');
+  if(!isValidPhone(val)){if(err)err.textContent='Enter a valid phone number (7-15 digits, optional +country code).';return}
+  if(err)err.textContent='';
+  pendingPhoneUpdate=val.trim();
+  sendOtp(pendingPhoneUpdate,'phone');
+  renderOtpStep(document.getElementById('phoneStepContainer'),pendingPhoneUpdate,'phone',completePhoneUpdate,()=>updatePhonePage());
+}
+var pendingPhoneUpdate=null;
+function completePhoneUpdate(){
+  profile.phone=pendingPhoneUpdate;
+  if(registeredAccount)registeredAccount.phone=pendingPhoneUpdate;
+  pendingPhoneUpdate=null;
+  saveState();
+  if(registeredAccount)lsSet('er_registered_account',JSON.stringify(registeredAccount));
+  toast('Phone number updated');
+  addNotification('security','Phone number updated','Your phone number was changed successfully.');
+  settingDetail('accountDetails');
+}
+
+/* ---------------- Boot ---------------- */
+function boot(){
+  if(account&&account.loggedIn)page('home');
+  else renderAuthGate('login');
+  updateNotificationBadge();
+}
+try{
+  boot();
+}catch(e){
+  showFatalError((e&&e.stack)||e);
+}
+</script>
+</body></html>

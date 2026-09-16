@@ -1,0 +1,19 @@
+{
+  "appId": "com.eduinsta.app",
+  "appName": "EduInsta",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": false
+  },
+  "plugins": {
+    "AdMob": {
+      "appId": {
+        "android": "ca-app-pub-3940256099942544~3347511713"
+      },
+      "initializeForTesting": true
+    }
+  }
+}

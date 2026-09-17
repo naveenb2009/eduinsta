@@ -201,6 +201,17 @@ textarea.field{resize:vertical}
 .uploadCameraBtn{width:64px;height:64px;border-radius:50%;border:0;background:#111;color:#5eead4;font-size:26px;display:flex;align-items:center;justify-content:center}
 .uploadPickHint{font-size:13px;color:#555}
 .uploadPickHint b{display:block;color:#111;margin-bottom:2px}
+.checkResult{border-radius:12px;padding:13px;margin:12px 0;font-size:13px;line-height:1.5}
+.checkResult b{display:block;margin-bottom:5px;font-size:14px}
+.checkResult p{margin:4px 0}
+.checkPass{background:#eaf7ee;border:1px solid #b6e0c4;color:#14532d}
+.checkFail{background:#fdeaea;border:1px solid #f0bcbc;color:#7f1d1d}
+.checkReview{background:#fff7e0;border:1px solid #f2d98a;color:#7a5f10}
+.checkPending{background:#eef4fb;border:1px solid #c7ddf2;color:#1e3a5f}
+.checkSpinner{width:22px;height:22px;margin-top:8px;border:3px solid #c7ddf2;border-top-color:#1e3a5f;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.safetyFlags{font-weight:700}
+.suggestTitle button{border:0;background:#14532d;color:#fff;border-radius:7px;padding:4px 9px;font-size:11px;margin-left:5px}
 .uploadOption{display:flex;align-items:center;gap:12px;width:100%;border:1px solid #ddd;background:#fff;border-radius:11px;padding:13px;text-align:left;margin:6px 0;font-weight:700}
 .uploadOption span{font-size:22px}
 .fieldLabel{display:block;font-weight:700;font-size:13px;margin:14px 2px 2px}
@@ -329,6 +340,8 @@ textarea.field{resize:vertical}
 .adHeadline{font-size:20px;font-weight:800;margin-bottom:18px;line-height:1.3}
 .adCta{width:auto;padding:11px 22px}
 .adDisclosure{margin-top:16px;font-size:11px;color:#999}
+.adSkipHint{position:absolute;bottom:22px;left:0;right:0;text-align:center;font-size:12px;color:#8b93a7;animation:adHintPulse 2s ease-in-out infinite}
+@keyframes adHintPulse{0%,100%{opacity:.45}50%{opacity:1}}
 .adRemoveLink{display:block;margin:8px auto 0;background:transparent;border:0;color:#5eead4;font-size:11px;text-decoration:underline}
 
 /* ---------- Owner dashboard (private) ---------- */
@@ -630,7 +643,14 @@ var subscription=readJSON('er_subscription',{status:'free',planId:null,paymentMe
    2) A small pool of house creatives that fill any remaining slots when no
       paid campaign is currently active, so the feed always has something to
       show rather than going empty. */
-const AD_DEFAULTS={enabled:true,frequency:4,simulateFailureRate:0.15,interstitialEvery:8};
+var AD_DEFAULTS={
+  enabled:true,
+  frequency:6,              // in-feed sponsored reel: 1 per 6 reels (Instagram-style)
+  simulateFailureRate:0.15,
+  interstitialsEnabled:false,   // OFF by default — in-feed ad reels are the primary format
+  interstitialEvery:25,         // if enabled: only after this many reels
+  interstitialMinGapMinutes:10  // AND never more than once per this many minutes
+};
 
 /* ================= AdMob (native only) =================
    AdMob is a NATIVE SDK. It cannot run in a plain browser, so:
@@ -656,7 +676,7 @@ var ADMOB_CONFIG={
 };
 function loadAdConfig(){return {...AD_DEFAULTS,...readJSON('er_ad_config_overrides',{})}}
 var AdConfig=loadAdConfig();
-function saveAdConfigOverrides(){lsSet('er_ad_config_overrides',JSON.stringify({enabled:AdConfig.enabled,frequency:AdConfig.frequency,interstitialEvery:AdConfig.interstitialEvery}))}
+function saveAdConfigOverrides(){lsSet('er_ad_config_overrides',JSON.stringify({enabled:AdConfig.enabled,frequency:AdConfig.frequency,interstitialsEnabled:AdConfig.interstitialsEnabled,interstitialEvery:AdConfig.interstitialEvery,interstitialMinGapMinutes:AdConfig.interstitialMinGapMinutes}))}
 const AD_CREATIVES=[
   {id:'ad1',sponsor:'BrightMind Tutoring',headline:'Personalized tutoring for competitive exams',cta:'Learn more'},
   {id:'ad2',sponsor:'StudySpace Notebooks',headline:'Notebooks designed for focused learners',cta:'Shop now'},
@@ -760,12 +780,22 @@ var AdMobService={
 var reelsViewedSinceAd=0;
 function noteReelViewedForAds(){
   if(isPremium()||!shouldShowAds()||!AdMobService.available())return;
+  /* Interstitials are OFF by default. The in-feed sponsored reel (which the
+     user simply swipes past, exactly like an Instagram sponsored post) is the
+     primary ad format - it needs no close button and never interrupts. */
+  if(!AdConfig.interstitialsEnabled)return;
   reelsViewedSinceAd++;
-  const every=Math.max(3,Number(AdConfig.interstitialEvery)||AD_DEFAULTS.interstitialEvery);
-  if(reelsViewedSinceAd>=every){
-    reelsViewedSinceAd=0;
-    AdMobService.showInterstitial();
-  }
+  const every=Math.max(10,Number(AdConfig.interstitialEvery)||AD_DEFAULTS.interstitialEvery);
+  if(reelsViewedSinceAd<every)return;
+  /* Second gate: a minimum real-time gap. Reel count alone isn't enough -
+     a fast scroller could otherwise hit several interstitials in a minute. */
+  const gapMs=Math.max(1,Number(AdConfig.interstitialMinGapMinutes)||AD_DEFAULTS.interstitialMinGapMinutes)*60000;
+  const last=Number(adState.lastInterstitialAt||0);
+  if(Date.now()-last<gapMs)return;
+  reelsViewedSinceAd=0;
+  adState.lastInterstitialAt=Date.now();
+  saveAdState();
+  AdMobService.showInterstitial();
 }
 
 const AdManager={
@@ -975,6 +1005,9 @@ function buildFeedWithAds(list){
   return out;
 }
 function shouldShowAds(){return AdConfig.enabled&&!isPremium()}
+/* An in-feed sponsored reel. Styled like a normal reel so it sits naturally
+   in the feed and is dismissed the same way any reel is - by swiping to the
+   next one. No close button to hunt for, no interruption. */
 function adSlotHTML(ad){
   return `<section class="reel adSlot" data-ad-id="${escapeAttr(ad.id)}">
     <div class="adBadge">Sponsored</div>
@@ -982,8 +1015,9 @@ function adSlotHTML(ad){
       <div class="adSponsor">${escapeHtml(ad.sponsor)}</div>
       <div class="adHeadline">${escapeHtml(ad.headline)}</div>
       <button type="button" class="primary adCta" onclick="AdManager.recordClick('${escapeAttr(ad.id)}')">${escapeHtml(ad.cta)}</button>
-      <div class="adDisclosure">Sponsored educational content, not verified by EduInsta. <button type="button" class="adRemoveLink" onclick="event.stopPropagation();premiumPage()">Remove ads with Premium</button></div>
+      <div class="adDisclosure">Sponsored content, not verified by EduInsta. <button type="button" class="adRemoveLink" onclick="event.stopPropagation();premiumPage()">Remove ads with Premium</button></div>
     </div>
+    <div class="adSkipHint">Swipe up to continue ↑</div>
   </section>`;
 }
 
@@ -1409,21 +1443,87 @@ function onUploadFileChosen(){
   if(p)p.innerHTML=`<video src="${u}" controls playsinline style="width:100%;max-height:260px;border-radius:12px;background:#000"></video>`;
   if(hint)hint.innerHTML=`<b>Selected</b>${escapeHtml(f.name)}`;
 }
+var lastModerationVerdict=null;
 function checkUpload(){
   const fileInput=document.getElementById("upFilePicker"), f=fileInput?.files[0], t=document.getElementById("upTitle").value.trim();
   if(!f){toast("Add a video first (camera, gallery or files)");return}
   if(!t){toast("Enter a title");return}
   if(!f.type.startsWith("video/")){toast("Please select a video file");return}
+  lastModerationVerdict=null;
+  if(serverMode())return runRealEducationCheck(f,t);
+  return runSimulatedEducationCheck();
+}
+/* PROTOTYPE MODE: no backend, so nothing is actually analysed. Say so plainly
+   rather than implying a real check happened. */
+function runSimulatedEducationCheck(){
   document.getElementById("check").innerHTML='<p>🔎 Education Check running…</p>';
   setTimeout(()=>{
-    document.getElementById("check").innerHTML=`<p>✅ <b>Education Check passed.</b></p>
+    lastModerationVerdict={status:'approved',simulated:true};
+    document.getElementById("check").innerHTML=`<div class="checkResult checkPass"><b>✅ Education Check passed</b>
+      <p>Simulated only — no backend is connected, so the video was not actually analysed.</p></div>
       <button type="button" class="primary" onclick="publishUpload()">Publish Reel</button>
-      <p style="font-size:12px;color:#666">Prototype check: a production build will analyze frames, audio/transcript and metadata with AI before publication.</p>`;
+      <p class="filterNote">Connect a backend (set API_BASE) to run the real AI check that watches the video and rejects non-educational content.</p>`;
   },700);
+}
+/* SERVER MODE: the video is sent to the backend, where Gemini watches it and
+   decides whether it is genuinely educational and safe. Publishing is gated
+   on the verdict, and the verdict is issued server-side so it can't be
+   skipped from the browser. */
+async function runRealEducationCheck(file,title){
+  const box=document.getElementById("check");
+  box.innerHTML=`<div class="checkResult checkPending"><b>🔎 Analysing your video…</b><p>Our AI is watching the video to confirm it's educational. This usually takes 10–30 seconds.</p><div class="checkSpinner"></div></div>`;
+  try{
+    const form=new FormData();
+    form.append('video',file);
+    form.append('title',title);
+    form.append('userId',currentUserId());
+    const res=await fetch(`${API_BASE}/api/education-check`,{method:'POST',body:form});
+    const verdict=await res.json();
+    lastModerationVerdict=verdict;
+    renderModerationVerdict(verdict);
+  }catch(err){
+    console.error(err);
+    lastModerationVerdict=null;
+    box.innerHTML=`<div class="checkResult checkFail"><b>⚠️ Could not complete the check</b>
+      <p>We couldn't reach the review service. Please check your connection and try again.</p></div>
+      <button type="button" class="primary" onclick="checkUpload()">Try again</button>`;
+  }
+}
+function renderModerationVerdict(v){
+  const box=document.getElementById("check");
+  if(v.status==='approved'){
+    box.innerHTML=`<div class="checkResult checkPass"><b>✅ Education Check passed</b>
+      <p>Identified as <b>${escapeHtml(v.subject||v.category||'educational content')}</b>${v.confidence?` · ${Math.round(v.confidence*100)}% confidence`:''}</p>
+      ${v.suggested_title?`<p class="suggestTitle">Suggested title: “${escapeHtml(v.suggested_title)}” <button type="button" onclick="useSuggestedTitle('${escapeAttr(v.suggested_title)}')">Use this</button></p>`:''}
+      </div>
+      <button type="button" class="primary" onclick="publishUpload()">Publish Reel</button>`;
+    return;
+  }
+  if(v.status==='manual_review'){
+    box.innerHTML=`<div class="checkResult checkReview"><b>⏳ Queued for review</b>
+      <p>${escapeHtml(v.reason||'This one needs a human look before publishing.')}</p></div>
+      <p class="filterNote">You'll be notified once it's reviewed. Nothing is published until then.</p>`;
+    addNotification('system','Reel under review','Your upload has been queued for manual review.');
+    return;
+  }
+  box.innerHTML=`<div class="checkResult checkFail"><b>❌ Not approved</b>
+    <p>${escapeHtml(v.reason||'This video does not appear to be educational content.')}</p>
+    ${(v.safety_flags&&v.safety_flags.length)?`<p class="safetyFlags">Flagged: ${escapeHtml(v.safety_flags.join(', '))}</p>`:''}
+    </div>
+    <p class="filterNote">EduInsta only accepts educational content — subjects like science, technology, engineering, maths, medicine, history, languages and exam preparation. Please choose a different video.</p>`;
+}
+function useSuggestedTitle(t){
+  const el=document.getElementById('upTitle');
+  if(el){el.value=t;toast('Title updated')}
 }
 async function publishUpload(){
   const f=document.getElementById("upFilePicker")?.files[0], title=document.getElementById("upTitle")?.value.trim();
   if(!f||!title){toast("Video/title missing");return}
+  /* Publishing requires a passing verdict. Prevents the Publish button being
+     reached by any route that skipped the check. */
+  if(!lastModerationVerdict||lastModerationVerdict.status!=='approved'){
+    toast('Please complete the Education Check first');return;
+  }
   const id=Date.now();
   const cat=document.getElementById("upCat").value;
   const sub=document.getElementById("upSub").value.trim()||cat;
@@ -2217,10 +2317,21 @@ function toggleAdEnabled(btn){
   saveAdConfigOverrides();
   toast('Ads '+(AdConfig.enabled?'enabled':'disabled'));
 }
+function toggleInterstitials(btn){
+  AdConfig.interstitialsEnabled=!AdConfig.interstitialsEnabled;
+  btn.classList.toggle('on',AdConfig.interstitialsEnabled);
+  saveAdConfigOverrides();
+  toast('Fullscreen interstitials '+(AdConfig.interstitialsEnabled?'enabled':'disabled'));
+}
+function updateInterstitialGap(v){
+  AdConfig.interstitialMinGapMinutes=Math.max(1,Math.min(120,Number(v)||AD_DEFAULTS.interstitialMinGapMinutes));
+  saveAdConfigOverrides();
+  toast('Minimum '+AdConfig.interstitialMinGapMinutes+' minutes between interstitials');
+}
 function updateInterstitialFrequency(v){
   /* Floor of 3 on purpose: interstitials any more often than that measurably
      hurt retention and risk an AdMob policy strike for disruptive ads. */
-  AdConfig.interstitialEvery=Math.max(3,Math.min(50,Number(v)||AD_DEFAULTS.interstitialEvery));
+  AdConfig.interstitialEvery=Math.max(10,Math.min(100,Number(v)||AD_DEFAULTS.interstitialEvery));
   saveAdConfigOverrides();
   toast('Interstitial frequency set to 1 per '+AdConfig.interstitialEvery+' reels');
 }
@@ -2256,7 +2367,9 @@ function adminConfigPage(){
     <div class="card"><h3>Advertising</h3>
       <div class="toggleRow"><div><b>Ads enabled</b><small>Master switch for the whole ad system</small></div><button type="button" class="switch ${AdConfig.enabled?'on':''}" onclick="toggleAdEnabled(this)"><i></i></button></div>
       <div class="selectRow"><b>In-feed sponsored slot (1 per N reels)</b><input class="field" style="width:70px" type="number" min="1" max="20" id="adFreqInput" value="${AdConfig.frequency}" onchange="updateAdFrequency(this.value)"></div>
-      <div class="selectRow"><b>AdMob interstitial (1 per N reels, app only)</b><input class="field" style="width:70px" type="number" min="3" max="50" id="adInterstitialInput" value="${AdConfig.interstitialEvery||AD_DEFAULTS.interstitialEvery}" onchange="updateInterstitialFrequency(this.value)"></div>
+      <div class="toggleRow"><div><b>Fullscreen interstitials</b><small>Off by default — in-feed sponsored reels are less intrusive</small></div><button type="button" class="switch ${AdConfig.interstitialsEnabled?'on':''}" onclick="toggleInterstitials(this)"><i></i></button></div>
+      <div class="selectRow"><b>Interstitial: min reels between</b><input class="field" style="width:70px" type="number" min="10" max="100" id="adInterstitialInput" value="${AdConfig.interstitialEvery||AD_DEFAULTS.interstitialEvery}" onchange="updateInterstitialFrequency(this.value)"></div>
+      <div class="selectRow"><b>Interstitial: min minutes between</b><input class="field" style="width:70px" type="number" min="1" max="120" id="adGapInput" value="${AdConfig.interstitialMinGapMinutes||AD_DEFAULTS.interstitialMinGapMinutes}" onchange="updateInterstitialGap(this.value)"></div>
       <p class="filterNote">AdMob: ${AdMobService.available()?'<b>active</b> (native app build)':'not available in a browser — in-feed sponsored slots are used instead'}${ADMOB_CONFIG.useTestAds?' · <b>TEST ad units</b>':''}</p>
       <p class="filterNote">Impressions: ${Object.values(adState.impressions).reduce((a,b)=>a+b,0)} · Clicks: ${Object.values(adState.clicks).reduce((a,b)=>a+b,0)}</p>
     </div>

@@ -863,7 +863,7 @@ const AdManager={
     toast('Opening sponsor link (demo)');
   }
 };
-var activeHomeTab='For You';
+var activeHomeTab='All';   // default: show everything, so a new user with no interests set still sees content
 var interestTab='library';
 
 function saveState(){
@@ -963,6 +963,7 @@ async function allReels(){
 
 /* ---------------- Navigation ---------------- */
 function page(p){
+  resetNav();
   document.querySelectorAll(".nav").forEach(x=>x.classList.toggle("active",x.dataset.page===p));
   closeOverlay();
   if(p==="home")home();
@@ -1416,11 +1417,12 @@ function computeEarnings(){
   };
 }
 function ownerDashboardPage(){
+  markPage(ownerDashboardPage);
   if(!isOwner()){promptOwnerLogin();return}
   const e=computeEarnings();
   const cur=PREMIUM_CONFIG.currency;
   const openReports=reports.filter(r=>r.status==='open').length;
-  main.innerHTML=`<div class="panel" id="ownerPanel"><div class="detailHead"><button type="button" onclick="settingsPage()">‹</button><h2>Owner dashboard</h2><button type="button" onclick="ownerLogout()" title="Lock">🔓</button></div>
+  main.innerHTML=`<div class="panel" id="ownerPanel"><div class="detailHead"><button type="button" onclick="navBack(settingsPage)">‹</button><h2>Owner dashboard</h2><button type="button" onclick="ownerLogout()" title="Lock">🔓</button></div>
     <div class="ownerPrivateNote">🔒 Private — visible only to you. Regular users cannot see this screen.</div>
     <div class="earningsHero">
       <small>Net earnings (after est. gateway fees)</small>
@@ -1710,22 +1712,23 @@ function avatarMarkup(size){
   return src?`<img class="erProfilePhoto ${size||''}" src="${escapeAttr(src)}" alt="Profile photo">`:`<div class="profileAvatar ${size||''}">${escapeHtml((profile?.name||'Y').charAt(0).toUpperCase())}</div>`;
 }
 async function profilePage(){
+  markPage(profilePage);
   const [uploads,allR]=await Promise.all([dbAll(),allReels()]);
   const downloadsList=allR.filter(r=>saved.includes(r.id));
   const premium=isPremium();
   main.innerHTML=`<div class="panel profilePanel">
-    <div class="profileTopBar"><button type="button" class="profileBack" onclick="page('home')">‹</button><h2>Profile</h2><button type="button" class="profileGear" onclick="settingsPage()">⚙</button></div>
+    <div class="profileTopBar"><button type="button" class="profileBack" onclick="page('home')">‹</button><h2>Profile</h2><button type="button" class="profileGear" onclick="goTo(settingsPage)">⚙</button></div>
     <div class="profileHero">${avatarMarkup()}<div><h2>${escapeHtml(profile.name)} ${premium?'<span class="premiumCrown">👑</span>':''}</h2><div class="muted">${escapeHtml(profile.username)} · ${escapeHtml(profile.role)}</div></div></div>
     ${premium
-      ?`<div class="premiumBadgeRow" onclick="manageSubscriptionPage()">👑 <b>EduInsta Premium</b><span>Manage ›</span></div>`
-      :`<div class="upgradeBanner" onclick="premiumPage()">✨ <b>Go Premium</b> — remove ads from your feed<span>›</span></div>`}
+      ?`<div class="premiumBadgeRow" onclick="goTo(manageSubscriptionPage)">👑 <b>EduInsta Premium</b><span>Manage ›</span></div>`
+      :`<div class="upgradeBanner" onclick="goTo(premiumPage)">✨ <b>Go Premium</b> — remove ads from your feed<span>›</span></div>`}
     <div class="profileStats">
       <button type="button" onclick="profileTab='uploads';profilePage()"><b>${uploads.length}</b><small>Uploads</small></button>
       <button type="button" onclick="profileTab='downloads';profilePage()"><b>${downloadsList.length}</b><small>Saved</small></button>
-      <button type="button" onclick="networkPage('followers')"><b>${followers.length}</b><small>Followers</small></button>
-      <button type="button" onclick="networkPage('following')"><b>${following.length}</b><small>Following</small></button>
+      <button type="button" onclick="goTo(()=>networkPage('followers'))"><b>${followers.length}</b><small>Followers</small></button>
+      <button type="button" onclick="goTo(()=>networkPage('following'))"><b>${following.length}</b><small>Following</small></button>
     </div>
-    <div class="profileActions"><button type="button" onclick="editProfilePage()">Edit profile</button><button type="button" onclick="shareProfile()">Share profile</button></div>
+    <div class="profileActions"><button type="button" onclick="goTo(editProfilePage)">Edit profile</button><button type="button" onclick="shareProfile()">Share profile</button></div>
     <p class="filterNote">🎯 Interests: ${interests.length?escapeHtml(interests.join(' • ')):'None selected — your For You feed shows all educational reels.'}</p>
     <div class="profileTabs">
       <button type="button" class="${profileTab==='uploads'?'selected':''}" onclick="profileTab='uploads';profilePage()">Uploads</button>
@@ -1795,7 +1798,8 @@ function saveProfile(){
   profilePage();
 }
 function editProfilePage(){
-  main.innerHTML=`<div class="panel"><div class="detailHead"><button type="button" onclick="profilePage()">‹</button><h2>Edit profile</h2></div>
+  markPage(editProfilePage);
+  main.innerHTML=`<div class="panel"><div class="detailHead"><button type="button" onclick="navBack(profilePage)">‹</button><h2>Edit profile</h2></div>
     <div class="card">
       <div class="erPhotoEditor">${avatarMarkup('big')}
         <div class="erPhotoActions">
@@ -1945,12 +1949,13 @@ function unfollowUser(u){
   saveState(); toast('Unfollowed '+u); networkPage(document.querySelector('.networkTabs .active')?.textContent.startsWith('Followers')?'followers':'following');
 }
 function networkPage(tab){
+  markPage(()=>networkPage(tab));
   tab=tab==='followers'?'followers':'following';
   const list=tab==='followers'?followers:following;
-  main.innerHTML=`<div class="panel networkPanel"><div class="detailHead"><button type="button" onclick="profilePage()">‹</button><h2>People</h2></div>
+  main.innerHTML=`<div class="panel networkPanel"><div class="detailHead"><button type="button" onclick="navBack(profilePage)">‹</button><h2>People</h2></div>
     <div class="networkTabs">
-      <button type="button" class="${tab==='followers'?'active':''}" onclick="networkPage('followers')">Followers <b>${followers.length}</b></button>
-      <button type="button" class="${tab==='following'?'active':''}" onclick="networkPage('following')">Following <b>${following.length}</b></button>
+      <button type="button" class="${tab==='followers'?'active':''}" onclick="goTo(()=>networkPage('followers'))">Followers <b>${followers.length}</b></button>
+      <button type="button" class="${tab==='following'?'active':''}" onclick="goTo(()=>networkPage('following'))">Following <b>${following.length}</b></button>
     </div>
     <div class="networkHint">${tab==='followers'?'People who follow your EduInsta profile.':'Creators and learners you currently follow.'}</div>
     <div>${list.length?list.map(u=>personRow(u,tab)).join(''):`<div class="empty">${tab==='followers'?'No followers yet.':'You are not following anyone yet.'}</div>`}</div>
@@ -1976,11 +1981,35 @@ function applyAccessibilitySettings(){
   });
 }
 
+/* ================= Navigation history =================
+   Sub-pages used to hardcode where "back" went, so arriving from a different
+   route dumped you somewhere you'd never been (Owner dashboard -> App config
+   -> back -> Settings). This keeps a real stack instead. */
+var navStack=[];
+var currentPageFn=null;
+/* Every page renderer calls this first so the stack knows where we are. */
+function markPage(fn){currentPageFn=fn}
+/* Navigate to a sub-page, remembering where we came from. */
+function goTo(fn){
+  if(currentPageFn&&currentPageFn!==fn)navStack.push(currentPageFn);
+  if(navStack.length>20)navStack.shift();
+  fn();
+}
+/* Go back to wherever we actually came from. */
+function navBack(fallbackFn){
+  const prev=navStack.pop();
+  if(prev){currentPageFn=prev;prev();return}
+  (fallbackFn||(()=>page('profile')))();
+}
+/* Switching top-level tabs resets the stack - you're starting a new journey. */
+function resetNav(){navStack=[];currentPageFn=null}
+
 function settingsRow(icon,title,sub,key){
-  return `<button type="button" class="settingRow" onclick="settingDetail('${escapeAttr(key)}')"><span class="settingIcon">${icon}</span><span class="settingText"><b>${escapeHtml(title)}</b>${sub?`<small>${escapeHtml(sub)}</small>`:''}</span><span class="chev">›</span></button>`;
+  return `<button type="button" class="settingRow" onclick="goTo(()=>settingDetail('${escapeAttr(key)}'))"><span class="settingIcon">${icon}</span><span class="settingText"><b>${escapeHtml(title)}</b>${sub?`<small>${escapeHtml(sub)}</small>`:''}</span><span class="chev">›</span></button>`;
 }
 function settingsPage(){
-  main.innerHTML=`<div class="panel settingsPanel"><div class="detailHead"><button type="button" onclick="profilePage()">‹</button><h2>EduInsta settings</h2></div>
+  markPage(settingsPage);
+  main.innerHTML=`<div class="panel settingsPanel"><div class="detailHead"><button type="button" onclick="navBack(profilePage)">‹</button><h2>EduInsta settings</h2></div>
     <input class="searchInput" id="settingsSearch" placeholder="Find a setting" oninput="filterSettings()">
     <div id="settingsList">
       <div class="settingSection"><h3>Membership</h3>${settingsRow('👑','EduInsta Premium',isPremium()?'Manage your active Premium subscription':'Ad-free, unlimited saves, quizzes & more','premium')}</div>
@@ -2011,8 +2040,9 @@ function filterSettings(){
     sec.style.display=any?'block':'none';
   });
 }
-function detailHead(title){return `<div class="detailHead"><button type="button" onclick="settingsPage()">‹</button><h2>${escapeHtml(title)}</h2></div>`}
-function detail(title,body){main.innerHTML=`<div class="panel detailPanel">${detailHead(title)}<div class="detailBody">${body}</div></div>`}
+function detailHead(title){return `<div class="detailHead"><button type="button" onclick="navBack(settingsPage)">‹</button><h2>${escapeHtml(title)}</h2></div>`}
+function detail(title,body){
+  markPage(()=>settingDetail(__lastSettingKey));main.innerHTML=`<div class="panel detailPanel">${detailHead(title)}<div class="detailBody">${body}</div></div>`}
 function toggleLine(key,label,desc,def){
   const on=erGet(key,!!def);
   return `<div class="toggleRow"><div><b>${escapeHtml(label)}</b><small>${escapeHtml(desc)}</small></div><button type="button" class="switch ${on?'on':''}" aria-label="${escapeAttr(label)}" onclick="toggleSetting('${key}',this)"><i></i></button></div>`;
@@ -2035,7 +2065,9 @@ function selectLine(key,label,options,def){
 }
 const btnHtml=(label,fn)=>`<button type="button" class="optionBtn" onclick="${fn}">${escapeHtml(label)}</button>`;
 
+var __lastSettingKey=null;
 function settingDetail(key){
+  __lastSettingKey=key;
   if(key==='interests'){interestsPage();return}
   if(key==='network'){networkPage('followers');return}
   if(key==='settings'){settingsPage();return}
@@ -2346,12 +2378,13 @@ function startCheckout(){
   });
 }
 function premiumPage(){
+  markPage(premiumPage);
   checkSubscriptionExpiry();
   const premium=isPremium();
   const plan=PREMIUM_CONFIG.plan;
-  main.innerHTML=`<div class="panel premiumPanel"><div class="detailHead"><button type="button" onclick="page('profile')">‹</button><h2>EduInsta Premium</h2></div>
+  main.innerHTML=`<div class="panel premiumPanel"><div class="detailHead"><button type="button" onclick="navBack(()=>page('profile'))">‹</button><h2>EduInsta Premium</h2></div>
     ${premium?`<div class="premiumActiveBanner">👑 <b>You're Premium</b><br><small>${subscription.cancelAtPeriodEnd?`Active until ${new Date(subscription.expiresAt).toLocaleDateString()} (won't renew)`:`Renews ${new Date(subscription.renewsAt).toLocaleDateString()}`}</small></div>
-      <button type="button" class="primary" style="width:100%" onclick="manageSubscriptionPage()">Manage subscription</button>`
+      <button type="button" class="primary" style="width:100%" onclick="goTo(manageSubscriptionPage)">Manage subscription</button>`
       :`<p class="filterNote">Go Premium to remove ads from your EduInsta feed.</p>`}
     <div class="compareTable">
       <div class="compareRow compareHead"><span>Feature</span><span>Free</span><span>Premium</span></div>
@@ -2362,9 +2395,10 @@ function premiumPage(){
   </div>`;
 }
 function manageSubscriptionPage(){
+  markPage(manageSubscriptionPage);
   checkSubscriptionExpiry();
   const plan=PREMIUM_CONFIG.plan;
-  main.innerHTML=`<div class="panel" id="managePanel"><div class="detailHead"><button type="button" onclick="premiumPage()">‹</button><h2>Manage subscription</h2></div>
+  main.innerHTML=`<div class="panel" id="managePanel"><div class="detailHead"><button type="button" onclick="navBack(premiumPage)">‹</button><h2>Manage subscription</h2></div>
     <div class="card">
       <p><b>Status</b><br>${subscription.status==='active'?(subscription.cancelAtPeriodEnd?'Active (will not renew)':'Active'):subscription.status==='expired'?'Expired':'Free plan'}</p>
       ${subscription.status==='active'?`<p><b>Plan</b><br>${escapeHtml(plan.label)} — ${PREMIUM_CONFIG.currency}${plan.price}/${plan.interval}</p><p><b>${subscription.cancelAtPeriodEnd?'Ends on':'Next renewal'}</b><br>${new Date(subscription.expiresAt).toLocaleDateString()}</p>`:''}
@@ -2397,8 +2431,9 @@ function setAdConsent(v){
    self-serve sponsored-placement products. ---- */
 var newCampaignDays=AdRateCard.minDurationDays;
 function adCampaignsPage(){
+  markPage(adCampaignsPage);
   refreshCampaignStatuses();
-  main.innerHTML=`<div class="panel"><div class="detailHead"><button type="button" onclick="settingsPage()">‹</button><h2>Advertise on EduInsta</h2></div>
+  main.innerHTML=`<div class="panel"><div class="detailHead"><button type="button" onclick="navBack(settingsPage)">‹</button><h2>Advertise on EduInsta</h2></div>
     <p class="filterNote">Rate card: ${PREMIUM_CONFIG.currency}${AdRateCard.pricePerDay}/day · ${AdRateCard.minDurationDays}-${AdRateCard.maxDurationDays} day campaigns · shown only to free (ad-supported) users.</p>
     <button type="button" class="primary" style="width:100%" onclick="createAdCampaignPage()">+ New campaign</button>
     <div class="card"><h3>Your campaigns</h3>${adCampaigns.length?adCampaigns.slice().reverse().map(c=>`
@@ -2411,8 +2446,9 @@ function adCampaignsPage(){
   </div>`;
 }
 function createAdCampaignPage(){
+  markPage(createAdCampaignPage);
   newCampaignDays=AdRateCard.minDurationDays;
-  main.innerHTML=`<div class="panel"><div class="detailHead"><button type="button" onclick="adCampaignsPage()">‹</button><h2>Create ad campaign</h2></div>
+  main.innerHTML=`<div class="panel"><div class="detailHead"><button type="button" onclick="navBack(adCampaignsPage)">‹</button><h2>Create ad campaign</h2></div>
     <p class="filterNote">Run a sponsored placement in the EduInsta feed. Rate: ${PREMIUM_CONFIG.currency}${AdRateCard.pricePerDay}/day.</p>
     <input class="field" id="campSponsor" placeholder="Business / sponsor name">
     <input class="field" id="campHeadline" placeholder="Ad headline">
@@ -2525,7 +2561,8 @@ function updatePremiumPrice(v){
   toast('Premium price updated');
 }
 function adminConfigPage(){
-  main.innerHTML=`<div class="panel"><div class="detailHead"><button type="button" onclick="settingsPage()">‹</button><h2>Admin / demo config</h2></div>
+  markPage(adminConfigPage);
+  main.innerHTML=`<div class="panel"><div class="detailHead"><button type="button" onclick="navBack(settingsPage)">‹</button><h2>Admin / demo config</h2></div>
     <div class="card"><h3>Advertising</h3>
       <div class="toggleRow"><div><b>Ads enabled</b><small>Master switch for the whole ad system</small></div><button type="button" class="switch ${AdConfig.enabled?'on':''}" onclick="toggleAdEnabled(this)"><i></i></button></div>
       <div class="selectRow"><b>In-feed sponsored slot (1 per N reels)</b><input class="field" style="width:70px" type="number" min="1" max="20" id="adFreqInput" value="${AdConfig.frequency}" onchange="updateAdFrequency(this.value)"></div>
@@ -2965,7 +3002,8 @@ function exitAuthGate(){
 
 /* ---- Update phone number (Settings > Account details), OTP-verified ---- */
 function updatePhonePage(){
-  main.innerHTML=`<div class="panel"><div class="detailHead"><button type="button" onclick="settingDetail('accountDetails')">‹</button><h2>Phone number</h2></div>
+  markPage(updatePhonePage);
+  main.innerHTML=`<div class="panel"><div class="detailHead"><button type="button" onclick="navBack(()=>settingDetail('accountDetails'))">‹</button><h2>Phone number</h2></div>
     <div class="detailBody" id="phoneStepContainer">
       <p class="filterNote">${profile.phone?`Current number: <b>${escapeHtml(maskPhone(profile.phone))}</b>`:'No phone number added yet.'}</p>
       <input class="field" id="newPhoneInput" placeholder="e.g. +919876543210" inputmode="tel">

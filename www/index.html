@@ -114,7 +114,10 @@ header{height:58px;position:fixed;top:0;left:0;right:0;z-index:20;background:rgb
 .chip.on{background:#111;color:#fff}
 .cards{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 .card{background:#fff;border:1px solid #ddd;border-radius:12px;padding:12px}
-.card button{margin-top:8px;border:0;border-radius:9px;padding:8px 10px;background:#111;color:#fff;width:100%}
+/* Scoped so it only styles plain action buttons. Without :not(), this rule
+   overrode .switch/.chip/.networkBtn (higher specificity) and stretched them
+   into full-width black bars inside settings cards. */
+.card button:not(.switch):not(.chip):not(.networkBtn):not(.passwordToggle):not(.close):not(.optionBtn):not(.btnSecondary):not(.btnDanger){margin-top:8px;border:0;border-radius:9px;padding:8px 10px;background:#111;color:#fff;width:100%}
 .field{width:100%;padding:12px;margin:7px 0;border:1px solid #ccc;border-radius:10px;background:#fff;color:#111}
 textarea.field{resize:vertical}
 .btnSecondary{width:100%;border:1px solid #d8d8d8;background:#fff;color:#333;border-radius:11px;padding:12px;font-weight:700;margin-top:8px}
@@ -234,16 +237,20 @@ textarea.field{resize:vertical}
 .settingText small{display:block;color:#777;font-size:11px;margin-top:3px}
 .chev{font-size:23px;color:#888}
 .detailBody{padding-bottom:24px}
-.toggleRow,.selectRow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0;border-bottom:1px solid #eee}
+.toggleRow,.selectRow{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 0;border-bottom:1px solid #eee}
+.toggleRow>div,.selectRow>span{flex:1 1 auto;min-width:0}
+.toggleRow b,.selectRow b{line-height:1.3}
+.toggleRow small{line-height:1.4}
 .toggleRow:last-child,.selectRow:last-child{border-bottom:0}
 .toggleRow div{flex:1}
 .toggleRow b,.selectRow b{display:block;font-size:14px}
 .toggleRow small{display:block;color:#777;font-size:11px;margin-top:3px}
-.switch{width:48px;height:28px;border:0;border-radius:20px;background:#ccc;padding:3px;flex:none}
+.switch{width:48px!important;min-width:48px;max-width:48px;height:28px;border:0;border-radius:20px;background:#ccc;padding:3px;flex:none;margin:0;box-sizing:border-box}
 .switch i{display:block;width:22px;height:22px;border-radius:50%;background:#fff;transition:.15s;font-style:normal}
 .switch.on{background:#111}
+.switch i{pointer-events:none}
 .switch.on i{transform:translateX(20px)}
-.selectRow select{border:1px solid #ddd;border-radius:9px;padding:8px;max-width:52%;background:#fff}
+.selectRow select{border:1px solid #ddd;border-radius:9px;padding:9px;max-width:50%;min-width:120px;background:#fff;flex:none}
 .deviceItem{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #f0f0f0}
 .deviceItem:last-child{border-bottom:0}
 .deviceItem>span{font-size:26px}

@@ -83,7 +83,7 @@ header{height:58px;position:fixed;top:0;left:0;right:0;z-index:20;background:rgb
 
 /* ---------- Home feed / reels ---------- */
 .homeTabs{position:fixed;z-index:25;top:66px;left:50%;transform:translateX(-50%);display:flex;gap:4px;padding:4px;background:rgba(255,255,255,.92);border:1px solid #ddd;border-radius:24px;box-shadow:0 2px 10px rgba(0,0,0,.12)}
-.homeTab{border:0;background:transparent;color:#666;padding:8px 16px;border-radius:18px;font-size:13px;font-weight:700}
+.homeTab{border:0;background:transparent;color:#666;padding:8px 14px;border-radius:18px;font-size:13px;font-weight:700;white-space:nowrap}
 .homeTab.active{background:#111;color:#fff}
 .feed{height:100vh;height:100dvh;overflow-y:auto;scroll-snap-type:y mandatory;padding-top:58px;padding-bottom:70px}
 .reel{height:calc(100vh - 128px);height:calc(100dvh - 128px);min-height:460px;scroll-snap-align:start;position:relative;background:#101010;border-bottom:1px solid #222;display:flex;align-items:center;justify-content:center;overflow:hidden}
@@ -117,6 +117,14 @@ header{height:58px;position:fixed;top:0;left:0;right:0;z-index:20;background:rgb
 .card button{margin-top:8px;border:0;border-radius:9px;padding:8px 10px;background:#111;color:#fff;width:100%}
 .field{width:100%;padding:12px;margin:7px 0;border:1px solid #ccc;border-radius:10px;background:#fff;color:#111}
 textarea.field{resize:vertical}
+.btnSecondary{width:100%;border:1px solid #d8d8d8;background:#fff;color:#333;border-radius:11px;padding:12px;font-weight:700;margin-top:8px}
+.btnSecondary:active{background:#f2f2f2}
+.btnDanger{width:100%;border:1px solid #f0bcbc;background:#fff;color:#b3261e;border-radius:11px;padding:12px;font-weight:700;margin-top:8px}
+/* Safety net: any button in a sheet or panel that has no class of its own
+   still gets a proper look instead of the raw browser default. */
+.sheet > button:not([class]),
+.detailBody > button:not([class]),
+.panel > button:not([class]){width:100%;border:1px solid #d8d8d8;background:#fff;color:#333;border-radius:11px;padding:12px;font-weight:700;margin-top:8px}
 .primary{background:#111;color:#fff;border:0;padding:12px 16px;border-radius:10px}
 .empty{padding:30px;text-align:center;color:#666}
 .modal{position:fixed;z-index:100;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:flex-end}
@@ -303,7 +311,7 @@ textarea.field{resize:vertical}
 .erPhotoActions small{font-size:11px;color:#777;line-height:1.35}
 
 @media(max-width:390px){
-  .homeTabs{top:62px}.homeTab{padding:7px 13px;font-size:12px}
+  .homeTabs{top:62px}.homeTab{padding:7px 11px;font-size:12px}
   .profileStats b{font-size:15px}.profileStats small{font-size:9px}
   .interestGrid{grid-template-columns:1fr}
   .networkQuick button{font-size:11px}
@@ -344,6 +352,26 @@ textarea.field{resize:vertical}
 .adSkipHint{position:absolute;bottom:22px;left:0;right:0;text-align:center;font-size:12px;color:#8b93a7;animation:adHintPulse 2s ease-in-out infinite}
 @keyframes adHintPulse{0%,100%{opacity:.45}50%{opacity:1}}
 .adRemoveLink{display:block;margin:8px auto 0;background:transparent;border:0;color:#5eead4;font-size:11px;text-decoration:underline}
+
+/* ---------- Accessibility (these must actually change the UI) ---------- */
+body.a11yLargeText{font-size:118%}
+body.a11yLargeText .meta,body.a11yLargeText .filterNote,body.a11yLargeText .settingText small,
+body.a11yLargeText .personInfo small,body.a11yLargeText .profileCard small{font-size:14px}
+body.a11yLargeText .title,body.a11yLargeText .adHeadline{font-size:21px}
+body.a11yLargeText .nav{font-size:13px}
+
+body.a11yHighContrast .panel{background:#fff}
+body.a11yHighContrast .card,body.a11yHighContrast .settingSection,body.a11yHighContrast .profileStats,
+body.a11yHighContrast .profileMenuCard,body.a11yHighContrast .compareTable{border-color:#111;border-width:2px}
+body.a11yHighContrast .field,body.a11yHighContrast .searchInput,body.a11yHighContrast .chip,
+body.a11yHighContrast .btnSecondary,body.a11yHighContrast .optionBtn{border-color:#111;border-width:2px}
+body.a11yHighContrast .muted,body.a11yHighContrast .filterNote,body.a11yHighContrast .settingText small{color:#333}
+body.a11yHighContrast .switch{border:2px solid #111}
+body.a11yHighContrast .primary{background:#000}
+
+body.a11yReducedMotion *,body.a11yReducedMotion *::before,body.a11yReducedMotion *::after{
+  animation-duration:.001ms!important;animation-iteration-count:1!important;
+  transition-duration:.001ms!important;scroll-behavior:auto!important}
 
 /* ---------- Owner dashboard (private) ---------- */
 .ownerPrivateNote{background:#fff7e0;border:1px solid #f2d98a;border-radius:11px;padding:10px 12px;font-size:12px;color:#7a5f10;margin-bottom:12px}
@@ -450,7 +478,7 @@ function showFatalError(details){
 /* Declared with `var` (not `const`) so it is reachable as window.API_BASE —
    lets you flip modes from the browser console while testing:
        API_BASE='https://your-backend.onrender.com'; location.reload()  */
-var API_BASE='';
+var API_BASE='https://eduinsta-api.onrender.com';
 function serverMode(){return typeof API_BASE==='string' && API_BASE.length>0}
 function currentUserId(){return (account&&account.email)||profile.username||'anonymous'}
 
@@ -967,22 +995,38 @@ function reelMatchesInterests(r){
 }
 
 /* ---------------- Home feed ---------------- */
+const HOME_TABS=['For You','All','Following'];
+/* Shuffle used by the All tab so discovery isn't dominated by whoever uploaded
+   most recently. Seeded per render, so the order changes each time you open it. */
+function shuffleFeed(arr){
+  const a=arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
 async function home(tab){
   if(tab)activeHomeTab=tab;
-  const active=activeHomeTab==="Following"?"Following":"For You";
+  const active=HOME_TABS.includes(activeHomeTab)?activeHomeTab:'For You';
   activeHomeTab=active;
   const all=await allReels();
-  const list=active==="Following"
-    ? all.filter(r=>following.includes(r.creator))
-    : all.filter(r=>reelMatchesInterests(r));
+  let list;
+  if(active==='Following')      list=all.filter(r=>following.includes(r.creator));
+  else if(active==='All')       list=shuffleFeed(all);   // everything, in random order
+  else                          list=all.filter(r=>reelMatchesInterests(r));
   const renderList=buildFeedWithAds(list);
+  const emptyMsg=active==='Following'
+    ? 'Follow educational creators to see their reels here.'
+    : active==='All'
+      ? 'No reels have been published yet.'
+      : 'No reels match your interests yet — try the All tab to see everything.';
   main.innerHTML=`
     <div class="homeTabs" role="tablist" aria-label="Home feed">
-      <button type="button" class="homeTab ${active==="For You"?"active":""}" onclick="home('For You')" role="tab" aria-selected="${active==="For You"}">For You</button>
-      <button type="button" class="homeTab ${active==="Following"?"active":""}" onclick="home('Following')" role="tab" aria-selected="${active==="Following"}">Following</button>
+      ${HOME_TABS.map(t=>`<button type="button" class="homeTab ${active===t?'active':''}" onclick="home('${t}')" role="tab" aria-selected="${active===t}">${t}</button>`).join('')}
     </div>
     <div class="feed" id="feed">
-      ${renderList.length?renderList.map(item=>item.type==='ad'?adSlotHTML(item.data):reelHTML(item.data)).join(""):`<div class="empty" style="margin-top:110px;color:#fff"><h3>No matching reels</h3><p>${active==="Following"?"Follow educational creators to see their reels here.":"Adjust your interests or age filter in Profile."}</p></div>`}
+      ${renderList.length?renderList.map(item=>item.type==='ad'?adSlotHTML(item.data):reelHTML(item.data)).join(""):`<div class="empty" style="margin-top:110px;color:#fff"><h3>No reels here</h3><p>${emptyMsg}</p>${active!=='All'?`<button type="button" class="primary" style="width:auto;margin-top:14px" onclick="home('All')">Browse all reels</button>`:''}</div>`}
     </div>`;
   observeVideos();
   if(!isPremium())maybeShowAdConsent();
@@ -1205,7 +1249,7 @@ function reportReel(id,e){
     <textarea class="field" id="reportDetails" rows="3" placeholder="Add any details (optional)"></textarea>
     <div class="fieldError" id="reportError"></div>
     <button type="button" class="primary" style="width:100%" onclick="submitReport(${id})">Submit report</button>
-    <button type="button" onclick="closeOverlay()">Cancel</button>
+    <button type="button" class="btnSecondary" onclick="closeOverlay()">Cancel</button>
   </div></div>`;
 }
 function submitReport(id){
@@ -1426,7 +1470,7 @@ function openUploadPicker(){
     <button type="button" class="uploadOption" onclick="pickUploadSource('camera')"><span>📷</span>Record with camera</button>
     <button type="button" class="uploadOption" onclick="pickUploadSource('gallery')"><span>🖼️</span>Choose from gallery</button>
     <button type="button" class="uploadOption" onclick="pickUploadSource('files')"><span>📁</span>Choose other location</button>
-    <button type="button" onclick="closeOverlay()">Cancel</button>
+    <button type="button" class="btnSecondary" onclick="closeOverlay()">Cancel</button>
   </div></div>`;
 }
 function pickUploadSource(source){
@@ -1744,7 +1788,7 @@ function interestsPage(){
     <div id="interestChooser"></div>
     <div class="selectedInterestBox"><b>Selected</b><div id="selectedInterests"></div></div>
     <div class="customInterest"><input id="customInterest" placeholder="Add any topic, e.g. Aircraft Certification" onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomInterest()}"><button type="button" class="primary" onclick="addCustomInterest()">Add topic</button></div>
-    <div class="interestActions"><button type="button" class="primary" onclick="commitInterests()">Save Interests</button><button type="button" onclick="closeOverlay()">Cancel</button></div>
+    <div class="interestActions"><button type="button" class="primary" onclick="commitInterests()">Save Interests</button><button type="button" class="btnSecondary" onclick="closeOverlay()">Cancel</button></div>
   </div></div>`;
   renderInterestChooser();
 }
@@ -1838,6 +1882,24 @@ function networkPage(tab){
 }
 
 /* ================= Settings ================= */
+/* Accessibility preferences have to actually change the interface, otherwise
+   the toggles are decorative. Applied to <body> so every screen inherits them,
+   and re-applied at boot because the DOM is rebuilt on each render. */
+function applyAccessibilitySettings(){
+  const b=document.body;
+  b.classList.toggle('a11yLargeText',!!erGet('largeText',false));
+  b.classList.toggle('a11yHighContrast',!!erGet('highContrast',false));
+  b.classList.toggle('a11yReducedMotion',!!erGet('reducedMotion',false));
+  /* Captions: apply to every existing and future <video>. */
+  const wantCaptions=!!erGet('captions',true);
+  document.querySelectorAll('video').forEach(v=>{
+    try{
+      const tracks=v.textTracks||[];
+      for(let i=0;i<tracks.length;i++)tracks[i].mode=wantCaptions?'showing':'hidden';
+    }catch{}
+  });
+}
+
 function settingsRow(icon,title,sub,key){
   return `<button type="button" class="settingRow" onclick="settingDetail('${escapeAttr(key)}')"><span class="settingIcon">${icon}</span><span class="settingText"><b>${escapeHtml(title)}</b>${sub?`<small>${escapeHtml(sub)}</small>`:''}</span><span class="chev">›</span></button>`;
 }
@@ -1879,6 +1941,7 @@ function toggleLine(key,label,desc,def){
   const on=erGet(key,!!def);
   return `<div class="toggleRow"><div><b>${escapeHtml(label)}</b><small>${escapeHtml(desc)}</small></div><button type="button" class="switch ${on?'on':''}" aria-label="${escapeAttr(label)}" onclick="toggleSetting('${key}',this)"><i></i></button></div>`;
 }
+const A11Y_KEYS=['largeText','highContrast','reducedMotion','captions'];
 function toggleSetting(key,btn){
   /* Read the CURRENT displayed state off the button itself rather than
      re-deriving it from erGet() with a guessed default - the row may have
@@ -1887,6 +1950,7 @@ function toggleSetting(key,btn){
   const next=!btn.classList.contains('on');
   erSet(key,next);
   btn.classList.toggle('on',next);
+  if(A11Y_KEYS.includes(key))applyAccessibilitySettings();
   toast(next?'Enabled':'Disabled');
 }
 function selectLine(key,label,options,def){
@@ -1921,7 +1985,7 @@ function settingDetail(key){
   if(key==='counts') body=`<div class="card">${toggleLine('showLikeCounts','Show like counts','Display engagement totals on reels.',true)}${toggleLine('showShareCounts','Show share counts','Display how often learning reels were shared.',true)}</div>`;
   if(key==='muted') body=`<div class="card">${(erGet('mutedCreators',[]).length?erGet('mutedCreators',[]).map(x=>`<div class="deviceItem"><div><b>${escapeHtml(x)}</b><small>Hidden from your feed</small></div>${btnHtml('Unmute',`unmuteCreator('${escapeAttr(x)}')`)}</div>`).join(''):'<div class="empty">No muted creators.</div>')}${btnHtml('Mute a creator',"muteCreator()")}</div>`;
   if(key==='downloads') body=`<div class="card">${toggleLine('wifiOnly','Wi-Fi only for media','Avoid background media downloads on mobile data.',true)}${selectLine('mediaQuality','Preferred media quality',['Auto','Data saver','Standard','High'],erGet('mediaQuality','Auto'))}${toggleLine('autoSave','Auto-save published reels','Keep a local copy of your own newly published reels.',false)}${btnHtml('Open saved reels',"page('downloads')")}</div>`;
-  if(key==='accessibility') body=`<div class="card">${toggleLine('captions','Always show captions','Prefer captions when a reel provides them.',true)}${toggleLine('reducedMotion','Reduce motion','Use calmer transitions in menus and navigation.',false)}${toggleLine('largeText','Larger text','Increase readable text sizes where supported.',false)}${toggleLine('highContrast','Higher contrast controls','Strengthen borders and control contrast.',false)}</div>`;
+  if(key==='accessibility') body=`<div class="card">${toggleLine('largeText','Larger text','Increase text size across the whole app.',false)}${toggleLine('highContrast','Higher contrast','Stronger borders and darker text for easier reading.',false)}${toggleLine('reducedMotion','Reduce motion','Remove animations and smooth-scrolling effects.',false)}${toggleLine('captions','Prefer captions','Show captions automatically when a reel provides them.',true)}<div class="infoBox">These apply immediately across the app — try one and look at this screen.</div></div>`;
   if(key==='language') body=`<div class="card">${selectLine('appLanguage','App language',['English','Kannada','Hindi','Tamil','Telugu'],erGet('appLanguage','English'))}<div class="infoBox">The selected language is stored and can drive full translations when language packs are added.</div></div>`;
   if(key==='data') body=`<div class="card">${toggleLine('dataSaver','Data saver','Reduce video quality and background loading.',false)}${toggleLine('autoplay','Autoplay reels','Start the visible reel automatically.',true)}${toggleLine('preload','Preload next reel','Load the next reel early for smoother scrolling.',true)}<div class="infoBox">If autoplay with sound is blocked by the browser, tap the reel or use the sound button to start playback.</div></div>`;
   if(key==='privacy') body=`<div class="card">${selectLine('privacyMode','Profile visibility',['Public','Followers only','Private'],erGet('privacyMode','Public'))}${selectLine('messageWho','Who can message you',['Anyone','People you follow','Nobody'],erGet('messageWho','People you follow'))}${toggleLine('activityStatus','Show active status','Let followers see when you are active.',false)}${toggleLine('allowMentions','Allow mentions','Allow other users to mention your profile.',true)}</div>`;
@@ -2577,25 +2641,34 @@ function renderOtpStep(container,target,purpose,onSuccess,onBack){
    between the two surfaces. Validation is split out from account creation so
    the OTP step can sit in between: fields are checked BEFORE an OTP is sent,
    and the account is only actually created once the code is verified. ---- */
-function validateSignupFields({name,email,phone,password,confirmPassword}){
-  name=(name||'').trim(); email=(email||'').trim(); phone=(phone||'').trim();
+/* Which channel an identifier implies. One field, two possible kinds. */
+function identifierType(v){
+  v=String(v||'').trim();
+  if(isValidEmail(v))return 'email';
+  if(isValidPhone(v))return 'phone';
+  return null;
+}
+function validateSignupFields({name,identifier,password,confirmPassword}){
+  name=(name||'').trim(); identifier=(identifier||'').trim();
   password=password||''; confirmPassword=confirmPassword||'';
   const errors={};
   if(name.length<2)errors.name='Enter your full name.';
-  if(!isValidEmail(email))errors.email='Enter a valid email address.';
-  /* Both email AND phone are required at signup: the phone is what makes
-     account recovery possible if the email is ever lost. */
-  if(!isValidPhone(phone))errors.phone='Enter a valid mobile number (7-15 digits, optional +country code).';
+  /* Signup is email-only. SMS OTP needs TRAI DLT registration in India, so
+     phone numbers are added later in Settings and verified by email instead. */
+  if(!isValidEmail(identifier))errors.identifier='Enter a valid email address.';
   if(!isValidPassword(password))errors.password='Password must be '+PASSWORD_HINT;
   if(confirmPassword!==password)errors.confirmPassword='Passwords do not match.';
   return Object.keys(errors).length?{ok:false,errors}:{ok:true};
 }
-function performSignup({name,email,phone,password}){
-  name=(name||'').trim(); email=(email||'').trim(); phone=(phone||'').trim();
-  registeredAccount={name,email,password,phone:phone||registeredAccount?.phone||null};
-  profile.phone=registeredAccount.phone;
+function performSignup({name,identifier,password}){
+  name=(name||'').trim(); identifier=(identifier||'').trim();
+  /* A signup creates a FRESH account record. Do NOT inherit the email or phone
+     of whoever was registered before - that would leak the previous user's
+     contact details into the new account and let them receive its OTPs. */
+  registeredAccount={name,password,email:identifier,phone:null};
+  profile.phone=null;
   lsSet('er_registered_account',JSON.stringify(registeredAccount));
-  account={loggedIn:true,email,name};
+  account={loggedIn:true,email:registeredAccount.email||registeredAccount.phone,name};
   lsSet('er_account',JSON.stringify(account));
   profile.name=name;
   profile.username="@"+name.toLowerCase().replace(/[^a-z0-9]+/g,"").slice(0,20)||"@student";
@@ -2647,7 +2720,7 @@ function authForm(mode){
   document.getElementById('authTabSignup')?.classList.toggle('on',mode==='signup');
   holder.innerHTML=mode==="login"
     ? `<input class="field" id="authEmail" type="email" placeholder="Email or mobile number"><div class="passwordField"><input class="field" id="authPass" type="password" placeholder="Password"><button type="button" class="passwordToggle" onclick="togglePasswordVisibility('authPass',this)">👁</button></div><div class="fieldError" id="authError"></div><button type="button" class="primary" onclick="modalLogin()">Log in</button><p class="filterNote">This prototype stores account state only on this device.</p>`
-    : `<input class="field" id="authName" placeholder="Full name"><input class="field" id="authEmail" type="email" placeholder="Email address"><input class="field" id="authPhone" type="tel" placeholder="Mobile number" inputmode="tel"><div class="passwordField"><input class="field" id="authPass" type="password" placeholder="Create password"><button type="button" class="passwordToggle" onclick="togglePasswordVisibility('authPass',this)">👁</button></div><small class="pwHint">${escapeHtml(PASSWORD_HINT)}</small><input class="field" id="authPass2" type="password" placeholder="Confirm password"><div class="fieldError" id="authError"></div><button type="button" class="primary" onclick="modalSignup()">Create account</button><p class="filterNote">This prototype stores account state only on this device.</p>`;
+    : `<input class="field" id="authName" placeholder="Full name"><input class="field" id="authIdentifier" type="email" placeholder="Email address" inputmode="email"><div class="passwordField"><input class="field" id="authPass" type="password" placeholder="Create password"><button type="button" class="passwordToggle" onclick="togglePasswordVisibility('authPass',this)">👁</button></div><small class="pwHint">${escapeHtml(PASSWORD_HINT)}</small><input class="field" id="authPass2" type="password" placeholder="Confirm password"><div class="fieldError" id="authError"></div><button type="button" class="primary" onclick="modalSignup()">Create account</button><p class="filterNote">This prototype stores account state only on this device.</p>`;
 }
 function modalLogin(){
   const result=performLogin({identifier:document.getElementById("authEmail")?.value,password:document.getElementById("authPass")?.value});
@@ -2658,14 +2731,14 @@ function modalLogin(){
 }
 var pendingModalSignupData=null;
 function modalSignup(){
-  const fields={name:document.getElementById("authName")?.value,email:document.getElementById("authEmail")?.value,phone:document.getElementById("authPhone")?.value,password:document.getElementById("authPass")?.value,confirmPassword:document.getElementById("authPass2")?.value};
+  const fields={name:document.getElementById("authName")?.value,identifier:document.getElementById("authIdentifier")?.value,password:document.getElementById("authPass")?.value,confirmPassword:document.getElementById("authPass2")?.value};
   const check=validateSignupFields(fields);
   const err=document.getElementById("authError");
   if(!check.ok){if(err)err.textContent=Object.values(check.errors)[0];return}
   if(err)err.textContent='';
   pendingModalSignupData=fields;
-  sendOtp(fields.email,'signup');
-  renderOtpStep(document.getElementById("authForm"),fields.email,'signup',completeModalSignup,()=>authForm('signup'));
+  sendOtp(fields.identifier,'signup');
+  renderOtpStep(document.getElementById("authForm"),fields.identifier,'signup',completeModalSignup,()=>authForm('signup'));
 }
 function completeModalSignup(){
   const result=performSignup(pendingModalSignupData);
@@ -2713,7 +2786,7 @@ function renderGateForm(){
   const holder=document.getElementById('gateForm'); if(!holder)return;
   if(gateTab==='login'){
     holder.innerHTML=`
-      <input class="field" id="gateEmail" type="email" placeholder="Email or mobile number" autocomplete="username" inputmode="email">
+      <input class="field" id="gateEmail" type="email" placeholder="Email address" autocomplete="username" inputmode="email">
       <div class="passwordField"><input class="field" id="gatePass" type="password" placeholder="Password" autocomplete="current-password"><button type="button" class="passwordToggle" onclick="togglePasswordVisibility('gatePass',this)">👁</button></div>
       <div class="fieldError" id="gateError"></div>
       <div class="authGateLinks"><span></span><button type="button" onclick="openForgotPassword()">Forgot password?</button></div>
@@ -2721,8 +2794,8 @@ function renderGateForm(){
   }else{
     holder.innerHTML=`
       <input class="field" id="gateName" placeholder="Full name" autocomplete="name">
-      <input class="field" id="gateEmail" type="email" placeholder="Email address" autocomplete="email">
-      <input class="field" id="gatePhone" type="tel" placeholder="Mobile number (e.g. +919876543210)" autocomplete="tel" inputmode="tel">
+      <input class="field" id="gateIdentifier" type="email" placeholder="Email address" autocomplete="email" inputmode="email">
+      <small class="pwHint">We'll send a verification code to this address.</small>
       <div class="passwordField"><input class="field" id="gatePass" type="password" placeholder="Create password" autocomplete="new-password"><button type="button" class="passwordToggle" onclick="togglePasswordVisibility('gatePass',this)">👁</button></div>
       <small class="pwHint">${escapeHtml(PASSWORD_HINT)}</small>
       <input class="field" id="gatePass2" type="password" placeholder="Confirm password" autocomplete="new-password">
@@ -2744,14 +2817,14 @@ function gateSignup(){
     const err=document.getElementById('gateError'); if(err)err.textContent='Please accept the Terms of Use and Privacy Policy to continue.';
     return;
   }
-  const fields={name:document.getElementById('gateName')?.value,email:document.getElementById('gateEmail')?.value,phone:document.getElementById('gatePhone')?.value,password:document.getElementById('gatePass')?.value,confirmPassword:document.getElementById('gatePass2')?.value};
+  const fields={name:document.getElementById('gateName')?.value,identifier:document.getElementById('gateIdentifier')?.value,password:document.getElementById('gatePass')?.value,confirmPassword:document.getElementById('gatePass2')?.value};
   const check=validateSignupFields(fields);
   const err=document.getElementById('gateError');
   if(!check.ok){if(err)err.textContent=Object.values(check.errors)[0];return}
   if(err)err.textContent='';
   pendingSignupData=fields;
-  sendOtp(fields.email,'signup');
-  renderOtpStep(document.getElementById('gateForm'),fields.email,'signup',completeGateSignup,()=>renderGateForm());
+  sendOtp(fields.identifier,'signup');
+  renderOtpStep(document.getElementById('gateForm'),fields.identifier,'signup',completeGateSignup,()=>renderGateForm());
 }
 function completeGateSignup(){
   const result=performSignup(pendingSignupData);
@@ -2769,13 +2842,15 @@ function openForgotPassword(){
       <button type="button" onclick="renderGateForm()">Back to login</button>`;
     return;
   }
+  /* Offer only the channels this account actually has. Accounts created with
+     a single identifier have one; a phone added later in Settings gives two. */
+  const opts=[];
+  if(registeredAccount.email)opts.push(`<button type="button" class="optionBtn" onclick="chooseForgotMethod('email')">📧 Email — ${escapeHtml(maskEmail(registeredAccount.email))}</button>`);
+  if(registeredAccount.phone)opts.push(`<button type="button" class="optionBtn" onclick="chooseForgotMethod('phone')">📱 SMS — ${escapeHtml(maskPhone(registeredAccount.phone))}</button>`);
   holder.innerHTML=`
-    <p class="filterNote">Choose how you'd like to receive your verification code.</p>
-    <div class="optionList">
-      <button type="button" onclick="chooseForgotMethod('email')">📧 Email — ${escapeHtml(maskEmail(registeredAccount.email))}</button>
-      <button type="button" ${registeredAccount.phone?'':'disabled'} onclick="chooseForgotMethod('phone')">📱 Phone ${registeredAccount.phone?'— '+escapeHtml(maskPhone(registeredAccount.phone)):'(not added to this account)'}</button>
-    </div>
-    <button type="button" onclick="renderGateForm()">Back to login</button>`;
+    <p class="filterNote">${opts.length>1?"Choose where to send your verification code.":"We'll send a verification code to:"}</p>
+    <div class="optionList">${opts.join('')}</div>
+    <button type="button" class="btnSecondary" onclick="renderGateForm()">Back to login</button>`;
 }
 function chooseForgotMethod(method){
   const target=method==='email'?registeredAccount?.email:registeredAccount?.phone;
@@ -2818,6 +2893,7 @@ function updatePhonePage(){
     <div class="detailBody" id="phoneStepContainer">
       <p class="filterNote">${profile.phone?`Current number: <b>${escapeHtml(maskPhone(profile.phone))}</b>`:'No phone number added yet.'}</p>
       <input class="field" id="newPhoneInput" placeholder="e.g. +919876543210" inputmode="tel">
+      <small class="pwHint">We'll email you a code to confirm this change.</small>
       <div class="fieldError" id="phoneError"></div>
       <button type="button" class="primary" onclick="requestPhoneOtp()">Send verification code</button>
     </div>
@@ -2829,8 +2905,13 @@ function requestPhoneOtp(){
   if(!isValidPhone(val)){if(err)err.textContent='Enter a valid phone number (7-15 digits, optional +country code).';return}
   if(err)err.textContent='';
   pendingPhoneUpdate=val.trim();
-  sendOtp(pendingPhoneUpdate,'phone');
-  renderOtpStep(document.getElementById('phoneStepContainer'),pendingPhoneUpdate,'phone',completePhoneUpdate,()=>updatePhonePage());
+  /* The confirmation code goes to the account's EMAIL, not the new number.
+     Sending it by SMS would require TRAI DLT registration; emailing it still
+     proves the account owner authorised the change, which is the point. */
+  const target=registeredAccount?.email||account.email;
+  if(!target){toast('No email on file for this account');return}
+  sendOtp(target,'phone');
+  renderOtpStep(document.getElementById('phoneStepContainer'),target,'phone',completePhoneUpdate,()=>updatePhonePage());
 }
 var pendingPhoneUpdate=null;
 function completePhoneUpdate(){
@@ -2849,6 +2930,7 @@ function boot(){
   if(account&&account.loggedIn)page('home');
   else renderAuthGate('login');
   updateNotificationBadge();
+  applyAccessibilitySettings();
   /* Re-check Premium against the server (server mode only). Runs after the
      first paint so a slow network never delays startup. */
   refreshSubscriptionFromServer().then(()=>{

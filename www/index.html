@@ -1085,7 +1085,7 @@ function reelHTML(r){
       <div class="meta">${escapeHtml(r.cat)} • ${escapeHtml(r.sub)}<br>${escapeHtml(r.desc||"Educational video on EduInsta.")}</div>
     </div>
     <div class="actions">
-      <button type="button" class="act soundBtn" onclick="toggleSound(event,this)"><span>🔇</span><small>Sound</small></button>
+      <button type="button" class="act soundBtn ${soundOn?'soundOn':''}" onclick="toggleSound(event,this)"><span>${soundOn?'🔊':'🔇'}</span><small>${soundOn?'Sound':'Muted'}</small></button>
       <button type="button" class="act likeBtn ${liked?"liked":""}" onclick="toggleLike(${r.id},event)"><span>♥</span><small>${liked?"Liked":"Like"}</small></button>
       <button type="button" class="act" onclick="commentsPanel(${r.id},event)"><span>💬</span><small>Comment</small></button>
       <button type="button" class="act saveBtn ${isSaved?"saved":""}" onclick="toggleSave(${r.id},event)"><span>🔖</span><small>${isSaved?"Saved":"Save"}</small></button>
@@ -1097,6 +1097,49 @@ function reelHTML(r){
 
 /* One IntersectionObserver instance, reused for every feed render. */
 let feedObserver=null;
+/* ================= Sound =================
+   Sound is ON by default, but browsers and Android WebView refuse to autoplay
+   audio until the user has interacted with the page. Unmuting blindly makes
+   play() reject and the reel never starts.
+
+   So: the first reel starts muted (guaranteed to play), and the moment the
+   user touches the screen we unmute it and everything after. That's how
+   Instagram/TikTok behave on the web. The preference itself is remembered. */
+var soundOn=readJSON('er_sound_on',true);          // default: sound ON
+var hasUserGesture=false;
+function saveSoundPref(){lsSet('er_sound_on',JSON.stringify(soundOn))}
+/* True only when we're actually allowed to play audio right now. */
+function audioAllowed(){return soundOn&&hasUserGesture}
+
+function applySoundToVideo(v){
+  if(!v)return;
+  v.muted=!audioAllowed();
+  v.volume=1;
+  const reel=v.closest('.reel');
+  const btn=reel?.querySelector('.soundBtn');
+  if(btn)updateSoundButton(btn,v.muted);
+}
+function updateSoundButton(btn,muted){
+  btn.classList.toggle('soundOn',!muted);
+  btn.querySelector('span').textContent=muted?'🔇':'🔊';
+  btn.querySelector('small').textContent=muted?'Muted':'Sound';
+}
+/* First real interaction unlocks audio. Registered once, then removed. */
+function unlockAudioOnFirstGesture(){
+  if(hasUserGesture)return;
+  hasUserGesture=true;
+  if(!soundOn)return;
+  const playing=[...document.querySelectorAll('.reel video')].find(v=>!v.paused);
+  if(playing){
+    applySoundToVideo(playing);
+    if(playing.paused)playing.play().catch(()=>{});
+  }
+  document.querySelectorAll('.playPrompt').forEach(p=>p.remove());
+}
+['pointerdown','touchstart','keydown'].forEach(ev=>{
+  document.addEventListener(ev,unlockAudioOnFirstGesture,{once:false,passive:true});
+});
+
 const impressedAdElements=new WeakSet();
 function observeVideos(){
   if(feedObserver)feedObserver.disconnect();
@@ -1113,8 +1156,25 @@ function observeVideos(){
       const v=entry.target.querySelector("video");
       if(!v)return;
       if(entry.isIntersecting){
-        document.querySelectorAll(".reel video").forEach(x=>{if(x!==v)x.pause()});
-        v.play().catch(()=>{});
+        document.querySelectorAll(".reel video").forEach(x=>{if(x!==v){x.pause();x.muted=true}});
+        applySoundToVideo(v);
+        /* Sound is wanted but not yet unlocked: the reel still plays (muted),
+           and we surface a one-tap prompt instead of leaving the user to
+           wonder why it's silent. */
+        if(soundOn&&!hasUserGesture){
+          const reel=v.closest('.reel');
+          if(reel)showPlaybackPrompt(reel,v);
+        }
+        v.play().catch(()=>{
+          /* Blocked (almost always because audio isn't unlocked yet):
+             fall back to muted playback so the reel still starts. */
+          v.muted=true;
+          v.play().catch(()=>{});
+          const reel=v.closest('.reel');
+          const btn=reel?.querySelector('.soundBtn');
+          if(btn)updateSoundButton(btn,true);
+          if(soundOn&&!hasUserGesture&&reel)showPlaybackPrompt(reel,v);
+        });
       }else{
         v.pause();
       }
@@ -1144,17 +1204,25 @@ function togglePlay(e,btn){
 function toggleSound(e,btn){
   e?.stopPropagation();
   const reel=btn.closest('.reel'), v=reel?.querySelector('video'); if(!v)return;
-  v.muted=!v.muted; v.volume=1;
-  btn.classList.toggle('soundOn',!v.muted);
-  btn.querySelector('span').textContent=v.muted?'🔇':'🔊';
-  btn.querySelector('small').textContent=v.muted?'Sound':'Muted';
-  if(!v.muted && v.paused)v.play().catch(()=>showPlaybackPrompt(reel,v));
+  hasUserGesture=true;              // tapping the button IS the gesture
+  soundOn=!soundOn;                 // this is a preference, not a per-reel state
+  saveSoundPref();
+  v.muted=!soundOn; v.volume=1;
+  updateSoundButton(btn,v.muted);
+  reel.querySelectorAll('.playPrompt').forEach(p=>p.remove());
+  if(v.paused)v.play().catch(()=>showPlaybackPrompt(reel,v));
 }
 function showPlaybackPrompt(reel,v){
   if(reel.querySelector('.playPrompt'))return;
   const p=document.createElement('button');
-  p.type='button'; p.className='playPrompt'; p.textContent='▶ Tap to play with sound';
-  p.onclick=(e)=>{e.stopPropagation();v.muted=false;v.volume=1;v.play().then(()=>{p.remove();updatePlayIcon(v)}).catch(()=>toast('Playback was blocked by the browser.'))};
+  p.type='button'; p.className='playPrompt'; p.textContent='🔊 Tap for sound';
+  p.onclick=(e)=>{
+    e.stopPropagation();
+    hasUserGesture=true; soundOn=true; saveSoundPref();
+    v.muted=false; v.volume=1;
+    v.play().then(()=>{p.remove();updatePlayIcon(v);applySoundToVideo(v)})
+            .catch(()=>toast('Playback was blocked by the browser.'));
+  };
   reel.appendChild(p);
 }
 document.addEventListener('error',e=>{if(e.target?.tagName==='VIDEO')toast('This video could not be loaded')},true);
@@ -1441,11 +1509,12 @@ async function openReel(id,srcHint){
     const v=reelEl.querySelector("video");
     if(!v)return;
     document.querySelectorAll(".reel video").forEach(x=>{if(x!==v){x.pause()}});
-    v.muted=false; v.volume=1;
+    hasUserGesture=true;            // opening a specific reel is a deliberate action
+    applySoundToVideo(v);
     const attempt=v.play();
     if(attempt&&typeof attempt.catch==='function')attempt.catch(()=>showPlaybackPrompt(reelEl,v));
     const soundBtn=reelEl.querySelector('.soundBtn');
-    if(soundBtn){soundBtn.classList.add('soundOn');soundBtn.querySelector('span').textContent='🔊';soundBtn.querySelector('small').textContent='Muted'}
+    if(soundBtn)updateSoundButton(soundBtn,v.muted);
   });
 }
 

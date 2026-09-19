@@ -956,7 +956,33 @@ function blobUrlFor(obj){
   if(!objectUrlCache.has(obj.id))objectUrlCache.set(obj.id,URL.createObjectURL(obj.blob));
   return objectUrlCache.get(obj.id);
 }
+/* In SERVER MODE the feed comes from the backend, so every user sees every
+   reel. In prototype mode it falls back to this device's own IndexedDB, which
+   only the uploader can see - fine for a demo, not a platform. */
+var serverFeedCursor=null;
+var serverFeedExhausted=false;
+async function fetchServerFeed(reset){
+  if(reset){serverFeedCursor=null;serverFeedExhausted=false}
+  const url=`${API_BASE}/api/feed?limit=30${serverFeedCursor?`&cursor=${encodeURIComponent(serverFeedCursor)}`:''}`;
+  const res=await fetch(url);
+  if(!res.ok)throw new Error('feed request failed');
+  const data=await res.json();
+  serverFeedCursor=data.nextCursor;
+  if(!data.nextCursor)serverFeedExhausted=true;
+  return data.reels||[];
+}
 async function allReels(){
+  if(serverMode()){
+    try{
+      const remote=await fetchServerFeed(true);
+      /* Demo reels are kept alongside so the feed is never empty on a brand
+         new install with no uploads yet. */
+      return remote.length?remote:reels;
+    }catch(err){
+      console.warn('Server feed unavailable, showing local content:',err);
+      toast('Could not reach the server — showing offline content');
+    }
+  }
   const uploads=await dbAll();
   return reels.concat(uploads.map(u=>({...u,uploaded:true,src:blobUrlFor(u)})));
 }
@@ -1014,16 +1040,40 @@ function shuffleFeed(arr){
   }
   return a;
 }
+/* ================= Feed paging & windowing =================
+   Previously the feed built EVERY reel as a DOM node on every render, and
+   re-read the whole of IndexedDB each time. That is fine at 6 reels and
+   unusable at a few hundred: render time and memory both grow linearly.
+
+   Two fixes, both local (no server needed):
+     PAGING   — render PAGE_SIZE items, append more as the user nears the end
+     WINDOWING— only reels near the viewport keep a loaded <video>; the rest
+                have their src detached, so memory stays flat no matter how
+                long the feed gets. */
+const FEED_PAGE_SIZE=8;      // items rendered per page
+const VIDEO_WINDOW=3;        // reels either side of current that keep their src
+var feedState={items:[],rendered:0,loading:false,tab:null};
+
+/* allReels() hits IndexedDB; cache it so scrolling and re-renders don't. */
+var __reelCache=null;
+function invalidateReelCache(){__reelCache=null}
+async function allReelsCached(){
+  if(!__reelCache)__reelCache=await allReels();
+  return __reelCache;
+}
+
 async function home(tab){
   if(tab)activeHomeTab=tab;
   const active=HOME_TABS.includes(activeHomeTab)?activeHomeTab:'For You';
   activeHomeTab=active;
-  const all=await allReels();
+  const all=await allReelsCached();
   let list;
   if(active==='Following')      list=all.filter(r=>following.includes(r.creator));
   else if(active==='All')       list=shuffleFeed(all);   // everything, in random order
   else                          list=all.filter(r=>reelMatchesInterests(r));
-  const renderList=buildFeedWithAds(list);
+
+  feedState={items:buildFeedWithAds(list),rendered:0,loading:false,tab:active};
+
   const emptyMsg=active==='Following'
     ? 'Follow educational creators to see their reels here.'
     : active==='All'
@@ -1034,11 +1084,72 @@ async function home(tab){
       ${HOME_TABS.map(t=>`<button type="button" class="homeTab ${active===t?'active':''}" onclick="home('${t}')" role="tab" aria-selected="${active===t}">${t}</button>`).join('')}
     </div>
     <div class="feed" id="feed">
-      ${renderList.length?renderList.map(item=>item.type==='ad'?adSlotHTML(item.data):reelHTML(item.data)).join(""):`<div class="empty" style="margin-top:110px;color:#fff"><h3>No reels here</h3><p>${emptyMsg}</p>${active!=='All'?`<button type="button" class="primary" style="width:auto;margin-top:14px" onclick="home('All')">Browse all reels</button>`:''}</div>`}
+      ${feedState.items.length?'':`<div class="empty" style="margin-top:110px;color:#fff"><h3>No reels here</h3><p>${emptyMsg}</p>${active!=='All'?`<button type="button" class="primary" style="width:auto;margin-top:14px" onclick="home('All')">Browse all reels</button>`:''}</div>`}
     </div>`;
+  renderNextFeedPage();
+  attachFeedScrollLoader();
   observeVideos();
   if(!isPremium())maybeShowAdConsent();
 }
+
+/* Append the next page of items to the feed. */
+function renderNextFeedPage(){
+  const feed=document.getElementById('feed');
+  if(!feed||feedState.loading)return 0;
+  const next=feedState.items.slice(feedState.rendered,feedState.rendered+FEED_PAGE_SIZE);
+  if(!next.length)return 0;
+  feedState.loading=true;
+  feed.insertAdjacentHTML('beforeend',
+    next.map(item=>item.type==='ad'?adSlotHTML(item.data):reelHTML(item.data)).join(''));
+  feedState.rendered+=next.length;
+  feedState.loading=false;
+  observeVideos();          // pick up the newly added sections
+  applyVideoWindow();
+  return next.length;
+}
+function feedHasMore(){return feedState.rendered<feedState.items.length}
+
+/* Load more when the user gets within ~2 screens of the end. */
+function attachFeedScrollLoader(){
+  const feed=document.getElementById('feed');
+  if(!feed)return;
+  feed.onscroll=()=>{
+    if(feedHasMore()&&feed.scrollTop+feed.clientHeight*2>=feed.scrollHeight)renderNextFeedPage();
+    applyVideoWindow();
+  };
+}
+
+/* Keep only nearby reels holding a decoded video. Far-away ones keep their
+   markup (so scroll position is stable) but drop the src, which is what
+   actually frees memory. */
+function applyVideoWindow(){
+  const feed=document.getElementById('feed');
+  if(!feed)return;
+  const sections=[...feed.querySelectorAll('.reel')];
+  if(!sections.length)return;
+  const mid=feed.scrollTop+feed.clientHeight/2;
+  let currentIndex=0,best=Infinity;
+  sections.forEach((sec,i)=>{
+    const centre=sec.offsetTop+sec.offsetHeight/2;
+    const d=Math.abs(centre-mid);
+    if(d<best){best=d;currentIndex=i}
+  });
+  sections.forEach((sec,i)=>{
+    const v=sec.querySelector('video');
+    if(!v)return;
+    const near=Math.abs(i-currentIndex)<=VIDEO_WINDOW;
+    const real=v.dataset.src||v.getAttribute('src');
+    if(near){
+      if(!v.getAttribute('src')&&v.dataset.src){v.setAttribute('src',v.dataset.src);v.load()}
+    }else if(v.getAttribute('src')){
+      v.dataset.src=real;
+      v.pause();
+      v.removeAttribute('src');
+      v.load();               // releases the decoder and buffered data
+    }
+  });
+}
+
 /* Inserts sponsored slots between organic reels - additional slots, not
    replacements, so ads never crowd out educational content. Premium users
    (or a disabled ad config) get the plain list back untouched. A slot that
@@ -1270,6 +1381,14 @@ function toggleLike(id,e){
   e?.stopPropagation();
   likes.includes(id)?likes=likes.filter(x=>x!==id):likes.push(id);
   saveState(); updateLikeUI(id);
+  /* Fire-and-forget: the UI already updated, so a slow or failed network
+     never makes the button feel unresponsive. */
+  if(serverMode()){
+    fetch(`${API_BASE}/api/reels/${id}/like`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({userId:currentUserId()})
+    }).catch(()=>{});
+  }
 }
 function toggleSave(id,e){
   e?.stopPropagation();
@@ -1637,6 +1756,7 @@ function useSuggestedTitle(t){
 async function publishUpload(){
   const f=document.getElementById("upFilePicker")?.files[0], title=document.getElementById("upTitle")?.value.trim();
   if(!f||!title){toast("Video/title missing");return}
+  if(serverMode())return publishToServer(f,title);
   /* Publishing requires a passing verdict. Prevents the Publish button being
      reached by any route that skipped the check. */
   if(!lastModerationVerdict||lastModerationVerdict.status!=='approved'){
@@ -1646,9 +1766,39 @@ async function publishUpload(){
   const cat=document.getElementById("upCat").value;
   const sub=document.getElementById("upSub").value.trim()||cat;
   await dbPut({id,cat,sub,creator:profile.username,title,desc:"Uploaded by "+profile.name,blob:f});
+  invalidateReelCache();
   toast("🎉 Reel published successfully");
   addNotification('system','Reel published',`"${title}" is now live on EduInsta.`);
   await openReel(id);
+}
+
+/* Upload to the backend so the reel is visible to every user. The server
+   moderates before storing, so a rejected video is never saved at all. */
+async function publishToServer(file,title){
+  const box=document.getElementById('check');
+  if(box)box.innerHTML=`<div class="checkResult checkPending"><b>⬆️ Publishing…</b><p>Uploading your reel and running the Education Check.</p><div class="checkSpinner"></div></div>`;
+  try{
+    const form=new FormData();
+    form.append('video',file);
+    form.append('title',title);
+    form.append('creator',profile.username);
+    form.append('description','Uploaded by '+profile.name);
+    form.append('category',document.getElementById('upCat')?.value||'');
+    form.append('subject',document.getElementById('upSub')?.value.trim()||'');
+    const res=await fetch(`${API_BASE}/api/reels`,{method:'POST',body:form});
+    const data=await res.json();
+    if(!res.ok||!data.ok){
+      if(box)box.innerHTML=`<div class="checkResult checkFail"><b>❌ Not published</b><p>${escapeHtml(data?.verdict?.reason||data?.error||'The reel could not be published.')}</p></div>`;
+      return;
+    }
+    invalidateReelCache();
+    toast('🎉 Published — everyone can see it now');
+    addNotification('system','Reel published',`"${title}" is now live for all EduInsta users.`);
+    await openReel(data.reel.id);
+  }catch(err){
+    console.error(err);
+    if(box)box.innerHTML=`<div class="checkResult checkFail"><b>⚠️ Upload failed</b><p>We couldn't reach the server. Check your connection and try again.</p></div><button type="button" class="primary" onclick="publishUpload()">Try again</button>`;
+  }
 }
 
 /* ---------------- Downloads ---------------- */

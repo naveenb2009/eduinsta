@@ -485,7 +485,7 @@ function showFatalError(details){
 /* Declared with `var` (not `const`) so it is reachable as window.API_BASE —
    lets you flip modes from the browser console while testing:
        API_BASE='https://your-backend.onrender.com'; location.reload()  */
-var API_BASE='https://eduinsta-api.onrender.com';
+var API_BASE='';
 function serverMode(){return typeof API_BASE==='string' && API_BASE.length>0}
 function currentUserId(){return (account&&account.email)||profile.username||'anonymous'}
 

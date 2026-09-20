@@ -226,6 +226,7 @@ textarea.field{resize:vertical}
 .suggestTitle button{border:0;background:#14532d;color:#fff;border-radius:7px;padding:4px 9px;font-size:11px;margin-left:5px}
 .uploadOption{display:flex;align-items:center;gap:12px;width:100%;border:1px solid #ddd;background:#fff;border-radius:11px;padding:13px;text-align:left;margin:6px 0;font-weight:700}
 .uploadOption span{font-size:22px}
+a.uploadOption{text-decoration:none;color:#111;display:flex;align-items:center}
 .fieldLabel{display:block;font-weight:700;font-size:13px;margin:14px 2px 2px}
 .profileMenuCard,.settingSection{background:#fff;border:1px solid #ddd;border-radius:14px;margin:14px 0;overflow:hidden}
 .profileMenuCard h3,.settingSection h3{padding:13px 14px;margin:0;background:#f5f5f5;font-size:14px}
@@ -1404,16 +1405,75 @@ function followCreator(creator,e){
   saveState(); updateFollowUI(creator);
   if(activeHomeTab==='Following')home('Following');
 }
+/* ================= Sharing =================
+   navigator.share is often unavailable inside an Android WebView, which is why
+   sharing silently fell back to "copied to clipboard" instead of opening the
+   system share sheet. Three tiers, best first:
+     1. Capacitor Share plugin  -> the real Android/iOS share sheet
+                                   (WhatsApp, Instagram, Gmail, everything)
+     2. navigator.share         -> the browser's own sheet, where supported
+     3. clipboard / prompt      -> last resort so sharing is never a dead end */
+function nativeSharePlugin(){
+  return window.Capacitor?.isNativePlatform?.() ? (window.Capacitor.Plugins?.Share||null) : null;
+}
+async function shareContent({title,text,url,dialogTitle}){
+  const payload={title,text,...(url?{url}:{}),dialogTitle:dialogTitle||'Share via'};
+  const plugin=nativeSharePlugin();
+  if(plugin){
+    try{ await plugin.share(payload); return 'native'; }
+    catch(err){
+      /* The user closing the sheet also rejects — that is not a failure,
+         and must not trigger a clipboard fallback behind their back. */
+      if(String(err?.message||err).toLowerCase().includes('cancel'))return 'cancelled';
+      console.warn('Native share failed, falling back:',err);
+    }
+  }
+  if(navigator.share){
+    try{ await navigator.share(payload); return 'web'; }
+    catch(err){
+      if(err?.name==='AbortError')return 'cancelled';
+      console.warn('navigator.share failed, falling back:',err);
+    }
+  }
+  const full=url?`${text} ${url}`:text;
+  if(navigator.clipboard&&window.isSecureContext){
+    try{ await navigator.clipboard.writeText(full); toast('Link copied — paste it anywhere'); return 'clipboard'; }catch{}
+  }
+  showShareFallbackSheet(full);
+  return 'manual';
+}
+/* If nothing else worked, offer explicit destinations rather than a dead end. */
+function showShareFallbackSheet(text){
+  const enc=encodeURIComponent(text);
+  overlay.innerHTML=`<div class="modal" onclick="closeOverlay()"><div class="sheet" onclick="event.stopPropagation()">
+    <div class="commentHeader"><div><b>Share</b><div class="commentCount">Choose where to send it</div></div><button type="button" class="close" onclick="closeOverlay()">×</button></div>
+    <a class="uploadOption" href="https://wa.me/?text=${enc}" target="_blank" rel="noopener"><span>💬</span>WhatsApp</a>
+    <a class="uploadOption" href="https://t.me/share/url?url=${enc}" target="_blank" rel="noopener"><span>✈️</span>Telegram</a>
+    <a class="uploadOption" href="mailto:?subject=EduInsta&body=${enc}"><span>📧</span>Email</a>
+    <a class="uploadOption" href="sms:?body=${enc}"><span>💌</span>Messages</a>
+    <button type="button" class="uploadOption" onclick="copyShareText('${escapeAttr(text)}')"><span>📋</span>Copy text</button>
+    <button type="button" class="btnSecondary" onclick="closeOverlay()">Cancel</button>
+  </div></div>`;
+}
+function copyShareText(t){
+  if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(t).catch(()=>{});
+  else prompt('Copy this text',t);
+  closeOverlay(); toast('Copied');
+}
+
 async function shareReel(id,e){
   e?.stopPropagation();
-  const all=await allReels();
+  const all=await allReelsCached();
   const r=all.find(x=>x.id===id); if(!r)return;
-  const text=`${r.title} – EduInsta`;
-  try{
-    if(navigator.share){await navigator.share({title:"EduInsta",text})}
-    else if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(text);toast("Copied share text")}
-    else{prompt('Copy this share text',text)}
-  }catch{}
+  /* Include a real link when the reel lives on a server — otherwise there is
+     nothing for the recipient to open. */
+  const link=(serverMode()&&r.src&&/^https?:/.test(r.src))?r.src:null;
+  await shareContent({
+    title:'EduInsta',
+    text:`${r.title} — ${r.creator} on EduInsta`,
+    url:link,
+    dialogTitle:'Share this reel'
+  });
 }
 /* Report flow: a proper dropdown of reasons (spam, copyright, etc.) plus an
    optional detail box, matching how mainstream apps handle reports. Reports
@@ -1999,10 +2059,11 @@ function removeProfilePhoto(){
   saveState(); toast('Profile photo removed'); editProfilePage();
 }
 function shareProfile(){
-  const text=`${profile.name} — ${profile.username} on EduInsta`;
-  if(navigator.share){navigator.share({title:'EduInsta profile',text}).catch(()=>{})}
-  else if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(text).then(()=>toast('Profile text copied')).catch(()=>toast(text))}
-  else{prompt('Copy this profile text',text)}
+  shareContent({
+    title:'EduInsta profile',
+    text:`${profile.name} (${profile.username}) on EduInsta`,
+    dialogTitle:'Share profile'
+  });
 }
 
 /* ================= Interests ================= */

@@ -962,6 +962,16 @@ function blobUrlFor(obj){
    only the uploader can see - fine for a demo, not a platform. */
 var serverFeedCursor=null;
 var serverFeedExhausted=false;
+/* The server may hand back a RELATIVE video path (/api/video/...). Inside the
+   Android app the page origin is localhost, so a relative path resolves to
+   https://localhost/... and the video silently fails to load. Resolve any
+   relative src against the API host so it points at the real server. */
+function resolveMediaUrl(src){
+  if(!src)return src;
+  if(/^(https?:|blob:|data:)/i.test(src))return src;        // already absolute
+  if(!API_BASE)return src;                                   // prototype mode
+  return `${API_BASE.replace(/\/$/,'')}${src.startsWith('/')?'':'/'}${src}`;
+}
 async function fetchServerFeed(reset){
   if(reset){serverFeedCursor=null;serverFeedExhausted=false}
   const url=`${API_BASE}/api/feed?limit=30${serverFeedCursor?`&cursor=${encodeURIComponent(serverFeedCursor)}`:''}`;
@@ -970,15 +980,17 @@ async function fetchServerFeed(reset){
   const data=await res.json();
   serverFeedCursor=data.nextCursor;
   if(!data.nextCursor)serverFeedExhausted=true;
-  return data.reels||[];
+  return (data.reels||[]).map(r=>({...r,src:resolveMediaUrl(r.src)}));
 }
 async function allReels(){
   if(serverMode()){
     try{
       const remote=await fetchServerFeed(true);
-      /* Demo reels are kept alongside so the feed is never empty on a brand
-         new install with no uploads yet. */
-      return remote.length?remote:reels;
+      /* Show server reels AND the built-in demo reels together. Returning only
+         the remote list meant a single upload made every demo reel vanish,
+         leaving a feed that looked broken. Demos are de-duplicated by id. */
+      const remoteIds=new Set(remote.map(r=>r.id));
+      return [...remote,...reels.filter(r=>!remoteIds.has(r.id))];
     }catch(err){
       console.warn('Server feed unavailable, showing local content:',err);
       toast('Could not reach the server — showing offline content');

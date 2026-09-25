@@ -102,26 +102,15 @@ header{height:58px;position:fixed;top:0;left:0;right:0;z-index:20;background:#05
 .feed::-webkit-scrollbar{display:none}
 /* Each reel fills the space above the bottom nav. The 10px margin is the
    separation between reels, visible only mid-swipe. */
-.reel{height:calc(100vh - 176px);height:calc(100dvh - 176px - env(safe-area-inset-bottom));min-height:360px;scroll-snap-align:start;scroll-snap-stop:always;position:relative;background:#000;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;overflow:hidden;margin:0 0 10px;border-radius:0}
-/* ~80% of the card: the video. Starts right below the tabs row. */
-.reelMedia{position:relative;flex:1 1 auto;min-height:0;overflow:hidden;background:#000}
-/* ~20%: solid strip below the video with actions + creator + caption */
-.reelPanel{flex:0 0 auto;background:#000;padding:6px 12px 10px;position:relative;z-index:4}
+.reel{height:calc(100vh - 176px);height:calc(100dvh - 176px - env(safe-area-inset-bottom));min-height:360px;scroll-snap-align:start;scroll-snap-stop:always;position:relative;background:#000;overflow:hidden;margin:0 0 10px;border-radius:0}
+/* The video ALWAYS owns the whole reel - full width, full height, filled
+   edge to edge (object-fit:cover). Every reel looks and behaves the same
+   way, whatever shape the source clip is - vertical video, the app's own
+   format, is meant to fill the screen exactly like Instagram Reels. */
+.reelMedia{position:absolute;inset:0;overflow:hidden;background:#000}
+.reelPanel{position:absolute;left:0;right:0;bottom:0;z-index:4;background:linear-gradient(0deg,rgba(0,0,0,.85) 0%,rgba(0,0,0,.62) 55%,rgba(0,0,0,0) 100%);padding:26px 12px 10px}
 .reel:last-child{margin-bottom:0}
-/* Any space the video's shape leaves over is filled with a blurred, dimmed
-   copy of the CURRENT frame (painted into a tiny canvas - no second download)
-   instead of dead black bars. */
-.reelBackdrop{position:absolute;inset:0;width:100%;height:100%;z-index:0;filter:blur(22px) brightness(.5) saturate(1.3);transform:scale(1.25);pointer-events:none;opacity:0;transition:opacity .3s}
-.reelBackdrop.painted{opacity:1}
-/* Every frame is shown in full: contain, never cover, never zoom. */
-.reel video.reelMain{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center center;z-index:1}
-/* TALL video (would need more height than the space above the caption strip):
-   the video gets the whole reel height so it can use the full screen width,
-   and the caption strip floats over its bottom edge on a fade - Instagram style. */
-.reel.tallVideo .reelMedia{position:absolute;inset:0}
-.reel.tallVideo video.reelMain{object-position:center top}
-.reel.tallVideo .reelPanel{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(0deg,rgba(0,0,0,.82) 0%,rgba(0,0,0,.6) 55%,rgba(0,0,0,0) 100%);padding-top:26px;text-shadow:0 1px 3px rgba(0,0,0,.9)}
-.reel.tallVideo .reelProgress{bottom:var(--panelH,0px)}
+.reel video.reelMain{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center center;z-index:1}
 .reelProgress{position:absolute;left:0;right:0;bottom:0;height:14px;z-index:6;display:flex;align-items:flex-end;cursor:pointer}
 .reelProgress::before{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(255,255,255,.25)}
 .reelProgressFill{position:relative;height:3px;width:0;background:#5eead4;transition:width .25s linear}
@@ -1289,15 +1278,14 @@ function adSlotHTML(ad){
 
 function reelHTML(r){
   const liked=likes.includes(r.id), isSaved=saved.includes(r.id), isFollowing=following.includes(r.creator);
-  /* Frames are NEVER cropped (object-fit:contain). How much height a video
-     gets depends on its shape - see applyReelFit. */
+  /* Every video fills the whole reel edge to edge (object-fit:cover) - the
+     app is vertical-video only, so there is no letterboxing to manage. */
   const initial=escapeHtml(String(r.creator||'?').replace(/^@/,'').charAt(0).toUpperCase()||'?');
-  /* Instagram-style card: the video owns the top ~80% (.reelMedia) and a
-     solid strip underneath (.reelPanel) holds the actions and caption, so
-     nothing ever sits on top of the picture except the transparent top bar. */
+  /* Instagram-style card: the video fills the whole reel and a floating
+     strip (.reelPanel) with a dark fade holds the actions and caption over
+     its bottom edge, so any video shape gets shown as large as possible. */
   return `<section class="reel" data-id="${r.id}" data-creator="${escapeAttr(r.creator)}">
     <div class="reelMedia">
-      <canvas class="reelBackdrop" width="24" height="24" aria-hidden="true"></canvas>
       <video class="reelMain" src="${escapeAttr(r.src)}" playsinline loop preload="metadata" muted></video>
       <div class="shade"></div>
       <button type="button" class="playPauseBtn" aria-label="Play or pause" onclick="togglePlay(event,this)">▶</button>
@@ -1426,70 +1414,6 @@ function updatePlayIcon(v){
   if(btn){btn.textContent=v.paused?'▶':'❚❚';btn.setAttribute('aria-label',v.paused?'Play reel':'Pause reel')}
   reel.classList.toggle('paused',v.paused);
 }
-/* ================= Frame fitting =================
-   Rule: NEVER crop a frame, and use the full screen width whenever the shape
-   of the video allows it.
-   - 'stack'  : the video fits full-width in the space above the caption strip
-                (landscape, square, 3:4 ...). Caption strip sits below it.
-   - 'overlay': the video is too tall for that space, so it gets the whole reel
-                height (full width for anything up to ~9:16) and the caption
-                strip floats over its bottom on a fade.
-   Very tall videos (taller than the whole reel at full width) are the only
-   case with thin side bars - unavoidable without cropping or stretching. */
-function reelLayoutMode(vw,vh,boxW,reelH,panelH){
-  if(!(vw>0&&vh>0&&boxW>0&&reelH>0))return 'stack';
-  const neededH=boxW*vh/vw;                  // height at full width
-  return neededH>(reelH-panelH)+1?'overlay':'stack';
-}
-function applyReelFit(v){
-  const reel=v?.closest?.('.reel'); if(!reel)return;
-  const panel=reel.querySelector('.reelPanel');
-  const panelH=panel?panel.offsetHeight:0;
-  const mode=reelLayoutMode(v.videoWidth,v.videoHeight,reel.clientWidth,reel.clientHeight,panelH);
-  reel.classList.toggle('tallVideo',mode==='overlay');
-  reel.style.setProperty('--panelH',panelH+'px');
-}
-document.addEventListener('loadedmetadata',e=>{
-  if(e.target?.classList?.contains('reelMain'))applyReelFit(e.target);
-},true);
-let fitResizeTimer=null;
-window.addEventListener('resize',()=>{
-  clearTimeout(fitResizeTimer);
-  fitResizeTimer=setTimeout(()=>document.querySelectorAll('video.reelMain').forEach(v=>{if(v.videoWidth)applyReelFit(v)}),150);
-});
-
-/* ================= Blurred backdrop =================
-   Paints the visible frame into a 24x24 canvas a few times a second; CSS
-   blur stretches it over the whole media area. Drawing a cross-origin video
-   is allowed (we never READ the pixels), and the canvas is only touched once
-   a video actually has frame data, so it costs nothing otherwise. */
-function paintBackdrop(v){
-  if(!v||v.readyState<2)return;
-  const c=v.parentElement?.querySelector('canvas.reelBackdrop'); if(!c)return;
-  try{
-    const ctx=c.getContext('2d'); if(!ctx)return;
-    ctx.drawImage(v,0,0,c.width,c.height);
-    c.classList.add('painted');
-  }catch(_){/* decorative only */}
-}
-document.addEventListener('loadeddata',e=>{
-  if(e.target?.classList?.contains('reelMain'))paintBackdrop(e.target);
-},true);
-/* One repaint timer, alive only while some reel is actually playing. */
-let backdropTimer=null;
-function syncBackdropTimer(){
-  const playing=[...document.querySelectorAll('video.reelMain')].filter(v=>!v.paused&&!v.ended);
-  if(playing.length&&!backdropTimer){
-    backdropTimer=setInterval(()=>{
-      const live=[...document.querySelectorAll('video.reelMain')].filter(v=>!v.paused&&!v.ended);
-      live.forEach(paintBackdrop);
-      if(!live.length){clearInterval(backdropTimer);backdropTimer=null}
-    },300);
-  }
-}
-document.addEventListener('playing',e=>{
-  if(e.target?.classList?.contains('reelMain')){paintBackdrop(e.target);syncBackdropTimer()}
-},true);
 
 /* ================= Replay + progress ================= */
 function replayReel(e,btn){
@@ -1913,6 +1837,7 @@ function upload(){
   main.innerHTML=`<div class="panel">
     <h2>Upload Reel</h2>
     <p>Select a video from your device. It's stored locally in this browser after publishing.</p>
+    <p class="filterNote">EduInsta reels are vertical (9:16), like Instagram Reels. Landscape videos will be cropped to fill the screen.</p>
     <div class="uploadPicker">
       <button type="button" class="uploadCameraBtn" onclick="openUploadPicker()" aria-label="Add a video">📷</button>
       <div class="uploadPickHint" id="uploadPickHint"><b>Add a reel</b>Camera, gallery or files</div>
@@ -1951,7 +1876,15 @@ function onUploadFileChosen(){
   if(!f){if(p)p.innerHTML="";return}
   if(!f.type.startsWith("video/")){if(p)p.innerHTML="<p>❌ Please choose a video file.</p>";return}
   const u=URL.createObjectURL(f);
-  if(p)p.innerHTML=`<video src="${u}" controls playsinline style="width:100%;max-height:260px;border-radius:12px;background:#000"></video>`;
+  if(p){
+    p.innerHTML=`<video src="${u}" controls playsinline style="width:100%;max-height:260px;border-radius:12px;background:#000"></video><div id="uploadOrientationNote"></div>`;
+    const v=p.querySelector('video');
+    v.addEventListener('loadedmetadata',()=>{
+      const note=document.getElementById('uploadOrientationNote'); if(!note)return;
+      if(v.videoWidth>v.videoHeight)
+        note.innerHTML='<p class="filterNote">⚠️ This looks like a landscape video — it will be cropped to fill the vertical screen. For the full frame, record or export it vertically (9:16).</p>';
+    });
+  }
   if(hint)hint.innerHTML=`<b>Selected</b>${escapeHtml(f.name)}`;
 }
 var lastModerationVerdict=null;

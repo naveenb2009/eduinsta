@@ -26,7 +26,7 @@ button{cursor:pointer}
     linear-gradient(180deg,#05060f 0%,#0b0f1f 55%,#05060f 100%)}
 
 /* ---------- Header / bottom nav ---------- */
-header{height:58px;position:fixed;top:0;left:0;right:0;z-index:20;background:rgba(8,10,20,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:space-between;padding:0 14px;border-bottom:1px solid rgba(94,234,212,.16)}
+header{height:58px;position:fixed;top:0;left:0;right:0;z-index:20;background:linear-gradient(180deg,rgba(4,6,12,.72) 0%,rgba(4,6,12,.28) 70%,transparent 100%);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:space-between;padding:0 14px;border-bottom:0}
 .logo{font-weight:800;font-size:20px;color:#5eead4;background:linear-gradient(90deg,var(--brand-teal),var(--brand-purple));-webkit-background-clip:text;background-clip:text}
 @supports (-webkit-background-clip:text) or (background-clip:text){.logo{color:transparent}}
 .logoMark{width:30px;height:30px;flex:none;display:block}
@@ -46,7 +46,7 @@ header{height:58px;position:fixed;top:0;left:0;right:0;z-index:20;background:rgb
 .notifBody div{font-size:12px;color:#555;margin-top:2px;line-height:1.4}
 .notifBody small{display:block;color:#999;margin-top:5px;font-size:11px}
 .notifDot{width:8px;height:8px;border-radius:50%;background:#5eead4;flex:none;margin-top:6px}
-.bottom{background:rgba(6,8,16,.82);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-top:1px solid rgba(94,234,212,.14)}
+.bottom{background:#05070c;border-top:1px solid rgba(255,255,255,.08)}
 
 /* ---------- Auth gate (shown before first sign-in) ---------- */
 .app.authGateMode header,.app.authGateMode .bottom{display:none}
@@ -61,11 +61,17 @@ header{height:58px;position:fixed;top:0;left:0;right:0;z-index:20;background:rgb
 @supports (-webkit-background-clip:text) or (background-clip:text){.authGateLogo{color:transparent}}
 .authGateTag{color:#aaa;font-size:13px;margin-bottom:26px;text-align:center}
 .authGateCard{width:100%;max-width:420px;background:rgba(17,19,32,.86);border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.45)}
-.authGateTabs{display:flex;gap:5px;background:#1c1c1c;padding:4px;border-radius:12px;margin-bottom:16px}
+.authGateTabs{display:flex;gap:5px;background:rgba(255,255,255,.07);padding:4px;border-radius:12px;margin-bottom:16px}
 .authGateTabs button{flex:1;border:0;padding:10px;border-radius:9px;background:transparent;color:#999;font-weight:700}
 .authGateTabs button.on{background:linear-gradient(90deg,var(--brand-teal),var(--brand-purple));color:#04101a}
-.authGate .field{background:#1a1a1a;border:1px solid #333;color:#fff}
-.authGate .field::placeholder{color:#888}
+.authGate .field{background:#1f2540;border:1px solid #394166;color:#fff;transition:border-color .15s,box-shadow .15s}
+.authGate .field::placeholder{color:#9aa3c7}
+.authGate .field:focus{outline:none;border-color:#5eead4;box-shadow:0 0 0 3px rgba(94,234,212,.22);background:#232a48}
+/* Log in / Create account / Verify: brand gradient instead of a black slab */
+.authGate .primary,.authCard .primary{background:linear-gradient(90deg,var(--brand-teal),var(--brand-purple));color:#04101a;font-weight:800;border:0;box-shadow:0 6px 18px rgba(94,234,212,.22)}
+.authGate .primary:active,.authCard .primary:active{transform:scale(.98);filter:brightness(.95)}
+.authGate .primary:disabled,.authCard .primary:disabled{opacity:.55;box-shadow:none}
+.authGate input[type=checkbox]{accent-color:#5eead4}
 .passwordField{position:relative}
 .passwordField .field{padding-right:44px}
 .passwordToggle{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:transparent;border:0;color:inherit;font-size:16px;width:34px;height:34px;opacity:.85}
@@ -76,43 +82,61 @@ header{height:58px;position:fixed;top:0;left:0;right:0;z-index:20;background:rgb
 .termsRow{display:flex;align-items:flex-start;gap:8px;font-size:12px;color:#bbb;margin:10px 0}
 .termsRow input{margin-top:3px}
 .authGateHint{font-size:11px;color:#777;text-align:center;margin-top:14px;line-height:1.5}
-.bottom{position:fixed;z-index:30;bottom:0;left:0;right:0;height:70px;background:#090909;border-top:1px solid #292929;display:flex;justify-content:space-around;padding-bottom:env(safe-area-inset-bottom)}
+.bottom{position:fixed;z-index:30;bottom:0;left:0;right:0;height:70px;background:#05070c;border-top:0;display:flex;justify-content:space-around;padding-bottom:env(safe-area-inset-bottom)}
 .nav{flex:1;border:0;background:none;color:#aaa;font-size:11px}
 .nav b{display:block;font-size:21px;margin-bottom:3px}
 .nav.active{color:#5eead4}
 
 /* ---------- Home feed / reels ---------- */
-.homeTabs{position:fixed;z-index:25;top:66px;left:50%;transform:translateX(-50%);display:flex;gap:4px;padding:4px;background:rgba(255,255,255,.92);border:1px solid #ddd;border-radius:24px;box-shadow:0 2px 10px rgba(0,0,0,.12)}
-.homeTab{border:0;background:transparent;color:#666;padding:8px 14px;border-radius:18px;font-size:13px;font-weight:700;white-space:nowrap}
-.homeTab.active{background:#111;color:#fff}
+.homeTabs{position:fixed;z-index:25;top:56px;left:50%;transform:translateX(-50%);display:flex;gap:2px;padding:0;background:transparent;border:0;box-shadow:none}
+/* Transparent text tabs over the top of the video (Instagram's "Reels · Friends" row) */
+.homeTab{border:0;background:transparent;color:rgba(255,255,255,.72);padding:6px 11px 7px;font-size:14px;font-weight:700;white-space:nowrap;text-shadow:0 1px 4px rgba(0,0,0,.9);border-bottom:2px solid transparent;border-radius:0}
+.homeTab.active{color:#fff;border-bottom-color:#fff;background:transparent}
 /* scroll-padding-top makes each reel SNAP below the fixed header instead of
    underneath it — without it the top of every video sits behind the bar. */
-.feed{height:100vh;height:100dvh;overflow-y:auto;scroll-snap-type:y mandatory;padding:58px 0 70px;scroll-padding-top:58px;scroll-padding-bottom:70px;-webkit-overflow-scrolling:touch}
-/* 14px shaved off the height and given back as margin: that is the visible
-   dark band separating one reel from the next. */
-.reel{height:calc(100vh - 142px);height:calc(100dvh - 142px);min-height:420px;scroll-snap-align:start;scroll-snap-stop:always;position:relative;background:radial-gradient(120% 80% at 50% 50%,#141a2b 0%,#080a12 100%);display:flex;align-items:center;justify-content:center;overflow:hidden;margin:0 0 14px;border-radius:16px}
+/* Instagram-style: the feed owns the FULL screen and the header / bottom nav
+   float on top of it. Reserving space for them was what squeezed the video
+   into a small band in the middle. */
+/* The feed ends at the bottom nav, so the caption strip is never hidden under it. */
+.feed{height:calc(100vh - 70px);height:calc(100dvh - 70px - env(safe-area-inset-bottom));overflow-y:auto;scroll-snap-type:y mandatory;padding:0;scroll-padding:0;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.feed::-webkit-scrollbar{display:none}
+/* Each reel fills the space above the bottom nav. The 10px margin is the
+   separation between reels, visible only mid-swipe. */
+.reel{height:calc(100vh - 80px);height:calc(100dvh - 80px - env(safe-area-inset-bottom));min-height:420px;scroll-snap-align:start;scroll-snap-stop:always;position:relative;background:#000;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;overflow:hidden;margin:0 0 10px;border-radius:0}
+/* ~80% of the card: the video. Starts at the very top, under the transparent header. */
+.reelMedia{position:relative;flex:1 1 auto;min-height:0;overflow:hidden;background:#000}
+/* ~20%: solid strip below the video with actions + creator + caption */
+.reelPanel{flex:0 0 auto;background:#000;padding:6px 12px 10px;position:relative;z-index:4}
 .reel:last-child{margin-bottom:0}
-/* contain, not cover: cover cropped portrait and landscape content so hard
-   that most of the frame was lost. The reel's gradient background fills
-   any letterbox bars. */
-.reel video{width:100%;height:100%;object-fit:contain;background:#000;position:relative;z-index:1}
-.shade{position:absolute;inset:0;z-index:2;pointer-events:none;border-radius:16px;background:linear-gradient(180deg,rgba(0,0,0,.45) 0%,transparent 16%,transparent 58%,rgba(0,0,0,.72) 100%)}
+/* object-fit:cover fills the frame edge to edge (Instagram look). The "Fit"
+   button switches a reel to contain; the blurred copy behind then fills the
+   bars instead of dead black. */
+.reel video.reelMain{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1}
+.reel.fitWhole video.reelMain{object-fit:contain}
+.fitBtn{position:absolute;z-index:6;right:10px;bottom:10px;border:1px solid rgba(255,255,255,.35);background:rgba(0,0,0,.45);color:#fff;border-radius:14px;padding:4px 10px;font-size:12px;font-weight:700}
+.reelBlur{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+  filter:blur(28px) brightness(.5) saturate(1.2);transform:scale(1.2);z-index:0;pointer-events:none}
+.shade{position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(180deg,rgba(0,0,0,.55) 0%,rgba(0,0,0,.15) 16%,transparent 26%,transparent 85%,rgba(0,0,0,.35) 100%)}
 .playPauseBtn{position:absolute;z-index:6;left:50%;top:50%;transform:translate(-50%,-50%);width:58px;height:58px;border:1px solid rgba(255,255,255,.75);border-radius:50%;background:rgba(0,0,0,.55);color:#fff;font-size:21px;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .15s}
-.reel.paused .playPauseBtn,.reel:active .playPauseBtn{opacity:1}
+.reel.paused .playPauseBtn,.reelMedia:active .playPauseBtn{opacity:1}
 .playPrompt{position:absolute;z-index:8;left:50%;top:50%;transform:translate(-50%,-50%);border:0;border-radius:999px;background:rgba(0,0,0,.85);color:#fff;padding:13px 18px;font-weight:700;box-shadow:0 3px 14px #0008}
-.info{position:absolute;left:15px;right:62px;bottom:20px;z-index:4;text-shadow:0 1px 4px rgba(0,0,0,.85)}
-.creator{font-weight:700;font-size:16px;margin-bottom:8px;display:flex;align-items:center;flex-wrap:wrap;gap:7px}
-.follow{border:1px solid #5eead4;color:#5eead4;background:transparent;border-radius:14px;padding:4px 9px;font-size:12px}
+.info{position:static;padding:2px 2px 0}
+.creator{font-weight:700;font-size:14px;margin-bottom:4px;display:flex;align-items:center;gap:8px;min-width:0}
+.reelAvatar{width:28px;height:28px;flex:0 0 28px;border-radius:50%;background:linear-gradient(135deg,#5eead4,#8b5cf6);color:#04121a;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800}
+.creatorName{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.follow{flex:0 0 auto;border:1px solid rgba(255,255,255,.55);color:#fff;background:transparent;border-radius:8px;padding:3px 10px;font-size:12px;font-weight:700}
 .follow.on{background:#5eead4;color:#042f2b;border-color:#5eead4}
-.title{font-size:18px;font-weight:700;margin:8px 0}
-.meta{font-size:13px;color:#ccc;line-height:1.4}
-.actions{position:absolute;right:6px;bottom:20px;z-index:5;display:flex;flex-direction:column;gap:16px;align-items:center}
+.title{font-size:15px;font-weight:700;margin:2px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.meta{font-size:12.5px;color:#c9ccd3;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.meta b{color:#e7e9ee;font-weight:600}
+.actions{position:static;display:flex;justify-content:space-between;align-items:center;padding:2px 0 6px}
+.actGroup{display:flex;align-items:center;gap:4px}
 /* The old dark boxes covered roughly a quarter of the frame. Transparent
    icons with a drop shadow stay readable over any video without hiding it. */
-.act{width:46px;border:0;background:transparent;color:#fff;padding:0;display:flex;flex-direction:column;align-items:center;gap:2px;-webkit-tap-highlight-color:transparent}
+.act{width:auto;min-width:40px;height:40px;border:0;background:transparent;color:#fff;padding:0 6px;display:flex;flex-direction:row;align-items:center;justify-content:center;gap:4px;-webkit-tap-highlight-color:transparent}
 .act:active{transform:scale(.88)}
-.act span{display:block;font-size:26px;line-height:1;filter:drop-shadow(0 1px 3px rgba(0,0,0,.85))}
-.act small{font-size:10px;display:block;margin-top:1px;text-shadow:0 1px 3px rgba(0,0,0,.9);font-weight:600}
+.act span{display:block;font-size:24px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))}
+.act small{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .act.liked{color:#ff5d73}
 .act.saved{color:#5eead4}
 .act.soundOn{color:#5eead4}
@@ -345,10 +369,9 @@ a.uploadOption{text-decoration:none;color:#111;display:flex;align-items:center}
     padding:72px 0 86px;
     scroll-padding-top:72px;
   }
+  .feed{height:100vh;height:100dvh}
   .reel{
-    height:auto;
-    aspect-ratio:9/16;
-    max-height:calc(100vh - 170px);
+    height:calc(100vh - 170px);
     min-height:0;
     margin:0 0 24px;
     border-radius:20px;
@@ -356,8 +379,8 @@ a.uploadOption{text-decoration:none;color:#111;display:flex;align-items:center}
     box-shadow:0 12px 40px rgba(0,0,0,.5);
   }
   .reel:last-child{margin-bottom:10px}
-  .reel video,.shade{border-radius:20px}
-  .homeTabs{top:70px}
+  .reelPanel{padding:8px 14px 12px}
+  .homeTabs{top:12px}
   .panel{max-width:760px;margin:0 auto;left:0;right:0}
 }
 
@@ -367,7 +390,8 @@ a.uploadOption{text-decoration:none;color:#111;display:flex;align-items:center}
 }
 
 @media(max-width:390px){
-  .homeTabs{top:62px}.homeTab{padding:7px 11px;font-size:12px}
+  .homeTabs{top:54px}.homeTab{padding:6px 8px 7px;font-size:13px}
+  .act{min-width:36px;padding:0 4px}
   .profileStats b{font-size:15px}.profileStats small{font-size:9px}
   .interestGrid{grid-template-columns:1fr}
   .networkQuick button{font-size:11px}
@@ -398,7 +422,7 @@ a.uploadOption{text-decoration:none;color:#111;display:flex;align-items:center}
 .payMethod input{margin:0}
 
 /* ---------- Ads ---------- */
-.adSlot{background:linear-gradient(160deg,#101826,#1a1230);flex-direction:column;padding:26px 22px;text-align:center}
+.adSlot{background:linear-gradient(160deg,#101826,#1a1230);flex-direction:column;align-items:center;justify-content:center;padding:26px 22px;text-align:center}
 .adBadge{position:absolute;left:14px;top:14px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);border-radius:10px;padding:3px 9px;font-size:11px;letter-spacing:.03em}
 .adContent{max-width:340px}
 .adSponsor{color:#5eead4;font-weight:700;font-size:13px;margin-bottom:8px}
@@ -1196,7 +1220,7 @@ function applyVideoWindow(){
     if(d<best){best=d;currentIndex=i}
   });
   sections.forEach((sec,i)=>{
-    const v=sec.querySelector('video');
+    const v=sec.querySelector('video.reelMain');
     if(!v)return;
     const near=Math.abs(i-currentIndex)<=VIDEO_WINDOW;
     const real=v.dataset.src||v.getAttribute('src');
@@ -1207,6 +1231,26 @@ function applyVideoWindow(){
       v.pause();
       v.removeAttribute('src');
       v.load();               // releases the decoder and buffered data
+    }
+    /* The blurred backdrop is a SECOND decoder, so it is only ever loaded for
+       the reel actually on screen. Loading one per windowed reel would double
+       video memory for a purely decorative layer. */
+    const blur=sec.querySelector('video.reelBlur');
+    if(!blur)return;
+    const mainSrc=v.getAttribute('src')||v.dataset.src;
+    if(i===currentIndex&&mainSrc){
+      /* Force the property, not just the attribute: the backdrop playing audio
+         would double every sound. */
+      blur.muted=true; blur.volume=0;
+      if(blur.getAttribute('src')!==mainSrc){
+        blur.setAttribute('src',mainSrc);
+        blur.load();
+      }
+      blur.play().catch(()=>{});   // decorative: failure is harmless
+    }else if(blur.getAttribute('src')){
+      blur.pause();
+      blur.removeAttribute('src');
+      blur.load();
     }
   });
 }
@@ -1248,22 +1292,36 @@ function adSlotHTML(ad){
 
 function reelHTML(r){
   const liked=likes.includes(r.id), isSaved=saved.includes(r.id), isFollowing=following.includes(r.creator);
+  const initial=escapeHtml(String(r.creator||'?').replace(/^@/,'').charAt(0).toUpperCase()||'?');
+  /* Instagram-style card: the video owns the top ~80% (.reelMedia) and a
+     solid strip underneath (.reelPanel) holds the actions and caption, so
+     nothing ever sits on top of the picture except the transparent top bar. */
   return `<section class="reel" data-id="${r.id}" data-creator="${escapeAttr(r.creator)}">
-    <video src="${escapeAttr(r.src)}" playsinline loop preload="metadata" muted></video>
-    <div class="shade"></div>
-    <button type="button" class="playPauseBtn" aria-label="Play or pause" onclick="togglePlay(event,this)">▶</button>
-    <div class="info">
-      <div class="creator">${escapeHtml(r.creator)}<button type="button" class="follow ${isFollowing?'on':''}" onclick="followCreator('${escapeAttr(r.creator)}',event)">${isFollowing?"Following":"Follow"}</button></div>
-      <div class="title">${escapeHtml(r.title)}</div>
-      <div class="meta">${escapeHtml(r.cat)} • ${escapeHtml(r.sub)}<br>${escapeHtml(r.desc||"Educational video on EduInsta.")}</div>
+    <div class="reelMedia">
+      <video class="reelBlur" playsinline loop muted preload="none" aria-hidden="true" tabindex="-1"></video>
+      <video class="reelMain" src="${escapeAttr(r.src)}" playsinline loop preload="metadata" muted></video>
+      <div class="shade"></div>
+      <button type="button" class="playPauseBtn" aria-label="Play or pause" onclick="togglePlay(event,this)">▶</button>
+      <button type="button" class="fitBtn" aria-label="Show the whole video" onclick="toggleFit(event,this)">⤢ Fit</button>
     </div>
-    <div class="actions">
-      <button type="button" class="act soundBtn ${soundOn?'soundOn':''}" onclick="toggleSound(event,this)"><span>${soundOn?'🔊':'🔇'}</span><small>${soundOn?'Sound':'Muted'}</small></button>
-      <button type="button" class="act likeBtn ${liked?"liked":""}" onclick="toggleLike(${r.id},event)"><span>♥</span><small>${liked?"Liked":"Like"}</small></button>
-      <button type="button" class="act" onclick="commentsPanel(${r.id},event)"><span>💬</span><small>Comment</small></button>
-      <button type="button" class="act saveBtn ${isSaved?"saved":""}" onclick="toggleSave(${r.id},event)"><span>🔖</span><small>${isSaved?"Saved":"Save"}</small></button>
-      <button type="button" class="act" onclick="shareReel(${r.id},event)"><span>↗</span><small>Share</small></button>
-      <button type="button" class="act" onclick="reportReel(${r.id},event)"><span>⋮</span><small>More</small></button>
+    <div class="reelPanel">
+      <div class="actions">
+        <div class="actGroup">
+          <button type="button" class="act likeBtn ${liked?"liked":""}" aria-label="Like" onclick="toggleLike(${r.id},event)"><span>♥</span><small>${liked?"Liked":"Like"}</small></button>
+          <button type="button" class="act" aria-label="Comments" onclick="commentsPanel(${r.id},event)"><span>💬</span><small>Comment</small></button>
+          <button type="button" class="act" aria-label="Share" onclick="shareReel(${r.id},event)"><span>↗</span><small>Share</small></button>
+        </div>
+        <div class="actGroup">
+          <button type="button" class="act soundBtn ${soundOn?'soundOn':''}" aria-label="Sound" onclick="toggleSound(event,this)"><span>${soundOn?'🔊':'🔇'}</span><small>${soundOn?'Sound':'Muted'}</small></button>
+          <button type="button" class="act saveBtn ${isSaved?"saved":""}" aria-label="Save" onclick="toggleSave(${r.id},event)"><span>🔖</span><small>${isSaved?"Saved":"Save"}</small></button>
+          <button type="button" class="act" aria-label="More options" onclick="reportReel(${r.id},event)"><span>⋮</span><small>More</small></button>
+        </div>
+      </div>
+      <div class="info">
+        <div class="creator"><span class="reelAvatar" aria-hidden="true">${initial}</span><span class="creatorName">${escapeHtml(r.creator)}</span><button type="button" class="follow ${isFollowing?'on':''}" onclick="followCreator('${escapeAttr(r.creator)}',event)">${isFollowing?"Following":"Follow"}</button></div>
+        <div class="title">${escapeHtml(r.title)}</div>
+        <div class="meta"><b>${escapeHtml(r.cat)} • ${escapeHtml(r.sub)}</b> · ${escapeHtml(r.desc||"Educational video on EduInsta.")}</div>
+      </div>
     </div>
   </section>`;
 }
@@ -1302,7 +1360,7 @@ function unlockAudioOnFirstGesture(){
   if(hasUserGesture)return;
   hasUserGesture=true;
   if(!soundOn)return;
-  const playing=[...document.querySelectorAll('.reel video')].find(v=>!v.paused);
+  const playing=[...document.querySelectorAll('.reel video.reelMain')].find(v=>!v.paused);
   if(playing){
     applySoundToVideo(playing);
     if(playing.paused)playing.play().catch(()=>{});
@@ -1326,10 +1384,10 @@ function observeVideos(){
         }
         return;
       }
-      const v=entry.target.querySelector("video");
+      const v=entry.target.querySelector("video.reelMain");
       if(!v)return;
       if(entry.isIntersecting){
-        document.querySelectorAll(".reel video").forEach(x=>{if(x!==v){x.pause();x.muted=true}});
+        document.querySelectorAll(".reel video.reelMain").forEach(x=>{if(x!==v){x.pause();x.muted=true}});
         applySoundToVideo(v);
         /* Sound is wanted but not yet unlocked: the reel still plays (muted),
            and we surface a one-tap prompt instead of leaving the user to
@@ -1356,7 +1414,7 @@ function observeVideos(){
   },{threshold:.65});
   document.querySelectorAll(".reel").forEach(sec=>{
     feedObserver.observe(sec);
-    const v=sec.querySelector("video");
+    const v=sec.querySelector("video.reelMain");
     if(v){
       v.onclick=()=>{v.paused?v.play().catch(()=>{}):v.pause();updatePlayIcon(v)};
     }
@@ -1368,15 +1426,24 @@ function updatePlayIcon(v){
   if(btn){btn.textContent=v.paused?'▶':'❚❚';btn.setAttribute('aria-label',v.paused?'Play reel':'Pause reel')}
   reel.classList.toggle('paused',v.paused);
 }
+/* Videos FILL the frame by default (like Instagram). Wide videos with text at
+   the edges can be switched to show the whole picture - per reel. */
+function toggleFit(e,btn){
+  e?.stopPropagation();
+  const reel=btn?.closest('.reel'); if(!reel)return;
+  const fit=reel.classList.toggle('fitWhole');
+  btn.textContent=fit?'⤢ Fill':'⤢ Fit';
+  btn.setAttribute('aria-label',fit?'Fill the screen':'Show the whole video');
+}
 function togglePlay(e,btn){
   e?.stopPropagation();
-  const v=btn?.closest('.reel')?.querySelector('video'); if(!v)return;
+  const v=btn?.closest('.reel')?.querySelector('video.reelMain'); if(!v)return;
   if(v.paused)v.play().catch(()=>{}); else v.pause();
   updatePlayIcon(v);
 }
 function toggleSound(e,btn){
   e?.stopPropagation();
-  const reel=btn.closest('.reel'), v=reel?.querySelector('video'); if(!v)return;
+  const reel=btn.closest('.reel'), v=reel?.querySelector('video.reelMain'); if(!v)return;
   hasUserGesture=true;              // tapping the button IS the gesture
   soundOn=!soundOn;                 // this is a preference, not a per-reel state
   saveSoundPref();
@@ -1396,7 +1463,7 @@ function showPlaybackPrompt(reel,v){
     v.play().then(()=>{p.remove();updatePlayIcon(v);applySoundToVideo(v)})
             .catch(()=>toast('Playback was blocked by the browser.'));
   };
-  reel.appendChild(p);
+  (reel.querySelector('.reelMedia')||reel).appendChild(p);
 }
 document.addEventListener('error',e=>{if(e.target?.tagName==='VIDEO')toast('This video could not be loaded')},true);
 /* Record watch history only for videos inside the main feed (.reel) - not the
@@ -1747,9 +1814,9 @@ async function openReel(id,srcHint){
     const reelEl=document.querySelector(`.reel[data-id="${id}"]`);
     if(!reelEl)return;
     reelEl.scrollIntoView({behavior:"smooth",block:"start"});
-    const v=reelEl.querySelector("video");
+    const v=reelEl.querySelector("video.reelMain");
     if(!v)return;
-    document.querySelectorAll(".reel video").forEach(x=>{if(x!==v){x.pause()}});
+    document.querySelectorAll(".reel video.reelMain").forEach(x=>{if(x!==v){x.pause()}});
     hasUserGesture=true;            // opening a specific reel is a deliberate action
     applySoundToVideo(v);
     const attempt=v.play();

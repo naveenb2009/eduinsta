@@ -26,7 +26,7 @@ button{cursor:pointer}
     linear-gradient(180deg,#05060f 0%,#0b0f1f 55%,#05060f 100%)}
 
 /* ---------- Header / bottom nav ---------- */
-header{height:58px;position:fixed;top:0;left:0;right:0;z-index:20;background:rgba(8,10,20,.68);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:space-between;padding:0 14px;border-bottom:1px solid rgba(94,234,212,.16)}
+header{height:58px;position:fixed;top:0;left:0;right:0;z-index:20;background:rgba(8,10,20,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:space-between;padding:0 14px;border-bottom:1px solid rgba(94,234,212,.16)}
 .logo{font-weight:800;font-size:20px;color:#5eead4;background:linear-gradient(90deg,var(--brand-teal),var(--brand-purple));-webkit-background-clip:text;background-clip:text}
 @supports (-webkit-background-clip:text) or (background-clip:text){.logo{color:transparent}}
 .logoMark{width:30px;height:30px;flex:none;display:block}
@@ -85,23 +85,34 @@ header{height:58px;position:fixed;top:0;left:0;right:0;z-index:20;background:rgb
 .homeTabs{position:fixed;z-index:25;top:66px;left:50%;transform:translateX(-50%);display:flex;gap:4px;padding:4px;background:rgba(255,255,255,.92);border:1px solid #ddd;border-radius:24px;box-shadow:0 2px 10px rgba(0,0,0,.12)}
 .homeTab{border:0;background:transparent;color:#666;padding:8px 14px;border-radius:18px;font-size:13px;font-weight:700;white-space:nowrap}
 .homeTab.active{background:#111;color:#fff}
-.feed{height:100vh;height:100dvh;overflow-y:auto;scroll-snap-type:y mandatory;padding-top:58px;padding-bottom:70px}
-.reel{height:calc(100vh - 128px);height:calc(100dvh - 128px);min-height:460px;scroll-snap-align:start;position:relative;background:#101010;border-bottom:1px solid #222;display:flex;align-items:center;justify-content:center;overflow:hidden}
-.reel video{width:100%;height:100%;object-fit:cover;background:#111}
-.shade{position:absolute;inset:0;background:linear-gradient(transparent 42%,rgba(0,0,0,.82) 100%);pointer-events:none}
+/* scroll-padding-top makes each reel SNAP below the fixed header instead of
+   underneath it — without it the top of every video sits behind the bar. */
+.feed{height:100vh;height:100dvh;overflow-y:auto;scroll-snap-type:y mandatory;padding:58px 0 70px;scroll-padding-top:58px;scroll-padding-bottom:70px;-webkit-overflow-scrolling:touch}
+/* 14px shaved off the height and given back as margin: that is the visible
+   dark band separating one reel from the next. */
+.reel{height:calc(100vh - 142px);height:calc(100dvh - 142px);min-height:420px;scroll-snap-align:start;scroll-snap-stop:always;position:relative;background:radial-gradient(120% 80% at 50% 50%,#141a2b 0%,#080a12 100%);display:flex;align-items:center;justify-content:center;overflow:hidden;margin:0 0 14px;border-radius:16px}
+.reel:last-child{margin-bottom:0}
+/* contain, not cover: cover cropped portrait and landscape content so hard
+   that most of the frame was lost. The reel's gradient background fills
+   any letterbox bars. */
+.reel video{width:100%;height:100%;object-fit:contain;background:#000;position:relative;z-index:1}
+.shade{position:absolute;inset:0;z-index:2;pointer-events:none;border-radius:16px;background:linear-gradient(180deg,rgba(0,0,0,.45) 0%,transparent 16%,transparent 58%,rgba(0,0,0,.72) 100%)}
 .playPauseBtn{position:absolute;z-index:6;left:50%;top:50%;transform:translate(-50%,-50%);width:58px;height:58px;border:1px solid rgba(255,255,255,.75);border-radius:50%;background:rgba(0,0,0,.55);color:#fff;font-size:21px;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .15s}
 .reel.paused .playPauseBtn,.reel:active .playPauseBtn{opacity:1}
 .playPrompt{position:absolute;z-index:8;left:50%;top:50%;transform:translate(-50%,-50%);border:0;border-radius:999px;background:rgba(0,0,0,.85);color:#fff;padding:13px 18px;font-weight:700;box-shadow:0 3px 14px #0008}
-.info{position:absolute;left:15px;right:76px;bottom:18px;z-index:3}
+.info{position:absolute;left:15px;right:62px;bottom:20px;z-index:4;text-shadow:0 1px 4px rgba(0,0,0,.85)}
 .creator{font-weight:700;font-size:16px;margin-bottom:8px;display:flex;align-items:center;flex-wrap:wrap;gap:7px}
 .follow{border:1px solid #5eead4;color:#5eead4;background:transparent;border-radius:14px;padding:4px 9px;font-size:12px}
 .follow.on{background:#5eead4;color:#042f2b;border-color:#5eead4}
 .title{font-size:18px;font-weight:700;margin:8px 0}
 .meta{font-size:13px;color:#ccc;line-height:1.4}
-.actions{position:absolute;right:10px;bottom:18px;z-index:4;display:flex;flex-direction:column;gap:12px}
-.act{width:52px;border:0;background:rgba(20,20,20,.78);color:#fff;border-radius:14px;padding:8px 4px}
-.act span{display:block;font-size:21px}
-.act small{font-size:10px;display:block;margin-top:2px}
+.actions{position:absolute;right:6px;bottom:20px;z-index:5;display:flex;flex-direction:column;gap:16px;align-items:center}
+/* The old dark boxes covered roughly a quarter of the frame. Transparent
+   icons with a drop shadow stay readable over any video without hiding it. */
+.act{width:46px;border:0;background:transparent;color:#fff;padding:0;display:flex;flex-direction:column;align-items:center;gap:2px;-webkit-tap-highlight-color:transparent}
+.act:active{transform:scale(.88)}
+.act span{display:block;font-size:26px;line-height:1;filter:drop-shadow(0 1px 3px rgba(0,0,0,.85))}
+.act small{font-size:10px;display:block;margin-top:1px;text-shadow:0 1px 3px rgba(0,0,0,.9);font-weight:600}
 .act.liked{color:#ff5d73}
 .act.saved{color:#5eead4}
 .act.soundOn{color:#5eead4}
@@ -331,35 +342,22 @@ a.uploadOption{text-decoration:none;color:#111;display:flex;align-items:center}
   .feed{
     max-width:430px;
     margin:0 auto;
-    padding-top:72px;
-    padding-bottom:86px;
+    padding:72px 0 86px;
     scroll-padding-top:72px;
   }
   .reel{
-    height:auto;                 /* let the card size to its content */
-    aspect-ratio:9/16;           /* keep the familiar reel shape */
-    max-height:calc(100vh - 160px);
+    height:auto;
+    aspect-ratio:9/16;
+    max-height:calc(100vh - 170px);
     min-height:0;
-    margin:0 0 22px;
-    border-radius:18px;
+    margin:0 0 24px;
+    border-radius:20px;
     border:1px solid rgba(255,255,255,.10);
-    box-shadow:0 10px 34px rgba(0,0,0,.45);
-    background:#0d1018;
+    box-shadow:0 12px 40px rgba(0,0,0,.5);
   }
-  .reel:last-child{margin-bottom:8px}
-  /* contain, not cover: show the whole frame rather than cropping it */
-  .reel video{object-fit:contain;background:#000;border-radius:18px}
-  /* the gradient and controls must follow the rounded corners */
-  .shade{border-radius:18px}
-  .adSlot{border-radius:18px}
-
-  /* a visible gap is clearer than a hairline border */
-  .reel{border-bottom:1px solid rgba(255,255,255,.10)}
-
-  /* tabs sit above the column, not pinned to the far left */
+  .reel:last-child{margin-bottom:10px}
+  .reel video,.shade{border-radius:20px}
   .homeTabs{top:70px}
-
-  /* wider gutters for the rest of the app so text isn't a full-width smear */
   .panel{max-width:760px;margin:0 auto;left:0;right:0}
 }
 

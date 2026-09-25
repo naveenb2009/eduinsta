@@ -318,6 +318,56 @@ a.uploadOption{text-decoration:none;color:#111;display:flex;align-items:center}
 .erUploadPhoto input{position:absolute;inset:0;opacity:0;cursor:pointer}
 .erPhotoActions small{font-size:11px;color:#777;line-height:1.35}
 
+
+/* ================= Desktop / wide-screen layout =================
+   The feed is designed phone-first: each reel fills the viewport and the
+   video uses object-fit:cover. On a wide laptop that makes every reel short
+   and very wide, so cover crops the video badly ("half visible"), and a 1px
+   border is not enough separation between reels.
+
+   From 700px up we switch to a centred phone-width column of distinct cards.
+   Everything below 700px is untouched, so mobile behaviour is unchanged. */
+@media (min-width:700px){
+  .feed{
+    max-width:430px;
+    margin:0 auto;
+    padding-top:72px;
+    padding-bottom:86px;
+    scroll-padding-top:72px;
+  }
+  .reel{
+    height:auto;                 /* let the card size to its content */
+    aspect-ratio:9/16;           /* keep the familiar reel shape */
+    max-height:calc(100vh - 160px);
+    min-height:0;
+    margin:0 0 22px;
+    border-radius:18px;
+    border:1px solid rgba(255,255,255,.10);
+    box-shadow:0 10px 34px rgba(0,0,0,.45);
+    background:#0d1018;
+  }
+  .reel:last-child{margin-bottom:8px}
+  /* contain, not cover: show the whole frame rather than cropping it */
+  .reel video{object-fit:contain;background:#000;border-radius:18px}
+  /* the gradient and controls must follow the rounded corners */
+  .shade{border-radius:18px}
+  .adSlot{border-radius:18px}
+
+  /* a visible gap is clearer than a hairline border */
+  .reel{border-bottom:1px solid rgba(255,255,255,.10)}
+
+  /* tabs sit above the column, not pinned to the far left */
+  .homeTabs{top:70px}
+
+  /* wider gutters for the rest of the app so text isn't a full-width smear */
+  .panel{max-width:760px;margin:0 auto;left:0;right:0}
+}
+
+/* Very wide screens: keep the reading column sane */
+@media (min-width:1100px){
+  .panel{max-width:860px}
+}
+
 @media(max-width:390px){
   .homeTabs{top:62px}.homeTab{padding:7px 11px;font-size:12px}
   .profileStats b{font-size:15px}.profileStats small{font-size:9px}

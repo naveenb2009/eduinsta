@@ -26,7 +26,7 @@ button{cursor:pointer}
     linear-gradient(180deg,#05060f 0%,#0b0f1f 55%,#05060f 100%)}
 
 /* ---------- Header / bottom nav ---------- */
-header{height:58px;position:fixed;top:0;left:0;right:0;z-index:20;background:linear-gradient(180deg,rgba(4,6,12,.72) 0%,rgba(4,6,12,.28) 70%,transparent 100%);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:space-between;padding:0 14px;border-bottom:0}
+header{height:58px;position:fixed;top:0;left:0;right:0;z-index:20;background:#05070c;display:flex;align-items:center;justify-content:space-between;padding:0 14px;border-bottom:0}
 .logo{font-weight:800;font-size:20px;color:#5eead4;background:linear-gradient(90deg,var(--brand-teal),var(--brand-purple));-webkit-background-clip:text;background-clip:text}
 @supports (-webkit-background-clip:text) or (background-clip:text){.logo{color:transparent}}
 .logoMark{width:30px;height:30px;flex:none;display:block}
@@ -88,9 +88,9 @@ header{height:58px;position:fixed;top:0;left:0;right:0;z-index:20;background:lin
 .nav.active{color:#5eead4}
 
 /* ---------- Home feed / reels ---------- */
-.homeTabs{position:fixed;z-index:25;top:56px;left:50%;transform:translateX(-50%);display:flex;gap:2px;padding:0;background:transparent;border:0;box-shadow:none}
-/* Transparent text tabs over the top of the video (Instagram's "Reels · Friends" row) */
-.homeTab{border:0;background:transparent;color:rgba(255,255,255,.72);padding:6px 11px 7px;font-size:14px;font-weight:700;white-space:nowrap;text-shadow:0 1px 4px rgba(0,0,0,.9);border-bottom:2px solid transparent;border-radius:0}
+/* Own row directly under the header - never on top of the video. */
+.homeTabs{position:fixed;z-index:25;top:58px;left:0;right:0;height:38px;display:flex;justify-content:center;align-items:flex-end;gap:2px;padding:0;background:#05070c;border:0;box-shadow:none}
+.homeTab{border:0;background:transparent;color:rgba(255,255,255,.6);padding:6px 12px 7px;font-size:14px;font-weight:700;white-space:nowrap;border-bottom:2px solid transparent;border-radius:0}
 .homeTab.active{color:#fff;border-bottom-color:#fff;background:transparent}
 /* scroll-padding-top makes each reel SNAP below the fixed header instead of
    underneath it — without it the top of every video sits behind the bar. */
@@ -98,24 +98,18 @@ header{height:58px;position:fixed;top:0;left:0;right:0;z-index:20;background:lin
    float on top of it. Reserving space for them was what squeezed the video
    into a small band in the middle. */
 /* The feed ends at the bottom nav, so the caption strip is never hidden under it. */
-.feed{height:calc(100vh - 70px);height:calc(100dvh - 70px - env(safe-area-inset-bottom));overflow-y:auto;scroll-snap-type:y mandatory;padding:0;scroll-padding:0;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.feed{margin-top:96px;height:calc(100vh - 166px);height:calc(100dvh - 166px - env(safe-area-inset-bottom));overflow-y:auto;scroll-snap-type:y mandatory;padding:0;scroll-padding:0;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .feed::-webkit-scrollbar{display:none}
 /* Each reel fills the space above the bottom nav. The 10px margin is the
    separation between reels, visible only mid-swipe. */
-.reel{height:calc(100vh - 80px);height:calc(100dvh - 80px - env(safe-area-inset-bottom));min-height:420px;scroll-snap-align:start;scroll-snap-stop:always;position:relative;background:#000;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;overflow:hidden;margin:0 0 10px;border-radius:0}
-/* ~80% of the card: the video. Starts at the very top, under the transparent header. */
+.reel{height:calc(100vh - 176px);height:calc(100dvh - 176px - env(safe-area-inset-bottom));min-height:360px;scroll-snap-align:start;scroll-snap-stop:always;position:relative;background:#000;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;overflow:hidden;margin:0 0 10px;border-radius:0}
+/* ~80% of the card: the video. Starts right below the tabs row. */
 .reelMedia{position:relative;flex:1 1 auto;min-height:0;overflow:hidden;background:#000}
 /* ~20%: solid strip below the video with actions + creator + caption */
 .reelPanel{flex:0 0 auto;background:#000;padding:6px 12px 10px;position:relative;z-index:4}
 .reel:last-child{margin-bottom:0}
-/* object-fit:cover fills the frame edge to edge (Instagram look). The "Fit"
-   button switches a reel to contain; the blurred copy behind then fills the
-   bars instead of dead black. */
-.reel video.reelMain{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1}
-.reel.fitWhole video.reelMain{object-fit:contain}
-.fitBtn{position:absolute;z-index:6;right:10px;bottom:10px;border:1px solid rgba(255,255,255,.35);background:rgba(0,0,0,.45);color:#fff;border-radius:14px;padding:4px 10px;font-size:12px;font-weight:700}
-.reelBlur{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
-  filter:blur(28px) brightness(.5) saturate(1.2);transform:scale(1.2);z-index:0;pointer-events:none}
+/* object-fit:cover always fills the frame edge to edge (Instagram look). */
+.reel video.reelMain{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;transform:scale(var(--zoom,1));transform-origin:center}
 .shade{position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(180deg,rgba(0,0,0,.55) 0%,rgba(0,0,0,.15) 16%,transparent 26%,transparent 85%,rgba(0,0,0,.35) 100%)}
 .playPauseBtn{position:absolute;z-index:6;left:50%;top:50%;transform:translate(-50%,-50%);width:58px;height:58px;border:1px solid rgba(255,255,255,.75);border-radius:50%;background:rgba(0,0,0,.55);color:#fff;font-size:21px;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .15s}
 .reel.paused .playPauseBtn,.reelMedia:active .playPauseBtn{opacity:1}
@@ -380,7 +374,7 @@ a.uploadOption{text-decoration:none;color:#111;display:flex;align-items:center}
   }
   .reel:last-child{margin-bottom:10px}
   .reelPanel{padding:8px 14px 12px}
-  .homeTabs{top:12px}
+  .homeTabs{top:10px;left:50%;right:auto;transform:translateX(-50%);height:auto;background:transparent}
   .panel{max-width:760px;margin:0 auto;left:0;right:0}
 }
 
@@ -390,7 +384,7 @@ a.uploadOption{text-decoration:none;color:#111;display:flex;align-items:center}
 }
 
 @media(max-width:390px){
-  .homeTabs{top:54px}.homeTab{padding:6px 8px 7px;font-size:13px}
+  .homeTab{padding:6px 9px 7px;font-size:13px}
   .act{min-width:36px;padding:0 4px}
   .profileStats b{font-size:15px}.profileStats small{font-size:9px}
   .interestGrid{grid-template-columns:1fr}
@@ -566,7 +560,7 @@ function currentUserId(){return (account&&account.email)||profile.username||'ano
 const reels=[
   {id:1,cat:"School",sub:"Mathematics",creator:"@mathminute",title:"Why is the area of a circle πr²?",desc:"A quick visual explanation of the circle area formula.",src:"https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"},
   {id:2,cat:"Engineering",sub:"Physics",creator:"@engineeringbytes",title:"Ohm's Law explained in one minute",desc:"Understand voltage, current and resistance with a simple example.",src:"https://www.w3schools.com/html/mov_bbb.mp4"},
-  {id:3,cat:"Medical",sub:"Biology",creator:"@medstudy",title:"DNA: the four bases",desc:"A short introduction to A, T, C and G.",src:"https://media.w3.org/2010/05/sintel/trailer.mp4"},
+  {id:3,cat:"Medical",sub:"Biology",creator:"@medstudy",title:"DNA: the four bases",desc:"A short introduction to A, T, C and G.",src:"https://media.w3.org/2010/05/sintel/trailer.mp4",zoom:1.34},
   {id:4,cat:"Competitive Exams",sub:"General Knowledge",creator:"@upscquick",title:"Fundamental Rights – quick revision",desc:"A concise revision-style explainer for exam preparation.",src:"https://media.w3.org/2010/05/bunny/trailer.mp4"},
   {id:5,cat:"Engineering",sub:"Aerospace",creator:"@aerospacelab",title:"Inside a jet engine: turbomachinery explained",desc:"A deep-dive into how turbomachinery powers modern jet engines.",src:"https://media.w3.org/2010/05/bunny/trailer.mp4"},
   {id:6,cat:"Computer Science",sub:"Data Science",creator:"@datasciencehub",title:"Building your first machine learning model",desc:"A step-by-step walkthrough of a simple ML pipeline.",src:"https://www.w3schools.com/html/mov_bbb.mp4"}
@@ -1169,7 +1163,7 @@ async function home(tab){
       ${HOME_TABS.map(t=>`<button type="button" class="homeTab ${active===t?'active':''}" onclick="home('${t}')" role="tab" aria-selected="${active===t}">${t}</button>`).join('')}
     </div>
     <div class="feed" id="feed">
-      ${feedState.items.length?'':`<div class="empty" style="margin-top:110px;color:#fff"><h3>No reels here</h3><p>${emptyMsg}</p>${active!=='All'?`<button type="button" class="primary" style="width:auto;margin-top:14px" onclick="home('All')">Browse all reels</button>`:''}</div>`}
+      ${feedState.items.length?'':`<div class="empty" style="margin-top:24px;color:#fff"><h3>No reels here</h3><p>${emptyMsg}</p>${active!=='All'?`<button type="button" class="primary" style="width:auto;margin-top:14px" onclick="home('All')">Browse all reels</button>`:''}</div>`}
     </div>`;
   renderNextFeedPage();
   attachFeedScrollLoader();
@@ -1232,26 +1226,6 @@ function applyVideoWindow(){
       v.removeAttribute('src');
       v.load();               // releases the decoder and buffered data
     }
-    /* The blurred backdrop is a SECOND decoder, so it is only ever loaded for
-       the reel actually on screen. Loading one per windowed reel would double
-       video memory for a purely decorative layer. */
-    const blur=sec.querySelector('video.reelBlur');
-    if(!blur)return;
-    const mainSrc=v.getAttribute('src')||v.dataset.src;
-    if(i===currentIndex&&mainSrc){
-      /* Force the property, not just the attribute: the backdrop playing audio
-         would double every sound. */
-      blur.muted=true; blur.volume=0;
-      if(blur.getAttribute('src')!==mainSrc){
-        blur.setAttribute('src',mainSrc);
-        blur.load();
-      }
-      blur.play().catch(()=>{});   // decorative: failure is harmless
-    }else if(blur.getAttribute('src')){
-      blur.pause();
-      blur.removeAttribute('src');
-      blur.load();
-    }
   });
 }
 
@@ -1292,17 +1266,19 @@ function adSlotHTML(ad){
 
 function reelHTML(r){
   const liked=likes.includes(r.id), isSaved=saved.includes(r.id), isFollowing=following.includes(r.creator);
+  /* Always fill the frame. Clips with black bars baked into the file (e.g. a
+     cinema-ratio trailer) carry a zoom factor that scales the bars off-screen. */
+  const zoom=Math.min(1.6,Math.max(1,Number(r.zoom)||1));
+  const zoomStyle=zoom>1?` style="--zoom:${zoom}"`:'';
   const initial=escapeHtml(String(r.creator||'?').replace(/^@/,'').charAt(0).toUpperCase()||'?');
   /* Instagram-style card: the video owns the top ~80% (.reelMedia) and a
      solid strip underneath (.reelPanel) holds the actions and caption, so
      nothing ever sits on top of the picture except the transparent top bar. */
   return `<section class="reel" data-id="${r.id}" data-creator="${escapeAttr(r.creator)}">
     <div class="reelMedia">
-      <video class="reelBlur" playsinline loop muted preload="none" aria-hidden="true" tabindex="-1"></video>
-      <video class="reelMain" src="${escapeAttr(r.src)}" playsinline loop preload="metadata" muted></video>
+      <video class="reelMain" src="${escapeAttr(r.src)}"${zoomStyle} playsinline loop preload="metadata" muted></video>
       <div class="shade"></div>
       <button type="button" class="playPauseBtn" aria-label="Play or pause" onclick="togglePlay(event,this)">▶</button>
-      <button type="button" class="fitBtn" aria-label="Show the whole video" onclick="toggleFit(event,this)">⤢ Fit</button>
     </div>
     <div class="reelPanel">
       <div class="actions">
@@ -1425,15 +1401,6 @@ function updatePlayIcon(v){
   const btn=reel.querySelector('.playPauseBtn');
   if(btn){btn.textContent=v.paused?'▶':'❚❚';btn.setAttribute('aria-label',v.paused?'Play reel':'Pause reel')}
   reel.classList.toggle('paused',v.paused);
-}
-/* Videos FILL the frame by default (like Instagram). Wide videos with text at
-   the edges can be switched to show the whole picture - per reel. */
-function toggleFit(e,btn){
-  e?.stopPropagation();
-  const reel=btn?.closest('.reel'); if(!reel)return;
-  const fit=reel.classList.toggle('fitWhole');
-  btn.textContent=fit?'⤢ Fill':'⤢ Fit';
-  btn.setAttribute('aria-label',fit?'Fill the screen':'Show the whole video');
 }
 function togglePlay(e,btn){
   e?.stopPropagation();

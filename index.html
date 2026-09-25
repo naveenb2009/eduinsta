@@ -108,8 +108,13 @@ header{height:58px;position:fixed;top:0;left:0;right:0;z-index:20;background:#05
 /* ~20%: solid strip below the video with actions + creator + caption */
 .reelPanel{flex:0 0 auto;background:#000;padding:6px 12px 10px;position:relative;z-index:4}
 .reel:last-child{margin-bottom:0}
-/* object-fit:cover always fills the frame edge to edge (Instagram look). */
+/* Fill by default; tall videos switch to whole-frame via .fitWhole (applyReelFit). */
 .reel video.reelMain{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;transform:scale(var(--zoom,1));transform-origin:center}
+/* Tall video that cover would crop heavily: show the whole frame instead. */
+.reel.fitWhole video.reelMain{object-fit:contain;transform:none}
+.reelProgress{position:absolute;left:0;right:0;bottom:0;height:14px;z-index:6;display:flex;align-items:flex-end;cursor:pointer}
+.reelProgress::before{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(255,255,255,.25)}
+.reelProgressFill{position:relative;height:3px;width:0;background:#5eead4;transition:width .25s linear}
 .shade{position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(180deg,rgba(0,0,0,.55) 0%,rgba(0,0,0,.15) 16%,transparent 26%,transparent 85%,rgba(0,0,0,.35) 100%)}
 .playPauseBtn{position:absolute;z-index:6;left:50%;top:50%;transform:translate(-50%,-50%);width:58px;height:58px;border:1px solid rgba(255,255,255,.75);border-radius:50%;background:rgba(0,0,0,.55);color:#fff;font-size:21px;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .15s}
 .reel.paused .playPauseBtn,.reelMedia:active .playPauseBtn{opacity:1}
@@ -1266,8 +1271,9 @@ function adSlotHTML(ad){
 
 function reelHTML(r){
   const liked=likes.includes(r.id), isSaved=saved.includes(r.id), isFollowing=following.includes(r.creator);
-  /* Always fill the frame. Clips with black bars baked into the file (e.g. a
-     cinema-ratio trailer) carry a zoom factor that scales the bars off-screen. */
+  /* Landscape/square clips fill the frame; tall clips switch to whole-frame
+     once their size is known (see applyReelFit). Clips with black bars baked
+     into the file carry a zoom factor that scales the bars off-screen. */
   const zoom=Math.min(1.6,Math.max(1,Number(r.zoom)||1));
   const zoomStyle=zoom>1?` style="--zoom:${zoom}"`:'';
   const initial=escapeHtml(String(r.creator||'?').replace(/^@/,'').charAt(0).toUpperCase()||'?');
@@ -1279,6 +1285,7 @@ function reelHTML(r){
       <video class="reelMain" src="${escapeAttr(r.src)}"${zoomStyle} playsinline loop preload="metadata" muted></video>
       <div class="shade"></div>
       <button type="button" class="playPauseBtn" aria-label="Play or pause" onclick="togglePlay(event,this)">▶</button>
+      <div class="reelProgress" role="slider" aria-label="Seek" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" onclick="seekReel(event,this)"><div class="reelProgressFill"></div></div>
     </div>
     <div class="reelPanel">
       <div class="actions">
@@ -1288,6 +1295,7 @@ function reelHTML(r){
           <button type="button" class="act" aria-label="Share" onclick="shareReel(${r.id},event)"><span>↗</span><small>Share</small></button>
         </div>
         <div class="actGroup">
+          <button type="button" class="act replayBtn" aria-label="Replay from start" onclick="replayReel(event,this)"><span>↺</span><small>Replay</small></button>
           <button type="button" class="act soundBtn ${soundOn?'soundOn':''}" aria-label="Sound" onclick="toggleSound(event,this)"><span>${soundOn?'🔊':'🔇'}</span><small>${soundOn?'Sound':'Muted'}</small></button>
           <button type="button" class="act saveBtn ${isSaved?"saved":""}" aria-label="Save" onclick="toggleSave(${r.id},event)"><span>🔖</span><small>${isSaved?"Saved":"Save"}</small></button>
           <button type="button" class="act" aria-label="More options" onclick="reportReel(${r.id},event)"><span>⋮</span><small>More</small></button>
@@ -1402,6 +1410,61 @@ function updatePlayIcon(v){
   if(btn){btn.textContent=v.paused?'▶':'❚❚';btn.setAttribute('aria-label',v.paused?'Play reel':'Pause reel')}
   reel.classList.toggle('paused',v.paused);
 }
+/* ================= Frame fitting =================
+   object-fit:cover on a tall phone video inside the (roughly square) media
+   area cut off the top and bottom of the picture. Rule:
+   - a small trim (<= FIT_MAX_CROP) is fine, so the frame fills;
+   - a TALL video that would lose more is shown whole (contain) - the full
+     picture matters more than filling the sides;
+   - landscape videos keep filling the frame. */
+var FIT_MAX_CROP=0.12;
+function reelFitMode(vw,vh,bw,bh){
+  if(!(vw>0&&vh>0&&bw>0&&bh>0))return 'cover';
+  const va=vw/vh, ba=bw/bh;
+  if(va>=ba)return 'cover';                // wider than the box: fill (sides trimmed)
+  const crop=1-va/ba;                       // share of the height cover would cut
+  return crop<=FIT_MAX_CROP?'cover':'contain';
+}
+function applyReelFit(v){
+  const reel=v?.closest?.('.reel'), box=v?.parentElement; if(!reel||!box)return;
+  const mode=reelFitMode(v.videoWidth,v.videoHeight,box.clientWidth,box.clientHeight);
+  reel.classList.toggle('fitWhole',mode==='contain');
+}
+document.addEventListener('loadedmetadata',e=>{
+  if(e.target?.classList?.contains('reelMain'))applyReelFit(e.target);
+},true);
+let fitResizeTimer=null;
+window.addEventListener('resize',()=>{
+  clearTimeout(fitResizeTimer);
+  fitResizeTimer=setTimeout(()=>document.querySelectorAll('video.reelMain').forEach(applyReelFit),150);
+});
+
+/* ================= Replay + progress ================= */
+function replayReel(e,btn){
+  e?.stopPropagation();
+  const reel=btn?.closest('.reel'), v=reel?.querySelector('video.reelMain'); if(!v)return;
+  hasUserGesture=true;
+  try{v.currentTime=0}catch(_){}
+  applySoundToVideo(v);
+  v.play().catch(()=>showPlaybackPrompt(reel,v));
+  updatePlayIcon(v);
+  const fill=reel.querySelector('.reelProgressFill'); if(fill)fill.style.width='0%';
+}
+function seekReel(e,bar){
+  e?.stopPropagation();
+  const v=bar?.closest('.reel')?.querySelector('video.reelMain'); if(!v||!(v.duration>0))return;
+  const r=bar.getBoundingClientRect(); if(!r.width)return;
+  const ratio=Math.min(1,Math.max(0,(e.clientX-r.left)/r.width));
+  v.currentTime=ratio*v.duration;
+}
+document.addEventListener('timeupdate',e=>{
+  const v=e.target; if(!v?.classList?.contains('reelMain')||!(v.duration>0))return;
+  const bar=v.closest('.reel')?.querySelector('.reelProgress'); if(!bar)return;
+  const pct=Math.min(100,v.currentTime/v.duration*100);
+  bar.firstElementChild.style.width=pct+'%';
+  bar.setAttribute('aria-valuenow',String(Math.round(pct)));
+},true);
+
 function togglePlay(e,btn){
   e?.stopPropagation();
   const v=btn?.closest('.reel')?.querySelector('video.reelMain'); if(!v)return;

@@ -146,9 +146,19 @@ jobs:
 
       # 2) The plain .apk on the repo's Releases page, downloadable straight
       #    from a phone browser. Replaced on every build.
+      #
+      # Prefers a RELEASE_TOKEN repo secret (a personal access token with
+      # repo/contents write) over the automatic github.token. On some
+      # personal-account repos the automatic token still 403s on release
+      # creation ("Resource not accessible by integration") even with
+      # Settings -> Actions -> Workflow permissions correctly set to "Read
+      # and write" and no tag protection rules -- a known GitHub quirk, not
+      # a config mistake. Until/unless RELEASE_TOKEN is added as a secret,
+      # this falls back to github.token exactly as before, so nothing
+      # changes for anyone who isn't hitting that quirk.
       - name: Publish APK to Releases (latest build)
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
         run: |
           TAG=latest-apk
           gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
@@ -216,7 +226,7 @@ jobs:
       - name: Publish signed release to GitHub Releases
         if: steps.signing.outputs.have_keystore == 'true'
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
         run: |
           TAG=latest-release-signed
           gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true

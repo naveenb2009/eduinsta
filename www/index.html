@@ -1133,15 +1133,34 @@ function reelMatchesInterests(r){
 
 /* ---------------- Home feed ---------------- */
 const HOME_TABS=['For You','All','Following'];
-/* Shuffle used by the All tab so discovery isn't dominated by whoever uploaded
-   most recently. Seeded per render, so the order changes each time you open it. */
-function shuffleFeed(arr){
-  const a=arr.slice();
-  for(let i=a.length-1;i>0;i--){
-    const j=Math.floor(Math.random()*(i+1));
-    [a[i],a[j]]=[a[j],a[i]];
+/* Best-effort "when was this posted" in epoch ms, from whichever field the
+   reel actually has:
+     - server reels: a real createdAt ISO timestamp
+     - local (prototype-mode) uploads: no createdAt, but id IS Date.now()
+     - built-in demo/seed reels: small hand-picked ids (1,2,3…), no useful
+       time signal at all — treated as oldest, so they sink to the bottom
+       below any real content instead of crowding out real uploads. */
+function reelTimestamp(r){
+  if(r.createdAt){
+    const t=Date.parse(r.createdAt);
+    if(!isNaN(t))return t;
   }
-  return a;
+  if(typeof r.id==='number'){
+    if(r.id>1e14)return Math.floor(r.id/1000);   // server id: Date.now()*1000+seq
+    if(r.id>1e11)return r.id;                     // local upload id: Date.now()
+  }
+  return 0;                                       // demo/seed reel: no real date
+}
+/* Newest first, with reels from people you follow bumped above everyone
+   else's (still newest-first within each group). Used by every home feed
+   tab so a followed creator's new upload is never buried. */
+function sortFeedByPriority(arr){
+  return arr.slice().sort((a,b)=>{
+    const af=following.includes(a.creator)?1:0;
+    const bf=following.includes(b.creator)?1:0;
+    if(af!==bf)return bf-af;
+    return reelTimestamp(b)-reelTimestamp(a);
+  });
 }
 /* ================= Feed paging & windowing =================
    Previously the feed built EVERY reel as a DOM node on every render, and
@@ -1171,9 +1190,9 @@ async function home(tab){
   activeHomeTab=active;
   const all=await allReelsCached();
   let list;
-  if(active==='Following')      list=all.filter(r=>following.includes(r.creator));
-  else if(active==='All')       list=shuffleFeed(all);   // everything, in random order
-  else                          list=all.filter(r=>reelMatchesInterests(r));
+  if(active==='Following')      list=sortFeedByPriority(all.filter(r=>following.includes(r.creator)));
+  else if(active==='All')       list=sortFeedByPriority(all);   // everything, newest first, follows bumped up
+  else                          list=sortFeedByPriority(all.filter(r=>reelMatchesInterests(r)));
 
   feedState={items:buildFeedWithAds(list),rendered:0,loading:false,tab:active};
 

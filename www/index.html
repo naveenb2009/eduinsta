@@ -1259,14 +1259,24 @@ function applyVideoWindow(){
   sections.forEach((sec,i)=>{
     const v=sec.querySelector('video.reelMain');
     if(!v)return;
-    const near=Math.abs(i-currentIndex)<=VIDEO_WINDOW;
+    const dist=Math.abs(i-currentIndex);
+    const near=dist<=VIDEO_WINDOW;
     const real=v.dataset.src||v.getAttribute('src');
     if(near){
       if(!v.getAttribute('src')&&v.dataset.src){v.setAttribute('src',v.dataset.src);v.load()}
+      /* Prefetch: the reel one away in either direction (the one the user is
+         about to scroll to) gets preload="auto" so the browser starts
+         pulling actual video bytes ahead of time, instead of just metadata -
+         this is what makes the *next* reel start playing instantly instead
+         of waiting on a fresh fetch. Anything farther out stays metadata-only
+         so we don't spend bandwidth/memory on reels that may never be watched. */
+      const wantPreload=dist<=1?'auto':'metadata';
+      if(v.getAttribute('preload')!==wantPreload)v.setAttribute('preload',wantPreload);
     }else if(v.getAttribute('src')){
       v.dataset.src=real;
       v.pause();
       v.removeAttribute('src');
+      v.setAttribute('preload','metadata');
       v.load();               // releases the decoder and buffered data
     }
   });

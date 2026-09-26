@@ -1630,9 +1630,16 @@ async function shareReel(id,e){
   e?.stopPropagation();
   const all=await allReelsCached();
   const r=all.find(x=>x.id===id); if(!r)return;
-  /* Include a real link when the reel lives on a server — otherwise there is
-     nothing for the recipient to open. */
-  const link=(serverMode()&&r.src&&/^https?:/.test(r.src))?r.src:null;
+  /* Share a link to OUR OWN /reel/:id landing page - never the raw video
+     file. The raw file URL is what made WhatsApp show a bare "website
+     address" instead of a reel: it has no title/thumbnail preview and just
+     plays the file in a browser rather than opening the app. The landing
+     page carries Open Graph tags for a rich preview card AND is what
+     Android's App Links system intercepts to open this exact reel straight
+     in the app (see AndroidManifest's intent-filter + the server's
+     /.well-known/assetlinks.json) - the same trick Instagram/TikTok use for
+     their reel share links. */
+  const link=serverMode()?`${API_BASE.replace(/\/$/,'')}/reel/${id}`:null;
   await shareContent({
     title:'EduInsta',
     text:`${r.title} — ${r.creator} on EduInsta`,
@@ -3383,6 +3390,13 @@ function exitAuthGate(){
   document.querySelector('.app').classList.remove('authGateMode');
   page('home');
   updateNotificationBadge();
+  // A deep-linked reel that arrived before the user finished logging in
+  // (e.g. tapped a shared WhatsApp link while signed out) - open it now.
+  if(pendingDeepLinkReelId!=null){
+    const id=pendingDeepLinkReelId;
+    pendingDeepLinkReelId=null;
+    openReel(id);
+  }
 }
 
 /* ---- Update phone number (Settings > Account details), OTP-verified ---- */
@@ -3424,6 +3438,31 @@ function completePhoneUpdate(){
   settingDetail('accountDetails');
 }
 
+/* ================= Deep links =================
+   Sharing a reel now points at <API_BASE>/reel/<id> (see shareReel above)
+   instead of the raw video file, so tapping it — if EduInsta is installed —
+   opens the app straight to that reel via Android App Links, instead of a
+   browser. This is the other half: catching that incoming URL, both on a
+   cold start (app wasn't running) and while the app is already open, and
+   jumping straight to the reel it names. */
+var pendingDeepLinkReelId=null;
+function handleDeepLinkUrl(url){
+  if(!url)return;
+  const m=String(url).match(/\/reel\/([^/?#]+)/);
+  if(!m)return;
+  const id=Number(m[1]);
+  if(!Number.isFinite(id))return;
+  if(account&&account.loggedIn)openReel(id);
+  else pendingDeepLinkReelId=id;   // opened once the user finishes logging in
+}
+function initDeepLinks(){
+  const plugin=window.Capacitor?.Plugins?.App;
+  if(!plugin?.addListener)return;
+  plugin.addListener('appUrlOpen',(data)=>handleDeepLinkUrl(data?.url));
+  // Cold start: the app may have been launched BY the deep link itself.
+  plugin.getLaunchUrl?.().then(res=>handleDeepLinkUrl(res?.url)).catch(()=>{});
+}
+
 /* ---------------- Boot ---------------- */
 function boot(){
   if(account&&account.loggedIn)page('home');
@@ -3437,6 +3476,7 @@ function boot(){
     syncAdMobWithSubscription();
   });
   if(AdMobService.available())AdMobService.init().then(()=>syncAdMobWithSubscription());
+  initDeepLinks();
 }
 /* Single place that decides whether native ads should be running at all.
    Called after boot and after any subscription change, so a user who just

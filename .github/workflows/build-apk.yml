@@ -117,7 +117,7 @@ jobs:
           if grep -q "gms.ads.APPLICATION_ID" "$MANIFEST"; then
             echo "Already present, skipping"
           else
-            sed -i 's#</application>#    <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713"/>\n    </application>#' "$MANIFEST"
+            sed -i 's#</application>#    <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-7892882753777979~9666677348"/>\n    </application>#' "$MANIFEST"
             echo "Injected AdMob APPLICATION_ID"
           fi
           grep -q "APPLICATION_ID" "$MANIFEST" || { echo "::error::AdMob APPLICATION_ID injection failed"; exit 1; }
@@ -147,16 +147,19 @@ jobs:
       # 2) The plain .apk on the repo's Releases page, downloadable straight
       #    from a phone browser. Replaced on every build.
       #
-      # Prefers a RELEASE_TOKEN repo secret (a personal access token with
-      # repo/contents write) over the automatic github.token. On some
-      # personal-account repos the automatic token still 403s on release
-      # creation ("Resource not accessible by integration") even with
-      # Settings -> Actions -> Workflow permissions correctly set to "Read
-      # and write" and no tag protection rules -- a known GitHub quirk, not
-      # a config mistake. Until/unless RELEASE_TOKEN is added as a secret,
-      # this falls back to github.token exactly as before, so nothing
-      # changes for anyone who isn't hitting that quirk.
+      # NON-BLOCKING (continue-on-error): this is a convenience mirror of the
+      # APK that's already been uploaded as an Actions artifact one step up
+      # -- it is not the only way to get the APK. Some personal-account repos
+      # get a persistent 403 ("Resource not accessible by...") creating
+      # Releases via the Actions token even with every documented setting
+      # correct (Workflow permissions = read/write, no tag protection, a
+      # classic PAT with repo scope in RELEASE_TOKEN) -- an unresolved GitHub
+      # quirk, not a config mistake on this repo. Rather than let that one
+      # convenience step keep failing the whole build, it's allowed to fail
+      # on its own: the debug APK above is always available from the Actions
+      # artifact regardless of whether this step succeeds.
       - name: Publish APK to Releases (latest build)
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
         run: |
@@ -223,8 +226,14 @@ jobs:
       # The .aab goes to Play Console (it can't be installed directly on a
       # phone). The signed .apk is included too so it can be sideloaded for
       # a final on-device check before submitting the .aab to Play Console.
+      #
+      # NON-BLOCKING for the same reason as the debug publish step above --
+      # the signed .aab/.apk are already uploaded as an Actions artifact one
+      # step up, so this Releases mirror failing (the same GitHub token
+      # quirk) never blocks getting the actual signed build.
       - name: Publish signed release to GitHub Releases
         if: steps.signing.outputs.have_keystore == 'true'
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
         run: |

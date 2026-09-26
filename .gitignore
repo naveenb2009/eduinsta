@@ -1,0 +1,8 @@
+node_modules/
+android/
+*.keystore
+# Exception: this one is a fixed, non-secret debug-only signing key that
+# MUST be committed so every CI build signs debug APKs identically (see
+# ci/README.md). It is never used for the Play Store release build.
+!ci/android-debug.keystore
+.env

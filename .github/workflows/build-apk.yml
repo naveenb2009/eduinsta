@@ -101,6 +101,13 @@ jobs:
       - name: Set auto-incrementing version (versionCode/versionName)
         run: python3 scripts/apply-version.py
 
+      # Lets a shared reel link (https://.../reel/<id>) open straight into
+      # the app instead of a browser -- same trick Instagram/TikTok use.
+      # Capacitor regenerates android/ on every CI build, so this must be
+      # reapplied here each time, same as the AdMob injection below.
+      - name: Inject App Links intent-filter into AndroidManifest
+        run: python3 scripts/apply-applinks.py
+
       # The Google Mobile Ads SDK CRASHES the app at launch if this meta-data
       # is missing from AndroidManifest.xml. Capacitor regenerates android/ on
       # every CI build, so it must be injected here each time.

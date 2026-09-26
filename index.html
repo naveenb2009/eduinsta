@@ -1177,7 +1177,7 @@ async function home(tab){
       ${HOME_TABS.map(t=>`<button type="button" class="homeTab ${active===t?'active':''}" onclick="home('${t}')" role="tab" aria-selected="${active===t}">${t}</button>`).join('')}
     </div>
     <div class="feed" id="feed">
-      ${feedState.items.length?'':`<div class="empty" style="margin-top:24px;color:#fff"><h3>No reels here</h3><p>${emptyMsg}</p>${active!=='All'?`<button type="button" class="primary" style="width:auto;margin-top:14px" onclick="home('All')">Browse all reels</button>`:''}</div>`}
+      ${feedState.items.length?'':`<div class="empty" style="margin-top:112px;color:#fff"><h3>No reels here</h3><p>${emptyMsg}</p>${active!=='All'?`<button type="button" class="primary" style="width:auto;margin-top:14px" onclick="home('All')">Browse all reels</button>`:''}</div>`}
     </div>`;
   renderNextFeedPage();
   attachFeedScrollLoader();

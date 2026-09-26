@@ -3225,7 +3225,7 @@ function authForm(mode){
   document.getElementById('authTabSignup')?.classList.toggle('on',mode==='signup');
   holder.innerHTML=mode==="login"
     ? `<input class="field" id="authEmail" type="email" placeholder="Email or mobile number"><div class="passwordField"><input class="field" id="authPass" type="password" placeholder="Password"><button type="button" class="passwordToggle" onclick="togglePasswordVisibility('authPass',this)">👁</button></div><div class="fieldError" id="authError"></div><button type="button" class="primary" onclick="modalLogin()">Log in</button><p class="filterNote">This prototype stores account state only on this device.</p>`
-    : `<input class="field" id="authName" placeholder="Full name"><input class="field" id="authIdentifier" type="email" placeholder="Email address" inputmode="email"><div class="passwordField"><input class="field" id="authPass" type="password" placeholder="Create password"><button type="button" class="passwordToggle" onclick="togglePasswordVisibility('authPass',this)">👁</button></div><small class="pwHint">${escapeHtml(PASSWORD_HINT)}</small><input class="field" id="authPass2" type="password" placeholder="Confirm password"><div class="fieldError" id="authError"></div><button type="button" class="primary" onclick="modalSignup()">Create account</button><p class="filterNote">This prototype stores account state only on this device.</p>`;
+    : `<input class="field" id="authName" placeholder="Full name"><input class="field" id="authIdentifier" type="email" placeholder="Email address" inputmode="email"><div class="passwordField"><input class="field" id="authPass" type="password" placeholder="Create password"><button type="button" class="passwordToggle" onclick="togglePasswordVisibility('authPass',this)">👁</button></div><small class="pwHint">${escapeHtml(PASSWORD_HINT)}</small><input class="field" id="authPass2" type="password" placeholder="Confirm password"><label class="termsRow"><input type="checkbox" id="authAge13"><span>I confirm I am 13 years of age or older.</span></label><div class="fieldError" id="authError"></div><button type="button" class="primary" onclick="modalSignup()">Create account</button><p class="filterNote">This prototype stores account state only on this device.</p>`;
 }
 function modalLogin(){
   const result=performLogin({identifier:document.getElementById("authEmail")?.value,password:document.getElementById("authPass")?.value});
@@ -3236,9 +3236,13 @@ function modalLogin(){
 }
 var pendingModalSignupData=null;
 function modalSignup(){
+  const err=document.getElementById("authError");
+  if(!document.getElementById('authAge13')?.checked){
+    if(err)err.textContent='You must confirm you are 13 or older to create an account.';
+    return;
+  }
   const fields={name:document.getElementById("authName")?.value,identifier:document.getElementById("authIdentifier")?.value,password:document.getElementById("authPass")?.value,confirmPassword:document.getElementById("authPass2")?.value};
   const check=validateSignupFields(fields);
-  const err=document.getElementById("authError");
   if(!check.ok){if(err)err.textContent=Object.values(check.errors)[0];return}
   if(err)err.textContent='';
   pendingModalSignupData=fields;
@@ -3304,6 +3308,7 @@ function renderGateForm(){
       <div class="passwordField"><input class="field" id="gatePass" type="password" placeholder="Create password" autocomplete="new-password"><button type="button" class="passwordToggle" onclick="togglePasswordVisibility('gatePass',this)">👁</button></div>
       <small class="pwHint">${escapeHtml(PASSWORD_HINT)}</small>
       <input class="field" id="gatePass2" type="password" placeholder="Confirm password" autocomplete="new-password">
+      <label class="termsRow"><input type="checkbox" id="gateAge13"><span>I confirm I am 13 years of age or older.</span></label>
       <div class="fieldError" id="gateError"></div>
       <label class="termsRow"><input type="checkbox" id="gateTerms"><span>I agree to EduInsta's Terms of Use and Privacy Policy.</span></label>
       <button type="button" class="primary" style="width:100%" onclick="gateSignup()">Create account</button>`;
@@ -3318,6 +3323,13 @@ function gateLogin(){
 }
 var pendingSignupData=null;
 function gateSignup(){
+  /* EduInsta requires signups to be 13+ (Play Store Families Policy / COPPA) --
+     self-declared here rather than a date-of-birth field, same pattern as the
+     Terms checkbox right below it. */
+  if(!document.getElementById('gateAge13')?.checked){
+    const err=document.getElementById('gateError'); if(err)err.textContent='You must confirm you are 13 or older to create an account.';
+    return;
+  }
   if(!document.getElementById('gateTerms')?.checked){
     const err=document.getElementById('gateError'); if(err)err.textContent='Please accept the Terms of Use and Privacy Policy to continue.';
     return;

@@ -113,6 +113,16 @@ header>*{pointer-events:auto}
 .reelPanel{position:absolute;left:0;right:0;bottom:0;z-index:4;background:linear-gradient(0deg,rgba(0,0,0,.85) 0%,rgba(0,0,0,.62) 55%,rgba(0,0,0,0) 100%);padding:26px 12px 10px}
 .reel:last-child{margin-bottom:0}
 .reel video.reelMain{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center center;z-index:1}
+/* Chromium/Android WebView draws its OWN large circular "start playback"
+   button on top of a <video> before its first frame renders - independent
+   of our custom playPauseBtn. It briefly flashes during scroll while the
+   next reel's video is still buffering. The app has its own play/pause UI,
+   so every native control (including this one) must be hidden explicitly. */
+.reel video.reelMain::-webkit-media-controls,
+.reel video.reelMain::-webkit-media-controls-start-playback-button,
+.reel video.reelMain::-webkit-media-controls-panel,
+.reel video.reelMain::-webkit-media-controls-play-button,
+.reel video.reelMain::-webkit-media-controls-overlay-play-button{display:none!important;-webkit-appearance:none!important}
 .reelProgress{position:absolute;left:0;right:0;bottom:0;height:14px;z-index:6;display:flex;align-items:flex-end;cursor:pointer}
 .reelProgress::before{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(255,255,255,.25)}
 .reelProgressFill{position:relative;height:3px;width:0;background:#5eead4;transition:width .25s linear}

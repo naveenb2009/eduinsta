@@ -5,13 +5,44 @@ on:
     branches: [main, master]
   workflow_dispatch:
 
+# Needed so the job can publish the APK as a downloadable GitHub Release.
+permissions:
+  contents: write
+
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # Pinned: GitHub moves "ubuntu-latest" to Ubuntu 26.04 between Oct 19 and
+    # Nov 19 2026, which changes the preinstalled Android SDK / Java versions.
+    runs-on: ubuntu-24.04
+
+    # Job-level so every step (including the debug and release gradle builds
+    # further down) sees the same values -- Gradle reads these at build time,
+    # not at the "Set auto-incrementing version" patch step below.
+    env:
+      CI_VERSION_CODE: ${{ github.run_number }}
+      CI_VERSION_NAME: 1.0.${{ github.run_number }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
+
+      # Most "no APK" failures are files uploaded into the wrong place
+      # (e.g. inside an extra "eduinsta-apk/" folder). Fail early and clearly.
+      - name: Check project files are in the right place
+        run: |
+          missing=0
+          for f in package.json capacitor.config.json www/index.html; do
+            if [ ! -f "$f" ]; then echo "::error::Missing $f at the TOP of the repository"; missing=1; fi
+          done
+          if [ -d android ]; then
+            echo "::warning::An 'android' folder is committed to the repo. It is regenerated on every build; delete it from GitHub if the build fails."
+          fi
+          if [ "$missing" = 1 ]; then
+            echo "Files found at the top of the repo:"; ls -la
+            echo "::error::Upload the CONTENTS of the eduinsta-apk folder to the repo root, not the folder itself."
+            exit 1
+          fi
+          echo "Project layout OK"
 
       - name: Set up Node.js
         uses: actions/setup-node@v5
@@ -26,20 +57,53 @@ jobs:
 
       - name: Use preinstalled Android SDK
         run: |
-          echo "ANDROID_HOME=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
-          echo "$ANDROID_SDK_ROOT/platform-tools" >> $GITHUB_PATH
+          SDK="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          if [ -z "$SDK" ] || [ ! -d "$SDK" ]; then SDK=/usr/local/lib/android/sdk; fi
+          echo "Android SDK: $SDK"
+          echo "ANDROID_HOME=$SDK" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=$SDK" >> $GITHUB_ENV
+          echo "$SDK/platform-tools" >> $GITHUB_PATH
 
-      - name: Accept SDK licenses
-        run: yes | "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null 2>&1 || true
+      - name: Install Android platform 34 + build tools
+        run: |
+          SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKM" --licenses > /dev/null 2>&1 || true
+          "$SDKM" --install "platforms;android-34" "build-tools;34.0.0" > /dev/null
+          ls "$ANDROID_HOME/platforms"
 
       - name: Install dependencies
-        run: npm install
+        run: npm install --no-audit --no-fund
 
       - name: Add Android platform
         run: |
-          npx cap add android || echo "android platform already present"
+          if [ ! -f android/gradlew ]; then
+            rm -rf android
+            npx cap add android
+          fi
           npx cap sync android
 
+      # Every CI run gets its own throwaway debug-signing certificate unless
+      # we install a fixed one first -- otherwise each new debug APK has a
+      # DIFFERENT signature than the last, and Android refuses to install it
+      # as an "update" (it silently requires uninstalling the old one first).
+      # This key is for local testing only (never used for the Play Store
+      # release build below), so committing it in the repo is fine.
+      - name: Use a consistent debug-signing key across builds
+        run: |
+          mkdir -p ~/.android
+          cp ci/android-debug.keystore ~/.android/debug.keystore
+
+      # Same reasoning applies to the version number: Android (and Play
+      # Console) both refuse to install/upload a build whose versionCode is
+      # not strictly higher than the one already installed/uploaded. Wire it
+      # to the ever-increasing GitHub Actions run number so every build,
+      # debug or release, is always a valid update over the last one.
+      - name: Set auto-incrementing version (versionCode/versionName)
+        run: python3 scripts/apply-version.py
+
+      # The Google Mobile Ads SDK CRASHES the app at launch if this meta-data
+      # is missing from AndroidManifest.xml. Capacitor regenerates android/ on
+      # every CI build, so it must be injected here each time.
       - name: Inject AdMob APPLICATION_ID into AndroidManifest
         run: |
           MANIFEST=android/app/src/main/AndroidManifest.xml
@@ -49,23 +113,116 @@ jobs:
             sed -i 's#</application>#    <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713"/>\n    </application>#' "$MANIFEST"
             echo "Injected AdMob APPLICATION_ID"
           fi
-          grep -A1 "APPLICATION_ID" "$MANIFEST" || echo "WARNING: injection failed"
-
-      - name: Make gradlew executable
-        run: chmod +x android/gradlew
+          grep -q "APPLICATION_ID" "$MANIFEST" || { echo "::error::AdMob APPLICATION_ID injection failed"; exit 1; }
 
       - name: Build debug APK
-        run: cd android && ./gradlew assembleDebug --no-daemon --stacktrace
+        run: |
+          chmod +x android/gradlew
+          cd android && ./gradlew assembleDebug --no-daemon --stacktrace
 
-      - name: Upload debug APK
+      - name: Rename APK
+        run: |
+          APK=android/app/build/outputs/apk/debug/app-debug.apk
+          [ -f "$APK" ] || { echo "::error::Gradle finished but no APK was produced"; exit 1; }
+          mkdir -p dist
+          cp "$APK" dist/EduInsta-debug.apk
+          ls -la dist
+
+      # 1) Zip under the run's "Artifacts" section (GitHub always zips these).
+      - name: Upload APK (Actions artifact)
         uses: actions/upload-artifact@v4
         with:
           name: EduInsta-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: dist/EduInsta-debug.apk
+          if-no-files-found: error
           retention-days: 30
+
+      # 2) The plain .apk on the repo's Releases page, downloadable straight
+      #    from a phone browser. Replaced on every build.
+      - name: Publish APK to Releases (latest build)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG=latest-apk
+          gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
+          gh release create "$TAG" dist/EduInsta-debug.apk \
+            --title "EduInsta latest APK" \
+            --notes "Built from commit ${GITHUB_SHA::7} on $(date -u '+%Y-%m-%d %H:%M UTC'). Debug build for testing." \
+            --prerelease --target "$GITHUB_SHA"
+
+      # --- Signed release build (Play Store) -----------------------------
+      # Only runs once the KEYSTORE_BASE64 repo secret is set. Until then it
+      # is skipped and everything above (the debug build) still works exactly
+      # as before -- this section can never break the existing pipeline.
+      - name: Check for release signing secret
+        id: signing
+        run: |
+          if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+            echo "have_keystore=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "have_keystore=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::KEYSTORE_BASE64 secret not set -- skipping signed release build (debug APK above is unaffected)."
+          fi
+
+      - name: Decode release keystore
+        if: steps.signing.outputs.have_keystore == 'true'
+        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/release.keystore
+
+      - name: Inject release signingConfig into build.gradle
+        if: steps.signing.outputs.have_keystore == 'true'
+        run: python3 scripts/apply-release-signing.py
+
+      - name: Build signed release AAB + APK
+        if: steps.signing.outputs.have_keystore == 'true'
+        env:
+          CI_KEYSTORE_PATH: release.keystore
+          CI_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          CI_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          CI_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          cd android && ./gradlew bundleRelease assembleRelease --no-daemon --stacktrace
+
+      - name: Collect signed release outputs
+        if: steps.signing.outputs.have_keystore == 'true'
+        run: |
+          AAB=android/app/build/outputs/bundle/release/app-release.aab
+          APK=android/app/build/outputs/apk/release/app-release.apk
+          [ -f "$AAB" ] || { echo "::error::Gradle finished but no .aab was produced"; exit 1; }
+          [ -f "$APK" ] || { echo "::error::Gradle finished but no signed release .apk was produced"; exit 1; }
+          mkdir -p dist-release
+          cp "$AAB" dist-release/EduInsta-release.aab
+          cp "$APK" dist-release/EduInsta-release-signed.apk
+          ls -la dist-release
+
+      - name: Upload signed release build (Actions artifact)
+        if: steps.signing.outputs.have_keystore == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: EduInsta-signed-release
+          path: dist-release/
+          if-no-files-found: error
+          retention-days: 90
+
+      # The .aab goes to Play Console (it can't be installed directly on a
+      # phone). The signed .apk is included too so it can be sideloaded for
+      # a final on-device check before submitting the .aab to Play Console.
+      - name: Publish signed release to GitHub Releases
+        if: steps.signing.outputs.have_keystore == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG=latest-release-signed
+          gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
+          gh release create "$TAG" dist-release/EduInsta-release.aab dist-release/EduInsta-release-signed.apk \
+            --title "EduInsta signed release build" \
+            --notes "Built from commit ${GITHUB_SHA::7} on $(date -u '+%Y-%m-%d %H:%M UTC'). The .aab is for Play Console upload; the .apk is for sideload testing." \
+            --prerelease --target "$GITHUB_SHA"
 
       - name: Diagnostics on failure
         if: failure()
         run: |
-          echo "=== java ==="; java -version
+          echo "=== top of repo ==="; ls -la
+          echo "=== java ==="; java -version || true
+          echo "=== node ==="; node -v || true
+          echo "=== android sdk ==="; ls "$ANDROID_HOME/platforms" "$ANDROID_HOME/build-tools" 2>/dev/null || true
           echo "=== manifest ==="; cat android/app/src/main/AndroidManifest.xml 2>/dev/null || true

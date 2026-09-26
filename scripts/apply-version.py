@@ -29,7 +29,13 @@ if "CI_VERSION_CODE" in src:
 
 src2, n1 = re.subn(
     r"versionCode\s+\d+",
-    'versionCode (System.getenv("CI_VERSION_CODE") ?: "1").toInteger()',
+    # NOTE: deliberately NOT "versionCode (getenv(...) ?: "1").toInteger()".
+    # In Groovy, "methodName (expr).foo()" parses as "(methodName(expr)).foo()"
+    # -- the trailing .toInteger() would land on versionCode()'s return value
+    # (null), not on the env var expression, causing a build-time
+    # NullPointerException ("Value is null"). Integer.parseInt(...) as a
+    # single self-contained argument avoids the ambiguity entirely.
+    'versionCode Integer.parseInt(System.getenv("CI_VERSION_CODE") ?: "1")',
     src,
     count=1,
 )

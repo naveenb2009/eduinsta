@@ -13,7 +13,8 @@
     "@capacitor/core": "6.2.2",
     "@capacitor-community/admob": "6.2.0",
     "@capacitor/share": "6.0.4",
-    "@capacitor/app": "6.0.3"
+    "@capacitor/app": "6.0.3",
+    "@revenuecat/purchases-capacitor": "*"
   },
   "devDependencies": {
     "@capacitor/cli": "6.2.2"

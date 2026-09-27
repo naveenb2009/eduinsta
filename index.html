@@ -174,6 +174,8 @@ textarea.field{resize:vertical}
 .detailBody > button:not([class]),
 .panel > button:not([class]){width:100%;border:1px solid #d8d8d8;background:#fff;color:#333;border-radius:11px;padding:12px;font-weight:700;margin-top:8px}
 .primary{background:#111;color:#fff;border:0;padding:12px 16px;border-radius:10px}
+.primary.danger{background:#b3261e}
+.primary:disabled{opacity:.6}
 .empty{padding:30px;text-align:center;color:#666}
 .modal{position:fixed;z-index:100;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:flex-end}
 .sheet{background:#fff;color:#111;width:100%;border-radius:20px 20px 0 0;padding:18px;max-height:82dvh;overflow:auto}
@@ -2487,6 +2489,7 @@ function settingsPage(){
         ?`<div class="settingSection"><h3>Owner tools 🔒</h3>${settingsRow('📊','Owner dashboard','Earnings, transactions and moderation','ownerDashboard')}${settingsRow('📢','Advertiser campaigns','Manage booked sponsored placements','ads')}${settingsRow('🛠️','App configuration','Ad frequency, advertiser rates and Premium pricing','adminConfig')}</div>`
         :`<div class="settingSection"><h3>App owner</h3>${settingsRow('🔒','Owner sign-in','Restricted — app owner access only','ownerLogin')}</div>`}
       <div class="settingSection loginSection">${settingsRow('➕','Add another account','Switch between local demo accounts','addAccount')}${settingsRow('🚪','Log out','Sign out of this device','logout')}</div>
+      <div class="settingSection"><h3>Danger zone</h3>${settingsRow('🗑️','Delete account','Permanently delete your account, uploads and data','deleteAccount')}</div>
     </div>
   </div>`;
 }
@@ -2537,6 +2540,7 @@ function settingDetail(key){
   if(key==='account'){authPage();return}
   if(key==='addAccount'){authPage(true);authForm('signup');return}
   if(key==='logout'){logout();return}
+  if(key==='deleteAccount'){deleteAccountPage();return}
   if(key==='premium'){premiumPage();return}
   if(key==='ownerLogin'){promptOwnerLogin();return}
   if(key==='ownerDashboard'){ownerDashboardPage();return}
@@ -3492,6 +3496,53 @@ function exitAuthGate(){
     pendingDeepLinkReelId=null;
     openReel(id);
   }
+}
+
+/* ---- Delete account (Settings > Danger zone) ----
+   Runs entirely on-device: the user is already authenticated in this
+   session, so no extra OTP step is needed here (that's only required for
+   the public /delete-account web page, which has no device session to
+   trust). Two confirms, then the server wipes the account server-side and
+   this clears everything local and returns to the sign-in gate. */
+function deleteAccountPage(){
+  markPage(deleteAccountPage);
+  main.innerHTML=`<div class="panel"><div class="detailHead"><button type="button" onclick="navBack(()=>settingDetail('settings'))">‹</button><h2>Delete account</h2></div>
+    <div class="detailBody">
+      <div class="card">
+        <p><b>This permanently deletes your EduInsta account.</b></p>
+        <p>This removes your uploaded videos, subscription record and account data from EduInsta's servers, and signs you out of this device. This cannot be undone.</p>
+      </div>
+      <button type="button" class="primary danger" id="confirmDeleteBtn" onclick="confirmDeleteAccount()">Permanently delete my account</button>
+    </div>
+  </div>`;
+}
+async function confirmDeleteAccount(){
+  if(!window.confirm('Delete your EduInsta account? Your uploads, subscription and account data will be permanently removed. This cannot be undone.'))return;
+  const btn=document.getElementById('confirmDeleteBtn');
+  const userId=currentUserId();
+  if(btn){btn.disabled=true;btn.textContent='Deleting…'}
+  try{
+    if(serverMode()){
+      const res=await fetch(`${API_BASE}/api/account/${encodeURIComponent(userId)}`,{method:'DELETE'});
+      const result=await res.json().catch(()=>({ok:false}));
+      if(!result.ok)throw new Error(result.error||'Delete failed');
+    }
+    wipeLocalAccountData();
+    toast('Your account has been deleted');
+    renderAuthGate('login');
+  }catch(err){
+    if(btn){btn.disabled=false;btn.textContent='Permanently delete my account'}
+    toast('Could not delete your account — check your connection and try again');
+  }
+}
+function wipeLocalAccountData(){
+  try{
+    Object.keys(localStorage).filter(k=>k.startsWith('er_')).forEach(k=>localStorage.removeItem(k));
+  }catch{}
+  account={loggedIn:false,email:"",name:""};
+  profile={name:"Your Name",username:"@student",role:"Student / Creator"};
+  comments={};following=[];saved=[];likes=[];interests=[];customInterests=[];
+  erSettings={};registeredAccount=null;
 }
 
 /* ---- Update phone number (Settings > Account details), OTP-verified ---- */

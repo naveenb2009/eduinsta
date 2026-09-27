@@ -1231,7 +1231,12 @@ async function allReels(){
 async function fetchMyUploads(){
   if(serverMode()){
     try{
-      const res=await fetch(`${API_BASE}/api/feed?creator=${encodeURIComponent(currentUserId())}&limit=50`);
+      /* Reels are stored on the server with creator=profile.username (see
+         publishToServer(), which sends form.append('creator',profile.username))
+         - NOT currentUserId() (which is account.email once logged in). Filtering
+         by the wrong value here silently matched nothing, so the Uploads tab
+         always looked empty even for a user with real published reels. */
+      const res=await fetch(`${API_BASE}/api/feed?creator=${encodeURIComponent(profile.username)}&limit=50`);
       const data=await res.json();
       return (data.reels||[]).map(r=>({...r,src:resolveMediaUrl(r.src)}));
     }catch(err){
@@ -3510,8 +3515,27 @@ function validateSignupFields({name,identifier,password,confirmPassword}){
   if(confirmPassword!==password)errors.confirmPassword='Passwords do not match.';
   return Object.keys(errors).length?{ok:false,errors}:{ok:true};
 }
-function performSignup({name,identifier,password}){
+/* Accounts are now real server-side records (see /api/signup in server.js) -
+   previously this only ever wrote to THIS device's local storage, which is
+   wiped on reinstall, so "sign in" would stop working even though the user
+   never asked to delete anything. Server mode requires connectivity to
+   create an account (it always did require it to actually be useful across
+   devices); the local copy below is kept too, purely as an offline-login
+   cache once you've successfully signed in on this device at least once. */
+async function performSignup({name,identifier,password}){
   name=(name||'').trim(); identifier=(identifier||'').trim();
+  if(serverMode()){
+    try{
+      const res=await fetch(`${API_BASE}/api/signup`,{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({name,email:identifier,password})
+      });
+      const data=await res.json();
+      if(!data.ok)return{ok:false,error:data.error||'Could not create your account. Please try again.'};
+    }catch{
+      return{ok:false,error:'Could not reach the server. Check your connection and try again.'};
+    }
+  }
   /* A signup creates a FRESH account record. Do NOT inherit the email or phone
      of whoever was registered before - that would leak the previous user's
      contact details into the new account and let them receive its OTPs. */
@@ -3532,10 +3556,46 @@ function performSignup({name,identifier,password}){
   syncOwnAvatarFromServer();
   return{ok:true};
 }
-function performLogin({identifier,password}){
+async function performLogin({identifier,password}){
   identifier=(identifier||'').trim(); password=password||'';
   if(!identifier||!password)return{ok:false,error:'Enter your email/mobile and password.'};
-  if(!registeredAccount)return{ok:false,error:'No account found on this device yet — please sign up first.'};
+
+  if(serverMode()){
+    try{
+      const res=await fetch(`${API_BASE}/api/login`,{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({email:identifier,password})
+      });
+      const data=await res.json();
+      if(data.ok){
+        registeredAccount={name:data.name||identifier,password,email:identifier,phone:data.phone||null};
+        lsSet('er_registered_account',JSON.stringify(registeredAccount));
+        account={loggedIn:true,email:identifier,name:data.name||identifier};
+        lsSet('er_account',JSON.stringify(account));
+        if(!profile.name||profile.name==='Your Name')profile.name=data.name||identifier;
+        if(data.phone)profile.phone=data.phone;
+        saveState();
+        addNotification('security','New sign-in','Your account was signed in on this device.');
+        syncOwnAvatarFromServer();
+        return{ok:true};
+      }
+      /* The server definitively said "wrong password" - trust that and stop,
+         rather than falling through to a stale local check that could let
+         an old/changed password still work. */
+      if(res.status===401)return{ok:false,error:data.error||'Incorrect email/mobile or password.'};
+      // status 404 (no such account on the server yet - see the migration
+      // fallback below) or a server error - fall through.
+    }catch{
+      // Server unreachable - fall through to the offline check below.
+    }
+  }
+
+  /* OFFLINE FALLBACK, and MIGRATION PATH for accounts created before this
+     update shipped (the server has never heard of them, but this device's
+     local copy is still valid). A successful local match here silently
+     creates the matching server record too, so future logins - including
+     after a reinstall - work without the user having to do anything. */
+  if(!registeredAccount)return{ok:false,error:serverMode()?'Could not reach the server. Check your connection and try again.':'No account found on this device yet — please sign up first.'};
   const matchesEmail=norm(identifier)===norm(registeredAccount.email);
   const idDigits=digitsOnly(identifier);
   const matchesPhone=!!registeredAccount.phone && idDigits.length>=7 && idDigits===digitsOnly(registeredAccount.phone);
@@ -3547,6 +3607,12 @@ function performLogin({identifier,password}){
   saveState();
   addNotification('security','New sign-in','Your account was signed in on this device.');
   syncOwnAvatarFromServer();
+  if(serverMode()){
+    fetch(`${API_BASE}/api/signup`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({name:registeredAccount.name,email:registeredAccount.email,phone:registeredAccount.phone,password:registeredAccount.password})
+    }).catch(()=>{});
+  }
   return{ok:true};
 }
 
@@ -3572,8 +3638,10 @@ function authForm(mode){
     ? `<input class="field" id="authEmail" type="email" placeholder="Email or mobile number"><div class="passwordField"><input class="field" id="authPass" type="password" placeholder="Password"><button type="button" class="passwordToggle" onclick="togglePasswordVisibility('authPass',this)">👁</button></div><div class="fieldError" id="authError"></div><button type="button" class="primary" onclick="modalLogin()">Log in</button><p class="filterNote">This prototype stores account state only on this device.</p>`
     : `<input class="field" id="authName" placeholder="Full name"><input class="field" id="authIdentifier" type="email" placeholder="Email address" inputmode="email"><div class="passwordField"><input class="field" id="authPass" type="password" placeholder="Create password"><button type="button" class="passwordToggle" onclick="togglePasswordVisibility('authPass',this)">👁</button></div><small class="pwHint">${escapeHtml(PASSWORD_HINT)}</small><input class="field" id="authPass2" type="password" placeholder="Confirm password"><label class="termsRow"><input type="checkbox" id="authAge13"><span>I confirm I am 13 years of age or older.</span></label><div class="fieldError" id="authError"></div><button type="button" class="primary" onclick="modalSignup()">Create account</button><p class="filterNote">This prototype stores account state only on this device.</p>`;
 }
-function modalLogin(){
-  const result=performLogin({identifier:document.getElementById("authEmail")?.value,password:document.getElementById("authPass")?.value});
+async function modalLogin(){
+  const btn=document.querySelector('#authForm .primary'); if(btn)btn.disabled=true;
+  const result=await performLogin({identifier:document.getElementById("authEmail")?.value,password:document.getElementById("authPass")?.value});
+  if(btn)btn.disabled=false;
   const err=document.getElementById("authError");
   if(!result.ok){if(err)err.textContent=result.error;return}
   if(err)err.textContent='';
@@ -3594,10 +3662,10 @@ function modalSignup(){
   sendOtp(fields.identifier,'signup');
   renderOtpStep(document.getElementById("authForm"),fields.identifier,'signup',completeModalSignup,()=>authForm('signup'));
 }
-function completeModalSignup(){
-  const result=performSignup(pendingModalSignupData);
+async function completeModalSignup(){
+  const result=await performSignup(pendingModalSignupData);
   pendingModalSignupData=null;
-  if(!result.ok){toast('Something went wrong — please try again');authForm('signup');return}
+  if(!result.ok){toast(result.error||'Something went wrong — please try again');authForm('signup');return}
   closeOverlay(); toast("Account created"); page('profile');
 }
 function logout(){
@@ -3659,8 +3727,10 @@ function renderGateForm(){
       <button type="button" class="primary" style="width:100%" onclick="gateSignup()">Create account</button>`;
   }
 }
-function gateLogin(){
-  const result=performLogin({identifier:document.getElementById('gateEmail')?.value,password:document.getElementById('gatePass')?.value});
+async function gateLogin(){
+  const btn=document.querySelector('#gateForm .primary'); if(btn)btn.disabled=true;
+  const result=await performLogin({identifier:document.getElementById('gateEmail')?.value,password:document.getElementById('gatePass')?.value});
+  if(btn)btn.disabled=false;
   const err=document.getElementById('gateError');
   if(!result.ok){if(err)err.textContent=result.error;return}
   if(err)err.textContent='';
@@ -3688,16 +3758,33 @@ function gateSignup(){
   sendOtp(fields.identifier,'signup');
   renderOtpStep(document.getElementById('gateForm'),fields.identifier,'signup',completeGateSignup,()=>renderGateForm());
 }
-function completeGateSignup(){
-  const result=performSignup(pendingSignupData);
+async function completeGateSignup(){
+  const result=await performSignup(pendingSignupData);
   pendingSignupData=null;
-  if(!result.ok){toast('Something went wrong — please try again');gateTab='signup';renderGateForm();return}
+  if(!result.ok){toast(result.error||'Something went wrong — please try again');gateTab='signup';renderGateForm();return}
   exitAuthGate(); toast('Account created — welcome to EduInsta');
 }
 
-/* ---- Forgot password (OTP via email or phone) ---- */
+/* ---- Forgot password (OTP via email or phone) ----
+   IMPORTANT: this can no longer assume `registeredAccount` exists on THIS
+   device. Accounts live on the server now (see performLogin/performSignup),
+   and a reinstalled or new device has no local copy at all even though the
+   account is perfectly real - so in server mode we always ask for the email
+   directly instead of gating the whole flow on a local record. Prototype
+   (offline) mode has no server to check against, so it keeps the old
+   local-only behavior. */
+var forgotPasswordTarget=null;
 function openForgotPassword(){
   const holder=document.getElementById('gateForm'); if(!holder)return;
+  if(serverMode()){
+    holder.innerHTML=`
+      <p class="filterNote">Enter the email address on your EduInsta account and we'll send you a verification code.</p>
+      <input class="field" id="forgotEmail" type="email" placeholder="Email address" autocomplete="username" inputmode="email" value="${escapeAttr(registeredAccount?.email||'')}">
+      <div class="fieldError" id="forgotError"></div>
+      <button type="button" class="primary" style="width:100%" onclick="submitForgotEmail()">Send code</button>
+      <button type="button" class="btnSecondary" onclick="renderGateForm()">Back to login</button>`;
+    return;
+  }
   if(!registeredAccount){
     holder.innerHTML=`<p class="filterNote">No account was found on this device yet. Please sign up first.</p>
       <button type="button" class="primary" style="width:100%" onclick="gateTab='signup';renderGateForm()">Go to sign up</button>
@@ -3714,13 +3801,22 @@ function openForgotPassword(){
     <div class="optionList">${opts.join('')}</div>
     <button type="button" class="btnSecondary" onclick="renderGateForm()">Back to login</button>`;
 }
+function submitForgotEmail(){
+  const email=(document.getElementById('forgotEmail')?.value||'').trim();
+  const err=document.getElementById('forgotError');
+  if(!email||!email.includes('@')){if(err)err.textContent='Enter a valid email address.';return}
+  if(err)err.textContent='';
+  sendOtp(email,'reset');
+  renderOtpStep(document.getElementById('gateForm'),email,'reset',()=>showResetPasswordStep(email),openForgotPassword);
+}
 function chooseForgotMethod(method){
   const target=method==='email'?registeredAccount?.email:registeredAccount?.phone;
   if(!target){toast('No phone number on file for this account');return}
   sendOtp(target,'reset');
-  renderOtpStep(document.getElementById('gateForm'),target,'reset',showResetPasswordStep,openForgotPassword);
+  renderOtpStep(document.getElementById('gateForm'),target,'reset',()=>showResetPasswordStep(target),openForgotPassword);
 }
-function showResetPasswordStep(){
+function showResetPasswordStep(target){
+  forgotPasswordTarget=target;
   const holder=document.getElementById('gateForm'); if(!holder)return;
   holder.innerHTML=`
     <p class="filterNote">Choose a new password for your account.</p>
@@ -3730,18 +3826,45 @@ function showResetPasswordStep(){
     <div class="fieldError" id="resetError"></div>
     <button type="button" class="primary" style="width:100%" onclick="submitPasswordReset()">Update password</button>`;
 }
-function submitPasswordReset(){
+async function submitPasswordReset(){
   const p1=document.getElementById('resetPass')?.value||'', p2=document.getElementById('resetPass2')?.value||'';
   const err=document.getElementById('resetError');
   if(!isValidPassword(p1)){if(err)err.textContent='Password must be '+PASSWORD_HINT;return}
   if(p1!==p2){if(err)err.textContent='Passwords do not match.';return}
-  registeredAccount.password=p1;
-  lsSet('er_registered_account',JSON.stringify(registeredAccount));
+  const target=forgotPasswordTarget||registeredAccount?.email;
+
+  if(serverMode()){
+    const btn=document.querySelector('#gateForm .primary'); if(btn)btn.disabled=true;
+    try{
+      const res=await fetch(`${API_BASE}/api/reset-password`,{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({email:target,newPassword:p1})
+      });
+      const data=await res.json();
+      if(btn)btn.disabled=false;
+      if(!data.ok){if(err)err.textContent=data.error||'Could not reset your password. Please try again.';return}
+    }catch{
+      if(btn)btn.disabled=false;
+      if(err)err.textContent='Could not reach the server. Check your connection and try again.';
+      return;
+    }
+  }
+  /* Keep this device's local copy in sync too (if it has one for this
+     account), so the old offline-fallback check in performLogin can't let
+     the stale password work again on this same device. */
+  if(registeredAccount && target && norm(registeredAccount.email||'')===norm(target)){
+    registeredAccount.password=p1;
+    lsSet('er_registered_account',JSON.stringify(registeredAccount));
+  }else if(!serverMode() && registeredAccount){
+    registeredAccount.password=p1;
+    lsSet('er_registered_account',JSON.stringify(registeredAccount));
+  }
   if(err)err.textContent='';
+  forgotPasswordTarget=null;
   toast('Password updated — please log in with your new password');
   addNotification('security','Password changed','Your password was reset successfully.');
   gateTab='login'; renderGateForm();
-  const emailField=document.getElementById('gateEmail'); if(emailField)emailField.value=registeredAccount.email;
+  const emailField=document.getElementById('gateEmail'); if(emailField&&target)emailField.value=target;
 }
 function exitAuthGate(){
   document.querySelector('.app').classList.remove('authGateMode');

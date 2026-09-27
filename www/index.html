@@ -759,6 +759,72 @@ function savePremiumConfigOverrides(){
 }
 var subscription=readJSON('er_subscription',{status:'free',planId:null,paymentMethod:null,startedAt:null,expiresAt:null,renewsAt:null,cancelAtPeriodEnd:false,history:[]});
 
+/* ================= Google Play Billing (Premium subscription ONLY) =================
+   Play Store policy requires in-app digital goods (like an ad-free Premium
+   subscription) to be sold through Play Billing, not a third-party payment
+   gateway -- using Razorpay/Cashfree/etc for this specific purchase risks
+   the listing being removed. Advertiser ad-campaign payments are a separate,
+   B2B purchase and are NOT affected -- those still go through
+   openCheckout()/Razorpay elsewhere in this file.
+
+   Uses the RevenueCat Capacitor plugin (@revenuecat/purchases-capacitor):
+   RevenueCat sits in front of the Play Billing Library and verifies each
+   purchase server-side against Google's Play Developer API on its own
+   infrastructure, and calls OUR backend's webhook (see
+   /api/revenuecat-webhook in server.js) once verified. That is a much
+   smaller lift for a solo project than hand-rolling Play Developer API
+   verification with a Google service account.
+
+   SETUP REQUIRED (placeholders below until done -- see REVENUECAT_SETUP.md):
+     1. Create the app + a "premium_monthly" subscription product in Play
+        Console (Monetize > Products > Subscriptions).
+     2. Create a free RevenueCat account, link it to that Play Console app
+        (via a Google Play service account, set up in RevenueCat's wizard).
+     3. Create a matching product + entitlement (e.g. entitlement id
+        "premium") in RevenueCat, copy the Android SDK "public" API key.
+     4. Replace REVENUECAT_ANDROID_API_KEY below with that real key. */
+var REVENUECAT_ANDROID_API_KEY='goog_REPLACE_ME';
+var REVENUECAT_ENTITLEMENT_ID='premium';
+var REVENUECAT_PRODUCT_ID='premium_monthly';
+var PurchasesService={
+  ready:false,
+  available(){
+    return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()
+              && window.Capacitor.Plugins && window.Capacitor.Plugins.Purchases);
+  },
+  plugin(){return window.Capacitor?.Plugins?.Purchases||null},
+  async init(){
+    if(this.ready||!this.available())return false;
+    try{
+      await this.plugin().configure({apiKey:REVENUECAT_ANDROID_API_KEY,appUserID:currentUserId()});
+      this.ready=true;
+      return true;
+    }catch(err){console.warn('RevenueCat init failed:',err);return false}
+  },
+  /* Kicks off the native Play Billing purchase sheet. Resolves once RevenueCat
+     confirms the purchase against Google; does NOT itself grant Premium --
+     that only happens when our backend's /api/subscription/:userId reflects
+     it, which the RevenueCat webhook updates once the purchase settles. */
+  async purchasePremium(){
+    if(!this.available())throw new Error('Play Billing not available in this build');
+    if(!this.ready)await this.init();
+    const {customerInfo}=await this.plugin().purchaseStoreProduct({
+      productIdentifier:REVENUECAT_PRODUCT_ID
+    });
+    return this.isEntitled(customerInfo);
+  },
+  async restorePurchases(){
+    if(!this.available())return false;
+    if(!this.ready)await this.init();
+    const {customerInfo}=await this.plugin().restorePurchases();
+    return this.isEntitled(customerInfo);
+  },
+  isEntitled(customerInfo){
+    return !!(customerInfo && customerInfo.entitlements && customerInfo.entitlements.active
+              && customerInfo.entitlements.active[REVENUECAT_ENTITLEMENT_ID]);
+  }
+};
+
 /* ================= Advertising system (admin/config) =================
    AdManager is the single place that knows how ads are sourced/tracked; the
    feed only ever calls buildFeedWithAds()/AdManager methods, so a real ad SDK
@@ -2600,9 +2666,12 @@ async function refreshSubscriptionFromServer(){
    this static prototype, so checkout is simulated locally with explicit
    Pay / Fail / Cancel outcomes, which also makes every outcome
    deterministically testable (a real gateway's result can't be).
-   Shared by BOTH the Premium subscription checkout and advertiser campaign
-   payments, including a standard set of payment methods (Card / UPI / Net
-   Banking / Wallet), same as any mainstream Indian payment gateway offers. */
+   Used for ADVERTISER CAMPAIGN payments only (a B2B purchase, not a
+   consumer digital good, so Play Store policy is fine with a third-party
+   gateway here). The Premium subscription no longer uses this path -- see
+   PurchasesService / Google Play Billing above. Includes a standard set of
+   payment methods (Card / UPI / Net Banking / Wallet), same as any
+   mainstream Indian payment gateway offers. */
 var __checkoutOnCancel=null;
 function openCheckout(opts){
   if(serverMode())return openRealCheckout(opts);
@@ -2757,14 +2826,41 @@ function showUpgradePrompt(message){
     <button type="button" onclick="closeOverlay()">Not now</button>
   </div></div>`;
 }
-function startCheckout(){
+/* Premium goes through Play Billing on a native build (PurchasesService,
+   above) -- Razorpay/the simulated sheet is only used as a browser preview
+   fallback where Play Billing can't run, purely so the flow is still
+   click-through-able while developing in a plain browser tab. Ad-campaign
+   checkout (startAdCampaignCheckout, below) is untouched and keeps using
+   openCheckout()/Razorpay -- that purchase type never moves to Play Billing. */
+async function startCheckout(){
   const plan=PREMIUM_CONFIG.plan;
+  if(PurchasesService.available()){
+    try{
+      const entitled=await PurchasesService.purchasePremium();
+      if(!entitled){toast('Purchase completed but Premium isn\'t active yet — pull to refresh in a moment.');return}
+      await refreshSubscriptionFromServer();
+      if(!isPremium()){
+        // RevenueCat's webhook to our backend hasn't landed yet; the purchase
+        // itself succeeded with Google, so tell the user rather than erroring.
+        toast('Payment received — activating Premium…');
+        setTimeout(async()=>{await refreshSubscriptionFromServer();premiumPage()},3000);
+        return;
+      }
+      toast('🎉 Welcome to EduInsta Premium!');premiumPage();
+    }catch(err){
+      console.error(err);
+      if(String(err?.message||err).toLowerCase().includes('cancel')){toast('Checkout cancelled');return}
+      recordPaymentFailure();toast('Payment failed — please try again.');
+    }
+    return;
+  }
+  // Browser fallback (no native Play Billing available) -- preview only.
   openCheckout({
     title:plan.label,
     amount:plan.price,
     intervalLabel:plan.interval,
     type:'premium',
-    onSuccess:(method)=>{activateSubscription(method);toast('🎉 Welcome to EduInsta Premium!');premiumPage()},
+    onSuccess:(method)=>{activateSubscription(method);toast('🎉 Welcome to EduInsta Premium! (browser preview — real builds use Google Play Billing)');premiumPage()},
     onFailure:()=>{recordPaymentFailure();toast('Payment failed — please try again.')},
     onCancel:()=>{toast('Checkout cancelled')}
   });
@@ -3488,6 +3584,7 @@ function boot(){
     syncAdMobWithSubscription();
   });
   if(AdMobService.available())AdMobService.init().then(()=>syncAdMobWithSubscription());
+  if(PurchasesService.available())PurchasesService.init();
   initDeepLinks();
 }
 /* Single place that decides whether native ads should be running at all.

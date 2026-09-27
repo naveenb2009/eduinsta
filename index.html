@@ -1223,6 +1223,48 @@ async function allReels(){
   return reels.concat(uploads.map(u=>({...u,uploaded:true,src:blobUrlFor(u)})));
 }
 
+/* Fetches the CURRENT user's own reels directly from the server (filtered
+   by creator), rather than relying on whatever happens to be on the first
+   page of the general feed - fixes the profile "Uploads" tab, which used to
+   read from local IndexedDB (dbAll()) even though reels haven't been stored
+   there since server mode shipped, so it always showed empty. */
+async function fetchMyUploads(){
+  if(serverMode()){
+    try{
+      const res=await fetch(`${API_BASE}/api/feed?creator=${encodeURIComponent(currentUserId())}&limit=50`);
+      const data=await res.json();
+      return (data.reels||[]).map(r=>({...r,src:resolveMediaUrl(r.src)}));
+    }catch(err){
+      console.warn('Could not load your uploads from the server:',err);
+      toast('Could not reach the server — showing offline content');
+    }
+  }
+  const uploads=await dbAll();
+  return uploads.map(u=>({...u,uploaded:true,src:blobUrlFor(u)}));
+}
+/* Fetches specific reels by id (e.g. saved/watch-history ids from local
+   storage) directly, instead of hoping they're on whichever single feed
+   page happens to already be loaded - a saved reel from a few days ago is
+   very likely to have scrolled off the first page by now. */
+async function fetchReelsByIds(ids){
+  if(!ids||!ids.length)return [];
+  if(serverMode()){
+    try{
+      const res=await fetch(`${API_BASE}/api/reels/batch?ids=${encodeURIComponent(ids.join(','))}`);
+      const data=await res.json();
+      if(data.ok){
+        const byId=new Map(data.reels.map(r=>[r.id,{...r,src:resolveMediaUrl(r.src)}]));
+        return ids.map(id=>byId.get(id)).filter(Boolean);
+      }
+    }catch(err){
+      console.warn('Could not load reels by id from the server:',err);
+    }
+  }
+  const all=await allReelsCached();
+  const byId=new Map(all.map(r=>[r.id,r]));
+  return ids.map(id=>byId.get(id)).filter(Boolean);
+}
+
 /* ---------------- Navigation ---------------- */
 function page(p){
   resetNav();
@@ -2081,6 +2123,22 @@ function cards(list){
 }
 async function openReel(id,srcHint){
   await home('For You');
+  /* The reel might not be on the currently loaded feed page at all - e.g. an
+     older saved/uploaded reel, or one reached via a shared link, that has
+     since scrolled past the first page of everyone's main feed. When that
+     happens, fetch it directly and splice it into the top of the feed so
+     "Watch Reel" (and shared /reel/:id links) work for ANY reel, not just
+     ones that happen to already be on screen. */
+  if(!document.querySelector(`.reel[data-id="${id}"]`)){
+    const feed=document.getElementById('feed');
+    if(feed){
+      const [found]=await fetchReelsByIds([id]);
+      if(found){
+        feed.insertAdjacentHTML('afterbegin',reelHTML(found));
+        observeVideos();
+      }
+    }
+  }
   requestAnimationFrame(()=>{
     const reelEl=document.querySelector(`.reel[data-id="${id}"]`);
     if(!reelEl)return;
@@ -2347,8 +2405,7 @@ function avatarMarkup(size){
 }
 async function profilePage(){
   markPage(profilePage);
-  const [uploads,allR]=await Promise.all([dbAll(),allReels()]);
-  const downloadsList=allR.filter(r=>saved.includes(r.id));
+  const [uploads,downloadsList]=await Promise.all([fetchMyUploads(),fetchReelsByIds(saved)]);
   const premium=isPremium();
   main.innerHTML=`<div class="panel profilePanel">
     <div class="profileTopBar"><button type="button" class="profileBack" onclick="page('home')">‹</button><h2>Profile</h2><button type="button" class="profileGear" onclick="goTo(settingsPage)">⚙</button></div>
@@ -2369,7 +2426,7 @@ async function profilePage(){
       <button type="button" class="${profileTab==='downloads'?'selected':''}" onclick="profileTab='downloads';profilePage()">Saved</button>
       <button type="button" class="${profileTab==='history'?'selected':''}" onclick="profileTab='history';profilePage()">History</button>
     </div>
-    <div id="profileContent">${profileTab==='uploads'?profileUploads(uploads):profileTab==='history'?await profileHistory(allR):profileDownloads(downloadsList)}</div>
+    <div id="profileContent">${profileTab==='uploads'?profileUploads(uploads):profileTab==='history'?await profileHistory():profileDownloads(downloadsList)}</div>
     <div class="profileMenuCard"><h3>EduInsta controls</h3>
       ${settingsRow('🎯','Manage interests','Choose subjects and topics for your For You feed','interests')}
       ${settingsRow('👥','Followers & following','See who follows you and who you follow','network')}
@@ -2406,14 +2463,15 @@ document.addEventListener('seeked',e=>{
 
 function profileUploads(list){
   if(!list.length)return `<div class="empty profileEmpty">🎬<br><b>No uploads yet</b><br>Published reels will appear here.</div>`;
-  return `<div class="profileGrid">${list.map(r=>`<div class="profileCard"><div class="thumb">${thumbVideoHTML(blobUrlFor(r))}<span>▶</span></div><b>${escapeHtml(r.title)}</b><small>${escapeHtml(r.cat)} · ${escapeHtml(r.sub)}</small><button type="button" onclick="openReel(${r.id})">Watch Reel</button></div>`).join("")}</div>`;
+  return `<div class="profileGrid">${list.map(r=>`<div class="profileCard"><div class="thumb">${thumbVideoHTML(r.src)}<span>▶</span></div><b>${escapeHtml(r.title)}</b><small>${escapeHtml(r.cat)} · ${escapeHtml(r.sub)}</small><button type="button" onclick="openReel(${r.id})">Watch Reel</button></div>`).join("")}</div>`;
 }
 function profileDownloads(list){
   if(!list.length)return `<div class="empty profileEmpty">🔖<br><b>No downloads yet</b><br>Tap Save on a reel and it will appear here.</div>`;
   return `<div class="profileGrid">${list.map(r=>`<div class="profileCard"><div class="thumb">${thumbVideoHTML(r.src)}<span>▶</span></div><b>${escapeHtml(r.title)}</b><small>${escapeHtml(r.creator)} · ${escapeHtml(r.sub)}</small><button type="button" onclick="openReel(${r.id})">Watch Reel</button></div>`).join("")}</div>`;
 }
-function profileHistory(allR){
-  const byId=new Map(allR.map(r=>[r.id,r]));
+async function profileHistory(){
+  const found=await fetchReelsByIds(watchHistory.map(h=>h.id));
+  const byId=new Map(found.map(r=>[r.id,r]));
   const list=watchHistory.map(h=>({...byId.get(h.id),watchedAt:h.watchedAt})).filter(r=>r&&r.id!==undefined);
   if(!list.length)return `<div class="empty profileEmpty">🕘<br><b>No watch history yet</b><br>Reels you play will appear here.</div>`;
   return `<div class="historyClearBar"><button type="button" onclick="clearHistory()">Clear history</button></div>

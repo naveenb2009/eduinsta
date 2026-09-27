@@ -82,6 +82,14 @@ jobs:
           fi
           npx cap sync android
 
+      # Capacitor's default launcher icon is a generic blue "cap" logo.
+      # android/ is regenerated from scratch on every CI build (gitignored),
+      # so the real EduInsta icon (pre-generated for every density, legacy +
+      # adaptive) is committed under android-icon/ and copied in here each
+      # time, same pattern as the App Links / AdMob injections below.
+      - name: Apply EduInsta app icon
+        run: python3 scripts/apply-app-icon.py
+
       # Every CI run gets its own throwaway debug-signing certificate unless
       # we install a fixed one first -- otherwise each new debug APK has a
       # DIFFERENT signature than the last, and Android refuses to install it

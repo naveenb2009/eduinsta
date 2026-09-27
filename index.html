@@ -3123,23 +3123,6 @@ function togglePasswordVisibility(id,btn){
   btn.setAttribute('aria-label',show?'Hide password':'Show password');
 }
 
-/* Best-effort, non-blocking location permission check performed right after a
-   successful login/signup. Never blocks or fails the auth flow itself. */
-function requestLocationPermission(){
-  try{
-    if(!('geolocation' in navigator))return;
-    navigator.geolocation.getCurrentPosition(
-      pos=>{
-        erSet('locationPermission','granted');
-        erSet('lastLocation',{lat:pos.coords.latitude,lng:pos.coords.longitude,at:Date.now()});
-        toast('Location access granted — nearby learning suggestions enabled');
-      },
-      ()=>{ erSet('locationPermission','denied'); toast('Location permission denied — some local recommendations may be limited'); },
-      {timeout:8000,maximumAge:60000}
-    );
-  }catch{ /* geolocation unsupported in this environment - ignore silently */ }
-}
-
 /* ---- One-time-password (OTP) infrastructure ----
    There is no backend or SMS/email provider wired into this static prototype,
    so delivery is SIMULATED: the "sent" code is surfaced via toast instead of a
@@ -3280,7 +3263,6 @@ function performSignup({name,identifier,password}){
   profile.name=name;
   profile.username="@"+name.toLowerCase().replace(/[^a-z0-9]+/g,"").slice(0,20)||"@student";
   saveState();
-  requestLocationPermission();
   addNotification('system','Welcome to EduInsta 🎉','Your account was created successfully.');
   addNotification('learning','Personalize your feed','Pick a few interests in your profile to fine-tune your For You feed.');
   FOLLOWERS_DEFAULT.forEach(u=>{
@@ -3302,7 +3284,6 @@ function performLogin({identifier,password}){
   lsSet('er_account',JSON.stringify(account));
   if(!profile.name||profile.name==='Your Name')profile.name=registeredAccount.name;
   saveState();
-  requestLocationPermission();
   addNotification('security','New sign-in','Your account was signed in on this device.');
   return{ok:true};
 }

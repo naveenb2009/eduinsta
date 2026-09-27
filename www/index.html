@@ -644,13 +644,23 @@ window.fetch=function(input,init){
 };
 
 /* ---------------- Demo content ---------------- */
+/* IDs are negative (-1..-6), NOT 1..6. Real reels get their id from the
+   server's BIGSERIAL sequence, which ALSO starts counting at 1 - so with
+   small positive demo ids, the very first few reels anyone ever publishes
+   would collide with these (server reel #2 and demo reel #2 both "id:2").
+   That collision is silent and nasty: allReels()'s de-dup logic would think
+   a real upload was "already shown" and drop a demo reel instead, and a
+   save/like recorded against a demo reel would suddenly point at someone's
+   real uploaded reel once that id number was taken. Negative ids can never
+   collide with a database sequence (always positive) or a local upload id
+   (Date.now()-based, always a large positive number). */
 const reels=[
-  {id:1,cat:"School",sub:"Mathematics",creator:"@mathminute",title:"Why is the area of a circle πr²?",desc:"A quick visual explanation of the circle area formula.",src:"https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"},
-  {id:2,cat:"Engineering",sub:"Physics",creator:"@engineeringbytes",title:"Ohm's Law explained in one minute",desc:"Understand voltage, current and resistance with a simple example.",src:"https://www.w3schools.com/html/mov_bbb.mp4"},
-  {id:3,cat:"Medical",sub:"Biology",creator:"@medstudy",title:"DNA: the four bases",desc:"A short introduction to A, T, C and G.",src:"https://media.w3.org/2010/05/sintel/trailer.mp4"},
-  {id:4,cat:"Competitive Exams",sub:"General Knowledge",creator:"@upscquick",title:"Fundamental Rights – quick revision",desc:"A concise revision-style explainer for exam preparation.",src:"https://media.w3.org/2010/05/bunny/trailer.mp4"},
-  {id:5,cat:"Engineering",sub:"Aerospace",creator:"@aerospacelab",title:"Inside a jet engine: turbomachinery explained",desc:"A deep-dive into how turbomachinery powers modern jet engines.",src:"https://media.w3.org/2010/05/bunny/trailer.mp4"},
-  {id:6,cat:"Computer Science",sub:"Data Science",creator:"@datasciencehub",title:"Building your first machine learning model",desc:"A step-by-step walkthrough of a simple ML pipeline.",src:"https://www.w3schools.com/html/mov_bbb.mp4"}
+  {id:-1,cat:"School",sub:"Mathematics",creator:"@mathminute",title:"Why is the area of a circle πr²?",desc:"A quick visual explanation of the circle area formula.",src:"https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"},
+  {id:-2,cat:"Engineering",sub:"Physics",creator:"@engineeringbytes",title:"Ohm's Law explained in one minute",desc:"Understand voltage, current and resistance with a simple example.",src:"https://www.w3schools.com/html/mov_bbb.mp4"},
+  {id:-3,cat:"Medical",sub:"Biology",creator:"@medstudy",title:"DNA: the four bases",desc:"A short introduction to A, T, C and G.",src:"https://media.w3.org/2010/05/sintel/trailer.mp4"},
+  {id:-4,cat:"Competitive Exams",sub:"General Knowledge",creator:"@upscquick",title:"Fundamental Rights – quick revision",desc:"A concise revision-style explainer for exam preparation.",src:"https://media.w3.org/2010/05/bunny/trailer.mp4"},
+  {id:-5,cat:"Engineering",sub:"Aerospace",creator:"@aerospacelab",title:"Inside a jet engine: turbomachinery explained",desc:"A deep-dive into how turbomachinery powers modern jet engines.",src:"https://media.w3.org/2010/05/bunny/trailer.mp4"},
+  {id:-6,cat:"Computer Science",sub:"Data Science",creator:"@datasciencehub",title:"Building your first machine learning model",desc:"A step-by-step walkthrough of a simple ML pipeline.",src:"https://www.w3schools.com/html/mov_bbb.mp4"}
 ];
 
 const ER_INTEREST_LIBRARY=[
@@ -1210,8 +1220,9 @@ async function allReels(){
     try{
       const remote=await fetchServerFeed(true);
       /* Show server reels AND the built-in demo reels together. Returning only
-         the remote list meant a single upload made every demo reel vanish,
-         leaving a feed that looked broken. Demos are de-duplicated by id. */
+         the remote list would make the feed look empty until people upload
+         real content. De-duplicated by id - safe because demo reels use
+         negative ids that can never collide with a real server reel id. */
       const remoteIds=new Set(remote.map(r=>r.id));
       return [...remote,...reels.filter(r=>!remoteIds.has(r.id))];
     }catch(err){
@@ -1250,24 +1261,47 @@ async function fetchMyUploads(){
 /* Fetches specific reels by id (e.g. saved/watch-history ids from local
    storage) directly, instead of hoping they're on whichever single feed
    page happens to already be loaded - a saved reel from a few days ago is
-   very likely to have scrolled off the first page by now. */
+   very likely to have scrolled off the first page by now.
+
+   Saved/liked/watched ids can point at TWO different kinds of reel:
+     - a real, server-published reel               -> only the server knows it
+     - one of the 6 built-in demo reels (ids 1-6)   -> only known locally,
+                                                        never exists on the server
+   Only checking the server (the old bug here) silently dropped every saved
+   demo reel from the Saved tab, Downloads page and Watch history - they'd
+   never come back even though `saved`/`watchHistory` still had their ids.
+   So: ask the server for whichever ids it has, then fill in anything it
+   didn't return (including when the server is unreachable) from the local
+   demo list. Ids are normalized to numbers throughout so a save recorded
+   from one source can't silently mismatch a lookup from the other. */
 async function fetchReelsByIds(ids){
   if(!ids||!ids.length)return [];
+  const wanted=ids.map(Number).filter(Number.isFinite);
+  if(!wanted.length)return [];
+  const byId=new Map();
   if(serverMode()){
     try{
-      const res=await fetch(`${API_BASE}/api/reels/batch?ids=${encodeURIComponent(ids.join(','))}`);
+      const res=await fetch(`${API_BASE}/api/reels/batch?ids=${encodeURIComponent(wanted.join(','))}`);
       const data=await res.json();
       if(data.ok){
-        const byId=new Map(data.reels.map(r=>[r.id,{...r,src:resolveMediaUrl(r.src)}]));
-        return ids.map(id=>byId.get(id)).filter(Boolean);
+        data.reels.forEach(r=>byId.set(Number(r.id),{...r,id:Number(r.id),src:resolveMediaUrl(r.src)}));
       }
     }catch(err){
       console.warn('Could not load reels by id from the server:',err);
     }
   }
-  const all=await allReelsCached();
-  const byId=new Map(all.map(r=>[r.id,r]));
-  return ids.map(id=>byId.get(id)).filter(Boolean);
+  const missing=wanted.filter(id=>!byId.has(id));
+  if(missing.length){
+    /* Local built-in demo reels first (always in memory, no fetch needed);
+       allReelsCached() also covers prototype/offline mode entirely. */
+    reels.forEach(r=>{ if(!byId.has(r.id) && missing.includes(r.id)) byId.set(r.id,r) });
+    const stillMissing=wanted.filter(id=>!byId.has(id));
+    if(stillMissing.length){
+      const all=await allReelsCached();
+      all.forEach(r=>{ if(!byId.has(r.id) && stillMissing.includes(r.id)) byId.set(r.id,r) });
+    }
+  }
+  return wanted.map(id=>byId.get(id)).filter(Boolean);
 }
 
 /* ---------------- Navigation ---------------- */
@@ -1317,9 +1351,10 @@ const HOME_TABS=['For You','All','Following'];
    reel actually has:
      - server reels: a real createdAt ISO timestamp
      - local (prototype-mode) uploads: no createdAt, but id IS Date.now()
-     - built-in demo/seed reels: small hand-picked ids (1,2,3…), no useful
-       time signal at all — treated as oldest, so they sink to the bottom
-       below any real content instead of crowding out real uploads. */
+     - built-in demo/seed reels: small hand-picked negative ids (-1,-2,…),
+       no useful time signal at all — treated as oldest, so they sink to
+       the bottom below any real content instead of crowding out real
+       uploads. */
 function reelTimestamp(r){
   if(r.createdAt){
     const t=Date.parse(r.createdAt);
@@ -2332,9 +2367,14 @@ async function publishToServer(file,title){
 }
 
 /* ---------------- Downloads ---------------- */
+/* Was filtering allReels() (a single ~30-item feed page) for saved ids -
+   any saved reel that had scrolled off that one page (or was never on it,
+   like a demo reel) silently vanished from this screen even though it was
+   genuinely saved. fetchReelsByIds() fetches exactly the saved reels
+   directly instead, the same fix already applied to the Profile > Saved
+   tab. */
 async function downloads(){
-  const all=await allReels();
-  const list=all.filter(r=>saved.includes(r.id));
+  const list=await fetchReelsByIds(saved);
   main.innerHTML=`<div class="panel"><h2>Downloads / Saved</h2>${cards(list)}</div>`;
 }
 

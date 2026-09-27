@@ -132,7 +132,8 @@ header>*{pointer-events:auto}
 .playPrompt{position:absolute;z-index:8;left:50%;top:50%;transform:translate(-50%,-50%);border:0;border-radius:999px;background:rgba(0,0,0,.85);color:#fff;padding:13px 18px;font-weight:700;box-shadow:0 3px 14px #0008}
 .info{position:static;padding:2px 2px 0}
 .creator{font-weight:700;font-size:14px;margin-bottom:4px;display:flex;align-items:center;gap:8px;min-width:0}
-.reelAvatar{width:28px;height:28px;flex:0 0 28px;border-radius:50%;background:linear-gradient(135deg,#5eead4,#8b5cf6);color:#04121a;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800}
+.reelAvatar{width:28px;height:28px;flex:0 0 28px;border-radius:50%;background:linear-gradient(135deg,#5eead4,#8b5cf6);color:#04121a;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;overflow:hidden}
+.reelAvatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
 .creatorName{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .follow{flex:0 0 auto;border:1px solid rgba(255,255,255,.55);color:#fff;background:transparent;border-radius:8px;padding:3px 10px;font-size:12px;font-weight:700}
 .follow.on{background:#5eead4;color:#042f2b;border-color:#5eead4}
@@ -1380,11 +1381,56 @@ function adSlotHTML(ad){
   </section>`;
 }
 
+/* ---------------- Shared creator avatars ----------------
+   Profile photos live on the server now (see setAvatar/getAvatars in
+   reels-service.js), so any user's feed can show another creator's real
+   photo, not just their own. Avatars are fetched in a small batched,
+   debounced call (one request per feed page, not one per reel) and cached
+   client-side for the rest of the session; the DOM is patched in place
+   once each batch resolves rather than blocking the feed render. */
+var creatorAvatars={};
+var __avatarFetchQueue=new Set();
+var __avatarFetchTimer=null;
+function queueAvatarFetch(creator){
+  if(!creator || Object.prototype.hasOwnProperty.call(creatorAvatars,creator) || !serverMode())return;
+  __avatarFetchQueue.add(creator);
+  if(__avatarFetchTimer)return;
+  __avatarFetchTimer=setTimeout(flushAvatarFetch,60);
+}
+async function flushAvatarFetch(){
+  __avatarFetchTimer=null;
+  const ids=[...__avatarFetchQueue]; __avatarFetchQueue.clear();
+  if(!ids.length)return;
+  try{
+    const res=await fetch(`${API_BASE}/api/avatars?ids=${encodeURIComponent(ids.join(','))}`);
+    const data=await res.json();
+    if(!data.ok)return;
+    ids.forEach(id=>{creatorAvatars[id]=data.avatars[id]||null});
+    applyAvatarsToDom(ids);
+  }catch{ids.forEach(id=>{delete creatorAvatars[id]})}
+}
+function avatarSpanHTML(creator){
+  const initial=escapeHtml(String(creator||'?').replace(/^@/,'').charAt(0).toUpperCase()||'?');
+  const url=creatorAvatars[creator];
+  if(url)return `<span class="reelAvatar" data-creator="${escapeAttr(creator)}"><img src="${escapeAttr(url)}" alt=""></span>`;
+  queueAvatarFetch(creator);
+  return `<span class="reelAvatar" data-creator="${escapeAttr(creator)}" aria-hidden="true">${initial}</span>`;
+}
+function applyAvatarsToDom(creators){
+  creators.forEach(c=>{
+    const url=creatorAvatars[c];
+    if(!url||typeof CSS==='undefined'||!CSS.escape)return;
+    document.querySelectorAll(`.reelAvatar[data-creator="${CSS.escape(c)}"]`).forEach(el=>{
+      el.innerHTML=`<img src="${escapeAttr(url)}" alt="">`;
+      el.removeAttribute('aria-hidden');
+    });
+  });
+}
+
 function reelHTML(r){
   const liked=likes.includes(r.id), isSaved=saved.includes(r.id), isFollowing=following.includes(r.creator);
   /* Every video fills the whole reel edge to edge (object-fit:cover) - the
      app is vertical-video only, so there is no letterboxing to manage. */
-  const initial=escapeHtml(String(r.creator||'?').replace(/^@/,'').charAt(0).toUpperCase()||'?');
   /* Instagram-style card: the video fills the whole reel and a floating
      strip (.reelPanel) with a dark fade holds the actions and caption over
      its bottom edge, so any video shape gets shown as large as possible. */
@@ -1410,7 +1456,7 @@ function reelHTML(r){
         </div>
       </div>
       <div class="info">
-        <div class="creator"><span class="reelAvatar" aria-hidden="true">${initial}</span><span class="creatorName">${escapeHtml(r.creator)}</span><button type="button" class="follow ${isFollowing?'on':''}" onclick="followCreator('${escapeAttr(r.creator)}',event)">${isFollowing?"Following":"Follow"}</button></div>
+        <div class="creator">${avatarSpanHTML(r.creator)}<span class="creatorName">${escapeHtml(r.creator)}</span><button type="button" class="follow ${isFollowing?'on':''}" onclick="followCreator('${escapeAttr(r.creator)}',event)">${isFollowing?"Following":"Follow"}</button></div>
         <div class="title">${escapeHtml(r.title)}</div>
         <div class="meta"><b>${escapeHtml(r.cat)} • ${escapeHtml(r.sub)}</b> · ${escapeHtml(r.desc||"Educational video on EduInsta.")}</div>
       </div>
@@ -1882,24 +1928,67 @@ function resolveReport(id){
   r.status='resolved'; saveReports(); toast('Report resolved'); ownerDashboardPage();
 }
 
-/* ---------------- Comments ---------------- */
-function commentsPanel(id,e){
+/* ---------------- Comments ----------------
+   Shared server-side (see /api/reels/:id/comments in server.js), so a
+   comment posted by one user is visible to everyone viewing that reel -
+   previously these lived only in the poster's own browser storage, so
+   nobody else could ever see them. `comments[id]` (local storage) is kept
+   only as an offline fallback for when the server can't be reached. */
+async function commentsPanel(id,e){
   e?.stopPropagation();
-  const arr=comments[id]||[];
   overlay.innerHTML=`<div class="modal" onclick="closeOverlay()"><div class="sheet" onclick="event.stopPropagation()">
-    <div class="commentHeader"><div><h3>Comments</h3><small>${arr.length} comment${arr.length===1?'':'s'}</small></div><button type="button" class="close" onclick="closeOverlay()">×</button></div>
-    <div class="commentList">${arr.length?arr.map(c=>`<div class="commentRow"><div class="commentAvatar">${escapeHtml((c.user||"S").replace("@","").charAt(0).toUpperCase())}</div><div class="commentBody"><b>${escapeHtml(c.user||"@student")}</b><div>${escapeHtml(c.text)}</div><small>Just now</small></div></div>`).join(""):`<div class="empty commentsEmpty">💬<br><b>No comments yet</b><br><span>Be the first to share your thoughts.</span></div>`}</div>
+    <div class="commentHeader"><div><h3>Comments</h3><small id="commentCount">Loading…</small></div><button type="button" class="close" onclick="closeOverlay()">×</button></div>
+    <div class="commentList" id="commentList"><div class="empty commentsEmpty">Loading comments…</div></div>
     <div class="commentComposer"><input id="commentInput" maxlength="300" placeholder="Add a thoughtful comment…" onkeydown="if(event.key==='Enter'){event.preventDefault();addComment(${id})}"><button type="button" onclick="addComment(${id})">➤</button></div>
   </div></div>`;
+  await loadComments(id);
 }
-function addComment(id){
+async function loadComments(id){
+  let arr=comments[id]||[];
+  if(serverMode()){
+    try{
+      const res=await fetch(`${API_BASE}/api/reels/${id}/comments`);
+      const data=await res.json();
+      if(data.ok)arr=data.comments;
+    }catch{
+      // Server unreachable - fall back to whatever's cached locally rather
+      // than showing an empty/broken panel.
+    }
+  }
+  renderCommentList(arr);
+}
+function renderCommentList(arr){
+  const list=document.getElementById('commentList'); if(!list)return;
+  const count=document.getElementById('commentCount');
+  if(count)count.textContent=`${arr.length} comment${arr.length===1?'':'s'}`;
+  list.innerHTML=arr.length
+    ?arr.map(c=>`<div class="commentRow"><div class="commentAvatar">${escapeHtml((c.user||"S").replace("@","").charAt(0).toUpperCase())}</div><div class="commentBody"><b>${escapeHtml(c.user||"@student")}</b><div>${escapeHtml(c.text)}</div><small>${c.createdAt?relativeTime(new Date(c.createdAt).getTime()):'Just now'}</small></div></div>`).join("")
+    :`<div class="empty commentsEmpty">💬<br><b>No comments yet</b><br><span>Be the first to share your thoughts.</span></div>`;
+}
+async function addComment(id){
   const x=document.getElementById("commentInput"), t=x&&x.value.trim();
   if(!t)return;
+  x.value='';
+  if(serverMode()){
+    try{
+      const res=await fetch(`${API_BASE}/api/reels/${id}/comments`,{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({userId:currentUserId(),username:profile.username||"@student",text:t})
+      });
+      const data=await res.json();
+      if(!data.ok)throw new Error(data.error||'failed');
+      await loadComments(id);
+      toast("Comment posted");
+      return;
+    }catch{
+      toast("Could not reach the server — comment saved on this device only");
+      // Fall through to the local-only save below so the comment isn't lost.
+    }
+  }
   comments[id]=comments[id]||[];
   comments[id].push({user:profile.username||"@student",text:t});
   saveState();
-  commentsPanel(id,null);
-  toast("Comment posted");
+  renderCommentList(comments[id]);
 }
 
 /* ---------------- Explore ---------------- */
@@ -2169,7 +2258,24 @@ async function doSearch(){
 }
 
 /* ================= Profile ================= */
-function photoSrc(){return profile?.avatarData||profile?.avatar||''}
+/* avatarData (local device copy) wins when present so the photo shows
+   instantly with no network round trip; avatarUrl (the server copy) is the
+   fallback used on a second device that hasn't taken its own local photo
+   yet - see syncOwnAvatarFromServer(), called at boot. */
+function photoSrc(){return profile?.avatarData||profile?.avatarUrl||profile?.avatar||''}
+/* On a fresh device (or after clearing local data) profile.avatarData won't
+   exist yet even though a photo was already uploaded from another device -
+   pull it down once so the profile page and this device's own reels show
+   the right photo instead of falling back to initials. */
+async function syncOwnAvatarFromServer(){
+  if(!serverMode()||!account.loggedIn||profile.avatarData||profile.avatarUrl)return;
+  try{
+    const res=await fetch(`${API_BASE}/api/avatars?ids=${encodeURIComponent(currentUserId())}`);
+    const data=await res.json();
+    const url=data?.avatars?.[currentUserId()];
+    if(url){profile.avatarUrl=url; saveState(); creatorAvatars[currentUserId()]=url; applyAvatarsToDom([currentUserId()])}
+  }catch{}
+}
 function avatarMarkup(size){
   const src=photoSrc();
   return src?`<img class="erProfilePhoto ${size||''}" src="${escapeAttr(src)}" alt="Profile photo">`:`<div class="profileAvatar ${size||''}">${escapeHtml((profile?.name||'Y').charAt(0).toUpperCase())}</div>`;
@@ -2299,17 +2405,44 @@ function handleProfilePhoto(input){
       const ctx=c.getContext('2d');
       if(!ctx){toast('Image processing is unavailable');return}
       ctx.drawImage(img,0,0,c.width,c.height);
+      /* Local copy shows instantly on THIS device, even offline. */
       profile.avatarData=c.toDataURL('image/jpeg',.84);
       saveState(); toast('Profile photo updated'); editProfilePage();
+      /* Server copy is what makes the photo visible to OTHER users - upload
+         the same downscaled image in the background. Local display above
+         already happened, so a slow/failed upload doesn't block the user. */
+      c.toBlob(uploadProfilePhoto,'image/jpeg',.84);
     };
     img.src=reader.result;
   };
   reader.readAsDataURL(file);
 }
+function uploadProfilePhoto(blob){
+  if(!blob||!serverMode())return;
+  const form=new FormData();
+  form.append('avatar',blob,'avatar.jpg');
+  form.append('userId',currentUserId());
+  fetch(`${API_BASE}/api/profile/avatar`,{method:'POST',body:form})
+    .then(r=>r.json())
+    .then(result=>{
+      if(!result.ok)return;
+      profile.avatarUrl=result.avatarUrl;
+      saveState();
+      /* Refresh this device's own reels immediately so the new photo shows
+         up right away in the feed too, not just on the profile page. */
+      creatorAvatars[currentUserId()]=result.avatarUrl;
+      applyAvatarsToDom([currentUserId()]);
+    })
+    .catch(()=>{});
+}
 function removeProfilePhoto(){
   if(!confirm('Remove your EduInsta profile photo?'))return;
-  delete profile.avatarData; delete profile.avatar;
+  delete profile.avatarData; delete profile.avatar; delete profile.avatarUrl;
   saveState(); toast('Profile photo removed'); editProfilePage();
+  if(serverMode()){
+    fetch(`${API_BASE}/api/profile/avatar/${encodeURIComponent(currentUserId())}`,{method:'DELETE'}).catch(()=>{});
+    delete creatorAvatars[currentUserId()];
+  }
 }
 function shareProfile(){
   shareContent({
@@ -3273,6 +3406,7 @@ function performSignup({name,identifier,password}){
     const p=personMap()[u];
     addNotification('follower','New follower',`${p?p.name:u} started following you.`);
   });
+  syncOwnAvatarFromServer();
   return{ok:true};
 }
 function performLogin({identifier,password}){
@@ -3289,6 +3423,7 @@ function performLogin({identifier,password}){
   if(!profile.name||profile.name==='Your Name')profile.name=registeredAccount.name;
   saveState();
   addNotification('security','New sign-in','Your account was signed in on this device.');
+  syncOwnAvatarFromServer();
   return{ok:true};
 }
 
@@ -3615,6 +3750,7 @@ function boot(){
   else renderAuthGate('login');
   updateNotificationBadge();
   applyAccessibilitySettings();
+  syncOwnAvatarFromServer();
   /* Re-check Premium against the server (server mode only). Runs after the
      first paint so a slow network never delays startup. */
   refreshSubscriptionFromServer().then(()=>{

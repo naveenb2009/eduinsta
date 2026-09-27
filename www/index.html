@@ -808,9 +808,13 @@ var PurchasesService={
   async purchasePremium(){
     if(!this.available())throw new Error('Play Billing not available in this build');
     if(!this.ready)await this.init();
-    const {customerInfo}=await this.plugin().purchaseStoreProduct({
-      productIdentifier:REVENUECAT_PRODUCT_ID
-    });
+    // purchaseStoreProduct needs the full product object from getProducts(),
+    // not just the id string -- Google requires the live product/price
+    // details to be shown in the purchase sheet, not just referenced by id.
+    const {products}=await this.plugin().getProducts({productIdentifiers:[REVENUECAT_PRODUCT_ID]});
+    const product=products&&products[0];
+    if(!product)throw new Error('Premium product not found — check it exists in both Play Console and RevenueCat with a matching id');
+    const {customerInfo}=await this.plugin().purchaseStoreProduct({product});
     return this.isEntitled(customerInfo);
   },
   async restorePurchases(){
@@ -2849,7 +2853,9 @@ async function startCheckout(){
       toast('🎉 Welcome to EduInsta Premium!');premiumPage();
     }catch(err){
       console.error(err);
-      if(String(err?.message||err).toLowerCase().includes('cancel')){toast('Checkout cancelled');return}
+      // RevenueCat's rejection carries a `userCancelled` boolean on Android;
+      // string-matching the message is only a fallback for other shapes.
+      if(err?.userCancelled||String(err?.message||err).toLowerCase().includes('cancel')){toast('Checkout cancelled');return}
       recordPaymentFailure();toast('Payment failed — please try again.');
     }
     return;

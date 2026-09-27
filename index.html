@@ -583,6 +583,66 @@ var API_BASE='https://eduinsta-api.onrender.com';
 function serverMode(){return typeof API_BASE==='string' && API_BASE.length>0}
 function currentUserId(){return (account&&account.email)||profile.username||'anonymous'}
 
+/* ---------------- Diagnostics (crash logs / errors / performance) ----------------
+   Lightweight, home-grown reporting to our own backend (see /api/diagnostics
+   and diagnostics-service.js) instead of Firebase Crashlytics - no extra
+   native SDK or Firebase project needed. Catches JS errors and unhandled
+   promise rejections anywhere in the app, plus flags unusually slow network
+   calls. Capped per session so a runaway error loop can't flood the server. */
+var __appVersion='web';
+var __diagCount=0;
+var __diagOrigFetch=window.fetch.bind(window);
+const DIAG_MAX_PER_SESSION=20;
+function loadAppVersion(){
+  const plugin=window.Capacitor?.Plugins?.App;
+  if(!plugin?.getInfo)return;
+  plugin.getInfo().then(info=>{__appVersion=info?.version||info?.build||__appVersion}).catch(()=>{});
+}
+function reportDiagnostic(type,message,stack,context){
+  if(!serverMode()||__diagCount>=DIAG_MAX_PER_SESSION)return;
+  __diagCount++;
+  try{
+    __diagOrigFetch(`${API_BASE}/api/diagnostics`,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        type, message:String(message==null?'':message).slice(0,500),
+        stack:stack?String(stack).slice(0,4000):undefined,
+        context:context||{userAgent:navigator.userAgent,screen:`${screen.width}x${screen.height}`},
+        userId:(typeof account!=='undefined'&&account&&account.email)||(typeof profile!=='undefined'&&profile&&profile.username)||undefined,
+        appVersion:__appVersion,
+        platform:(window.Capacitor&&window.Capacitor.getPlatform)?window.Capacitor.getPlatform():'web',
+      }),
+    }).catch(()=>{});
+  }catch{}
+}
+window.addEventListener('error',(e)=>{
+  reportDiagnostic('crash',e?.message||'Unknown error',e?.error?.stack||null,{source:e?.filename,line:e?.lineno,col:e?.colno});
+});
+window.addEventListener('unhandledrejection',(e)=>{
+  const reason=e?.reason;
+  reportDiagnostic('crash',(reason&&reason.message)||String(reason||'Unhandled promise rejection'),reason&&reason.stack||null);
+});
+/* Flags requests to our own API that take an unusually long time, or fail
+   outright — a light-touch signal for "the app feels slow/broken" without
+   timing every single fetch call by hand. Excludes calls TO /api/diagnostics
+   itself so this can never recurse into a reporting loop. */
+window.fetch=function(input,init){
+  const url=typeof input==='string'?input:(input?.url||'');
+  const isDiagCall=url.includes('/api/diagnostics');
+  const isOwnApi=API_BASE&&url.startsWith(API_BASE);
+  const start=isOwnApi&&!isDiagCall?performance.now():0;
+  return __diagOrigFetch(input,init).then(res=>{
+    if(isOwnApi&&!isDiagCall){
+      const dur=performance.now()-start;
+      if(dur>4000)reportDiagnostic('performance',`Slow request (${Math.round(dur)}ms): ${url.replace(API_BASE,'')}`);
+    }
+    return res;
+  }).catch(err=>{
+    if(isOwnApi&&!isDiagCall)reportDiagnostic('error',`Network request failed: ${url.replace(API_BASE,'')} — ${err&&err.message}`);
+    throw err;
+  });
+};
+
 /* ---------------- Demo content ---------------- */
 const reels=[
   {id:1,cat:"School",sub:"Mathematics",creator:"@mathminute",title:"Why is the area of a circle πr²?",desc:"A quick visual explanation of the circle area formula.",src:"https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"},
@@ -1285,7 +1345,12 @@ async function home(tab){
   attachFeedScrollLoader();
   observeVideos();
   if(!isPremium())maybeShowAdConsent();
+  if(!__reportedBootPerf){
+    __reportedBootPerf=true;
+    reportDiagnostic('performance',`Time to first feed render: ${Math.round(performance.now()-__bootStart)}ms`);
+  }
 }
+var __reportedBootPerf=false;
 
 /* Append the next page of items to the feed. */
 function renderNextFeedPage(){
@@ -3745,12 +3810,14 @@ function initDeepLinks(){
 }
 
 /* ---------------- Boot ---------------- */
+var __bootStart=(typeof performance!=='undefined')?performance.now():0;
 function boot(){
   if(account&&account.loggedIn)page('home');
   else renderAuthGate('login');
   updateNotificationBadge();
   applyAccessibilitySettings();
   syncOwnAvatarFromServer();
+  loadAppVersion();
   /* Re-check Premium against the server (server mode only). Runs after the
      first paint so a slow network never delays startup. */
   refreshSubscriptionFromServer().then(()=>{

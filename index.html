@@ -26,7 +26,11 @@ button{cursor:pointer}
     linear-gradient(180deg,#05060f 0%,#0b0f1f 55%,#05060f 100%)}
 
 /* ---------- Header / bottom nav ---------- */
-header{height:58px;position:fixed;top:0;left:0;right:0;z-index:20;background:linear-gradient(180deg,rgba(4,6,12,.68) 0%,rgba(4,6,12,.32) 65%,transparent 100%);display:flex;align-items:center;justify-content:space-between;padding:0 14px;border-bottom:0;pointer-events:none}
+/* Android 15+ (target API 35/36) draws the app edge-to-edge, so the status bar
+   overlaps the top of the WebView. env(safe-area-inset-top) is the status-bar
+   height there and 0 everywhere else (browsers, older WebViews), so these
+   calc()s change nothing on those. */
+header{height:calc(58px + env(safe-area-inset-top,0px));position:fixed;top:0;left:0;right:0;z-index:20;background:linear-gradient(180deg,rgba(4,6,12,.68) 0%,rgba(4,6,12,.32) 65%,transparent 100%);display:flex;align-items:center;justify-content:space-between;padding:env(safe-area-inset-top,0px) 14px 0;border-bottom:0;pointer-events:none}
 header>*{pointer-events:auto}
 .logo{font-weight:800;font-size:20px;color:#5eead4;background:linear-gradient(90deg,var(--brand-teal),var(--brand-purple));-webkit-background-clip:text;background-clip:text}
 @supports (-webkit-background-clip:text) or (background-clip:text){.logo{color:transparent}}
@@ -83,14 +87,14 @@ header>*{pointer-events:auto}
 .termsRow{display:flex;align-items:flex-start;gap:8px;font-size:12px;color:#bbb;margin:10px 0}
 .termsRow input{margin-top:3px}
 .authGateHint{font-size:11px;color:#777;text-align:center;margin-top:14px;line-height:1.5}
-.bottom{position:fixed;z-index:30;bottom:0;left:0;right:0;height:70px;background:#05070c;border-top:0;display:flex;justify-content:space-around;padding-bottom:env(safe-area-inset-bottom)}
+.bottom{position:fixed;z-index:30;bottom:0;left:0;right:0;height:calc(70px + env(safe-area-inset-bottom,0px));background:#05070c;border-top:0;display:flex;justify-content:space-around;padding-bottom:env(safe-area-inset-bottom)}
 .nav{flex:1;border:0;background:none;color:#aaa;font-size:11px}
 .nav b{display:block;font-size:21px;margin-bottom:3px}
 .nav.active{color:#5eead4}
 
 /* ---------- Home feed / reels ---------- */
 /* Own row directly under the header - never on top of the video. */
-.homeTabs{position:fixed;z-index:25;top:58px;left:0;right:0;height:34px;display:flex;justify-content:center;align-items:center;gap:2px;padding:0;background:transparent;border:0;box-shadow:none;pointer-events:none}
+.homeTabs{position:fixed;z-index:25;top:calc(58px + env(safe-area-inset-top,0px));left:0;right:0;height:34px;display:flex;justify-content:center;align-items:center;gap:2px;padding:0;background:transparent;border:0;box-shadow:none;pointer-events:none}
 .homeTabs>*{pointer-events:auto}
 .homeTab{border:0;background:transparent;color:rgba(255,255,255,.68);padding:6px 12px;font-size:14px;font-weight:700;white-space:nowrap;border-bottom:2px solid transparent;border-radius:0;text-shadow:0 1px 4px rgba(0,0,0,.9)}
 .homeTab.active{color:#fff;border-bottom-color:#fff;background:transparent;text-shadow:0 1px 4px rgba(0,0,0,.95)}
@@ -153,7 +157,7 @@ header>*{pointer-events:auto}
 .act.soundOn{color:#5eead4}
 
 /* ---------- Panels / generic UI ---------- */
-.panel{position:fixed;z-index:15;inset:58px 0 70px;background:linear-gradient(165deg,#f2fbf9 0%,#f6f4fd 45%,#fdf6ef 100%);color:#111;overflow:auto;padding:18px}
+.panel{position:fixed;z-index:15;inset:calc(58px + env(safe-area-inset-top,0px)) 0 calc(70px + env(safe-area-inset-bottom,0px));background:linear-gradient(165deg,#f2fbf9 0%,#f6f4fd 45%,#fdf6ef 100%);color:#111;overflow:auto;padding:18px}
 .panel h2{margin-top:0}
 .chips{display:flex;gap:8px;overflow:auto;padding:5px 0 12px}
 .chip{white-space:nowrap;border:1px solid #ccc;background:#fff;color:#111;border-radius:18px;padding:8px 12px}
@@ -192,7 +196,7 @@ textarea.field{resize:vertical}
 .otpTargetLine{font-size:12px;color:#aab;margin-bottom:10px;word-break:break-all}
 .otpFillBtn{width:100%;border:0;border-radius:10px;padding:11px;background:linear-gradient(90deg,#5eead4,#7c6cf6);color:#04101a;font-weight:800}
 .otpWhy{font-size:10px;color:#7e8aa0;margin-top:9px;line-height:1.45}
-.toast{position:fixed;z-index:200;bottom:88px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:11px 16px;border-radius:20px;border:1px solid #444;max-width:86vw;text-align:center;font-size:13px}
+.toast{position:fixed;z-index:200;bottom:calc(88px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:11px 16px;border-radius:20px;border:1px solid #444;max-width:86vw;text-align:center;font-size:13px}
 
 .searchInput{width:100%;padding:13px 15px;border:1px solid #ccc;border-radius:12px;background:#fff;color:#111;caret-color:#111;outline:none;font-size:16px;margin-bottom:8px}
 .searchInput::placeholder{color:#888}

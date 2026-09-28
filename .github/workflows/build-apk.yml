@@ -90,6 +90,12 @@ jobs:
       - name: Apply EduInsta app icon
         run: python3 scripts/apply-app-icon.py
 
+      # Play Console rejects bundles with minSdkVersion below 24 ("Play
+      # automatic protection requires a minimum SDK version of 24 or higher").
+      # Capacitor's template defaults to 22, so bump it on every fresh android/.
+      - name: Raise minSdkVersion to 24
+        run: python3 scripts/apply-min-sdk.py
+
       # Every CI run gets its own throwaway debug-signing certificate unless
       # we install a fixed one first -- otherwise each new debug APK has a
       # DIFFERENT signature than the last, and Android refuses to install it

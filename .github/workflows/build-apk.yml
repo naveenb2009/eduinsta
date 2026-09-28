@@ -64,11 +64,13 @@ jobs:
           echo "ANDROID_SDK_ROOT=$SDK" >> $GITHUB_ENV
           echo "$SDK/platform-tools" >> $GITHUB_PATH
 
-      - name: Install Android platform 34 + build tools
+      # Capacitor 8 compiles/targets Android API 36 (Google Play requires
+      # targetSdk 36 for new apps and updates since 31 Aug 2026).
+      - name: Install Android platform 36 + build tools
         run: |
           SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
           yes | "$SDKM" --licenses > /dev/null 2>&1 || true
-          "$SDKM" --install "platforms;android-34" "build-tools;34.0.0" > /dev/null
+          "$SDKM" --install "platforms;android-36" "build-tools;36.0.0" > /dev/null
           ls "$ANDROID_HOME/platforms"
 
       - name: Install dependencies

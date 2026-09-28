@@ -2159,7 +2159,10 @@ async function filterExplore(q,btn){
   document.getElementById("exploreResults").innerHTML=cards(list);
 }
 function cards(list){
-  return list.length?`<div class="cards">${list.map(r=>`<div class="card"><b>${escapeHtml(r.title)}</b><p>${escapeHtml(r.creator)}</p><small>${escapeHtml(r.cat)} • ${escapeHtml(r.sub)}</small><button type="button" onclick="openReel(${r.id})">Watch</button></div>`).join("")}</div>`:'<div class="empty">No reels found.</div>';
+  /* Used by Explore's grid. Now includes the same video thumbnail
+     (thumbVideoHTML) as the Profile Saved/Uploads/History tabs and the
+     Downloads page, instead of a text-only card. */
+  return list.length?`<div class="cards">${list.map(r=>`<div class="card"><div class="thumb">${thumbVideoHTML(r.src)}<span>▶</span></div><b>${escapeHtml(r.title)}</b><p>${escapeHtml(r.creator)}</p><small>${escapeHtml(r.cat)} • ${escapeHtml(r.sub)}</small><button type="button" onclick="openReel(${r.id})">Watch</button></div>`).join("")}</div>`:'<div class="empty">No reels found.</div>';
 }
 async function openReel(id,srcHint){
   await home('For You');
@@ -2375,7 +2378,14 @@ async function publishToServer(file,title){
    tab. */
 async function downloads(){
   const list=await fetchReelsByIds(saved);
-  main.innerHTML=`<div class="panel"><h2>Downloads / Saved</h2>${cards(list)}</div>`;
+  /* Uses the same thumbnail-card markup as Profile > Saved (profileGrid /
+     profileCard + thumbVideoHTML) instead of the plain text-only cards()
+     used by Explore, so a saved reel's video preview actually shows here
+     too, matching what the Profile tab already displays correctly. */
+  const body=list.length
+    ?`<div class="profileGrid">${list.map(r=>`<div class="profileCard"><div class="thumb">${thumbVideoHTML(r.src)}<span>▶</span></div><b>${escapeHtml(r.title)}</b><small>${escapeHtml(r.creator)} · ${escapeHtml(r.sub)}</small><button type="button" onclick="openReel(${r.id})">Watch Reel</button></div>`).join("")}</div>`
+    :'<div class="empty">No reels found.</div>';
+  main.innerHTML=`<div class="panel"><h2>Downloads / Saved</h2>${body}</div>`;
 }
 
 /* ---------------- Search ---------------- */

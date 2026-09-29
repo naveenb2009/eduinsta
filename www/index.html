@@ -243,6 +243,12 @@ textarea.field{resize:vertical}
 .profileActions{display:flex;gap:9px;margin:4px 0 13px}
 .profileActions button{flex:1;border:1px solid #ddd;background:#fff;border-radius:10px;padding:10px;font-weight:700}
 .filterNote{font-size:12px;color:#666;margin:7px 0 12px;line-height:1.5}
+.accountExists{background:#3b2a12;border:1px solid #f59e0b;color:#fde68a;border-radius:12px;padding:14px;margin:0 0 14px;text-align:left}
+.accountExists b{display:block;color:#fbbf24;font-size:15px;margin-bottom:6px}
+.accountExists p{margin:4px 0 10px;font-size:13px;line-height:1.5;color:#fef3c7}
+.accountExistsEmail{font-weight:700;word-break:break-all}
+.accountExists .btnSecondary{margin-top:8px}
+.accountExistsLink{background:none;border:0;color:#fbbf24;text-decoration:underline;font-size:13px;margin-top:10px;padding:0}
 .profileTabs{display:flex;border-bottom:1px solid #ddd;margin-bottom:14px}
 .profileTabs button{flex:1;border:0;background:none;padding:12px;font-weight:700;color:#777;border-bottom:2px solid transparent}
 .profileTabs button.selected{color:#111;border-bottom-color:#111}
@@ -718,12 +724,12 @@ function norm(x){return String(x??'').trim().toLowerCase().replace(/\s+/g,' ')}
 function lsSet(key,value){try{localStorage.setItem(key,value)}catch{}}
 function lsGetRaw(key){try{return localStorage.getItem(key)}catch{return null}}
 function readJSON(key,fallback){try{const v=lsGetRaw(key);return v===null?fallback:JSON.parse(v)}catch{return fallback}}
-function toast(t){
+function toast(t,ms){
   const x=document.createElement("div");
   x.className="toast";
   x.textContent=t;
   document.body.appendChild(x);
-  setTimeout(()=>x.remove(),1800);
+  setTimeout(()=>x.remove(),ms||2500);
 }
 
 /* ---------------- Persistent state ---------------- */
@@ -3626,7 +3632,7 @@ async function performSignup({name,identifier,password}){
         body:JSON.stringify({name,email:identifier,password})
       });
       const data=await res.json();
-      if(!data.ok)return{ok:false,error:data.error||'Could not create your account. Please try again.'};
+      if(!data.ok)return{ok:false,exists:res.status===409||/already exists/i.test(data.error||''),error:data.error||'Could not create your account. Please try again.'};
     }catch{
       return{ok:false,error:'Could not reach the server. Check your connection and try again.'};
     }
@@ -3854,10 +3860,44 @@ function gateSignup(){
   renderOtpStep(document.getElementById('gateForm'),fields.identifier,'signup',completeGateSignup,()=>renderGateForm());
 }
 async function completeGateSignup(){
+  const data=pendingSignupData||{};
   const result=await performSignup(pendingSignupData);
   pendingSignupData=null;
-  if(!result.ok){toast(result.error||'Something went wrong — please try again');gateTab='signup';renderGateForm();return}
+  if(!result.ok){
+    gateTab='signup';renderGateForm();
+    if(result.exists){showAccountExistsNotice(data.identifier,data.name);return}
+    const err=document.getElementById('gateError');
+    if(err)err.textContent=result.error||'Something went wrong — please try again.';
+    toast(result.error||'Something went wrong — please try again',5000);
+    return;
+  }
   exitAuthGate(); toast('Account created — welcome to EduInsta');
+}
+
+/* Shown when someone signs up with an email that already has an account.
+   Stays on screen (no auto-dismiss) and offers the two obvious next steps,
+   instead of a toast that vanished before it could be read. */
+function showAccountExistsNotice(email,name){
+  const holder=document.getElementById('gateForm'); if(!holder)return;
+  const nameEl=document.getElementById('gateName'); if(nameEl&&name)nameEl.value=name;
+  const old=document.getElementById('accountExistsNotice'); if(old)old.remove();
+  holder.insertAdjacentHTML('afterbegin',`<div class="accountExists" id="accountExistsNotice" role="alert">
+    <b>⚠️ An account already exists</b>
+    <p><span class="accountExistsEmail">${escapeHtml(email||'This email')}</span> is already registered with EduInsta.</p>
+    <p>Try signing in with this email, or sign up with a different email address.</p>
+    <button type="button" class="primary" style="width:100%" onclick="goLoginWithEmail('${escapeAttr(email||'')}')">Log in with this email</button>
+    <button type="button" class="btnSecondary" style="width:100%" onclick="useDifferentSignupEmail()">Use a different email</button>
+    <button type="button" class="accountExistsLink" onclick="goLoginWithEmail('${escapeAttr(email||'')}');openForgotPassword();const f=document.getElementById('forgotEmail');if(f)f.value='${escapeAttr(email||'')}'">Forgot your password?</button>
+  </div>`);
+}
+function goLoginWithEmail(email){
+  gateTab='login'; renderAuthGate('login');
+  const el=document.getElementById('gateEmail'); if(el){el.value=email||'';}
+  document.getElementById('gatePass')?.focus();
+}
+function useDifferentSignupEmail(){
+  document.getElementById('accountExistsNotice')?.remove();
+  const el=document.getElementById('gateIdentifier'); if(el){el.value='';el.focus();}
 }
 
 /* ---- Forgot password (OTP via email or phone) ----

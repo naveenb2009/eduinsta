@@ -2142,10 +2142,32 @@ async function addComment(id){
   renderCommentList(comments[id]);
 }
 
+/* ---------------- Education categories ----------------
+   Single source of truth for the Upload dropdown (as <optgroup>s) and the
+   Explore category chips (one chip per group). The original six names
+   (School, Engineering, Medical, Competitive Exams, UPSC / IAS, Government
+   Jobs) are kept verbatim so reels already published under them still match. */
+var EDU_GROUPS=[
+  {g:"School & Boards",items:["School","Primary (Class 1–5)","Middle School (Class 6–8)","Secondary (Class 9–10)","Senior Secondary (Class 11–12)","CBSE / ICSE / State Boards","Olympiads & Talent Search","Kids Learning"]},
+  {g:"Core Subjects",items:["Mathematics","Physics","Chemistry","Biology","General Science","English","Hindi","Sanskrit","Regional Languages","Foreign Languages","Social Science","History","Geography","Civics & Polity","Economics","Environmental Studies","Computer Science"]},
+  {g:"Engineering",items:["Engineering","Computer Science (CSE / IT)","Electronics (ECE / EEE)","Electrical Engineering","Mechanical Engineering","Civil Engineering","Chemical Engineering","Aerospace & Aviation","Biotechnology","Robotics & Mechatronics","Architecture & Design"]},
+  {g:"Medical & Health",items:["Medical","MBBS / Medicine","Nursing","Pharmacy","Dental","Ayurveda & AYUSH","Veterinary","Physiotherapy","Public Health & First Aid","Nutrition & Wellness","Yoga & Fitness"]},
+  {g:"Competitive Exams",items:["Competitive Exams","IIT-JEE / JEE Advanced","NEET","GATE","CAT / MBA Entrance","CLAT / Law Entrance","CUET / University Entrance","NDA / CDS / Defence","GRE / GMAT / SAT","IELTS / TOEFL","Aptitude & Reasoning"]},
+  {g:"UPSC & Government",items:["UPSC / IAS","State PSC","SSC","Banking (IBPS / SBI / RBI)","Railways (RRB)","Government Jobs","Police & Paramilitary","Teaching Exams (CTET / TET)","Current Affairs","General Knowledge"]},
+  {g:"Commerce & Business",items:["Commerce","Accountancy","CA / CS / CMA","Finance & Investing","Personal Finance","Business & Entrepreneurship","Marketing & Sales","Management & HR"]},
+  {g:"Law, Arts & Humanities",items:["Law","Psychology","Sociology","Philosophy","Political Science","Journalism & Media","Literature","Fine Arts & Design","Music & Performing Arts","Photography & Film"]},
+  {g:"Technology & Coding",items:["Programming","Web Development","App Development","AI & Machine Learning","Data Science & Analytics","Cybersecurity","Cloud & DevOps","Electronics & Embedded","Digital Marketing","Tools & Productivity"]},
+  {g:"Skills & Career",items:["Spoken English","Communication Skills","Soft Skills","Career Guidance","Interview Preparation","Study Tips & Techniques","Vocational & ITI","Crafts & DIY","Cooking Technique","Life Skills"]},
+  {g:"Other",items:["Science Experiments","Documentary & Explainers","Other Education"]}
+];
+function eduCategoryOptions(){
+  return EDU_GROUPS.map(gr=>`<optgroup label="${escapeAttr(gr.g)}">${gr.items.map(i=>`<option>${escapeHtml(i)}</option>`).join("")}</optgroup>`).join("");
+}
+
 /* ---------------- Explore ---------------- */
 async function explore(){
   const all=await allReels();
-  const cats=["All","School","Engineering","Medical","Competitive Exams","UPSC / IAS","Government Jobs"];
+  const cats=["All"].concat(EDU_GROUPS.map(gr=>gr.g));
   const subs=["Mathematics","Physics","Chemistry","Computer Science","Biology","General Knowledge","ECE","CSE","Mechanical","Civil","IIT/JEE","NEET","CAT","Banking","Polity","History","Geography","Economy"];
   main.innerHTML=`<div class="panel">
     <h2>Explore</h2>
@@ -2159,7 +2181,8 @@ async function filterExplore(q,btn){
   document.querySelectorAll('#exploreCatChips .chip,#exploreSubChips .chip').forEach(c=>c.classList.remove('on'));
   btn?.classList.add('on');
   const all=await allReels();
-  const list=all.filter(r=>q==="All"||r.cat===q||r.sub===q||r.title.toLowerCase().includes(q.toLowerCase()));
+  const grp=EDU_GROUPS.find(gr=>gr.g===q);   // a group chip matches every category inside it
+  const list=all.filter(r=>q==="All"||r.cat===q||r.sub===q||(grp&&(grp.items.includes(r.cat)||grp.items.includes(r.sub)))||String(r.title||'').toLowerCase().includes(q.toLowerCase()));
   document.getElementById("exploreResults").innerHTML=cards(list);
 }
 function cards(list){
@@ -2214,8 +2237,8 @@ function upload(){
     </div>
     <div id="preview"></div>
     <input class="field" id="upTitle" placeholder="Video title">
-    <select class="field" id="upCat"><option>School</option><option>Engineering</option><option>Medical</option><option>Competitive Exams</option><option>UPSC / IAS</option><option>Government Jobs</option></select>
-    <input class="field" id="upSub" placeholder="Subject / topic (e.g. Mathematics)">
+    <select class="field" id="upCat" aria-label="Education category">${eduCategoryOptions()}</select>
+    <input class="field" id="upSub" placeholder="Subject / topic (e.g. Newton's laws)">
     <input id="upFilePicker" type="file" accept="video/*" class="hidden" onchange="onUploadFileChosen()">
     <button type="button" class="primary" onclick="checkUpload()">Submit for Education Check</button>
     <div id="check"></div>
@@ -2315,11 +2338,28 @@ function renderModerationVerdict(v){
       <button type="button" class="primary" onclick="publishUpload()">Publish Reel</button>`;
     return;
   }
-  box.innerHTML=`<div class="checkResult checkFail"><b>❌ Not approved</b>
-    <p>${escapeHtml(v.reason||'This video does not appear to be educational content.')}</p>
-    ${(v.safety_flags&&v.safety_flags.length)?`<p class="safetyFlags">Flagged: ${escapeHtml(v.safety_flags.join(', '))}</p>`:''}
+  renderRejection(v);
+}
+/* A rejected reel is DISCARDED: the selected file, preview and Publish path
+   are cleared so it can't be published, and the uploader is told plainly why. */
+function discardRejectedUpload(){
+  lastModerationVerdict=null;
+  const inp=document.getElementById('upFilePicker'); if(inp)inp.value='';
+  const p=document.getElementById('preview'); if(p)p.innerHTML='';
+  const hint=document.getElementById('uploadPickHint'); if(hint)hint.innerHTML='<b>Add a reel</b>Camera, gallery or files';
+}
+function renderRejection(v){
+  const box=document.getElementById('check'); if(!box)return;
+  const unsafe=(v&&v.safety_flags&&v.safety_flags.length)||(v&&v.content_type==='adult');
+  const isAd=v&&v.content_type==='advertisement';
+  discardRejectedUpload();
+  box.innerHTML=`<div class="checkResult checkFail"><b>❌ ${unsafe?'Reel not allowed':isAd?'This looks like an advertisement':'Not related to education'}</b>
+    <p>${unsafe?'This reel was discarded because it breaks our content rules.':isAd?'Ads can’t be posted as regular reels, so this was discarded. Businesses can promote through EduInsta’s sponsored advertising instead.':'This reel is not related to education, so it was discarded and will not be uploaded.'}</p>
+    <p>${escapeHtml((v&&v.reason)||'This video does not appear to be educational content.')}</p>
+    ${unsafe?`<p class="safetyFlags">Flagged: ${escapeHtml(v.safety_flags.join(', '))}</p>`:''}
     </div>
-    <p class="filterNote">EduInsta only accepts educational content — subjects like science, technology, engineering, maths, medicine, history, languages and exam preparation. Please choose a different video.</p>`;
+    <p class="filterNote">EduInsta only accepts educational content — school and college subjects, exam preparation, technology, skills, languages, health and more. Please choose a different video.</p>
+    <button type="button" class="primary" onclick="openUploadPicker()">Choose another video</button>`;
 }
 function useSuggestedTitle(t){
   const el=document.getElementById('upTitle');
@@ -2360,6 +2400,7 @@ async function publishToServer(file,title){
     const res=await fetch(`${API_BASE}/api/reels`,{method:'POST',body:form});
     const data=await res.json();
     if(!res.ok||!data.ok){
+      if(data&&data.error==='rejected'&&data.verdict){renderRejection(data.verdict);return}
       if(box)box.innerHTML=`<div class="checkResult checkFail"><b>❌ Not published</b><p>${escapeHtml(data?.verdict?.reason||data?.error||'The reel could not be published.')}</p></div>`;
       return;
     }

@@ -98,6 +98,12 @@ jobs:
       - name: Raise minSdkVersion to 24
         run: python3 scripts/apply-min-sdk.py
 
+      # Without this, Android restores the app's saved login from the user's
+      # Google backup after uninstall/reinstall, so a fresh install opens
+      # already signed in instead of showing the sign-in screen.
+      - name: Disable Android Auto Backup
+        run: python3 scripts/apply-no-backup.py
+
       # Every CI run gets its own throwaway debug-signing certificate unless
       # we install a fixed one first -- otherwise each new debug APK has a
       # DIFFERENT signature than the last, and Android refuses to install it

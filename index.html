@@ -3838,7 +3838,7 @@ async function gateLogin(){
   exitAuthGate(); toast('Welcome back');
 }
 var pendingSignupData=null;
-function gateSignup(){
+async function gateSignup(){
   /* EduInsta requires signups to be 13+ (Play Store Families Policy / COPPA) --
      self-declared here rather than a date-of-birth field, same pattern as the
      Terms checkbox right below it. */
@@ -3855,6 +3855,22 @@ function gateSignup(){
   const err=document.getElementById('gateError');
   if(!check.ok){if(err)err.textContent=Object.values(check.errors)[0];return}
   if(err)err.textContent='';
+  /* Check the email BEFORE sending a code, so a taken address is caught
+     straight away. If the check itself fails (offline, old server), carry on:
+     the signup call after the code still rejects duplicates. */
+  if(serverMode()){
+    const btn=document.querySelector('#gateForm .primary'); if(btn)btn.disabled=true;
+    let exists=false, blocked='';
+    try{
+      const res=await fetch(`${API_BASE}/api/check-email`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:fields.identifier.trim()})});
+      const data=await res.json().catch(()=>({}));
+      if(res.status===429)blocked=data.error||'Too many attempts. Please wait a few minutes and try again.';
+      else if(data.ok&&data.exists)exists=true;
+    }catch{}
+    if(btn)btn.disabled=false;
+    if(blocked){if(err)err.textContent=blocked;return}
+    if(exists){showAccountExistsNotice(fields.identifier.trim(),fields.name);return}
+  }
   pendingSignupData=fields;
   sendOtp(fields.identifier,'signup');
   renderOtpStep(document.getElementById('gateForm'),fields.identifier,'signup',completeGateSignup,()=>renderGateForm());

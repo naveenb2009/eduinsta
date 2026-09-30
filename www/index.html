@@ -55,7 +55,7 @@ header>*{pointer-events:auto}
 
 /* ---------- Auth gate (shown before first sign-in) ---------- */
 .app.authGateMode header,.app.authGateMode .bottom{display:none}
-.authGate{position:fixed;inset:0;z-index:40;overflow:auto;padding:40px 22px;display:flex;flex-direction:column;align-items:center;color:#fff;
+.authGate{position:fixed;inset:0;z-index:40;overflow:auto;padding:calc(40px + env(safe-area-inset-top,0px)) 22px calc(40px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;align-items:center;color:#fff;
   background:
     radial-gradient(900px 560px at 20% 0%,rgba(94,234,212,.24),transparent 60%),
     radial-gradient(800px 520px at 100% 100%,rgba(124,108,246,.26),transparent 55%),
@@ -183,7 +183,7 @@ textarea.field{resize:vertical}
 .primary:disabled{opacity:.6}
 .empty{padding:30px;text-align:center;color:#666}
 .modal{position:fixed;z-index:100;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:flex-end}
-.sheet{background:#fff;color:#111;width:100%;border-radius:20px 20px 0 0;padding:18px;max-height:82dvh;overflow:auto}
+.sheet{background:#fff;color:#111;width:100%;border-radius:20px 20px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom,0px));max-height:82dvh;overflow:auto}
 .sheet h3{margin-top:0}
 .close{border:0;background:#f0f0f0;border-radius:50%;width:34px;height:34px;font-size:20px}
 .optionList button,.optionBtn{display:block;width:100%;border:1px solid #ddd;background:#fff;color:#111;border-radius:10px;padding:11px;text-align:left;margin:6px 0}
@@ -243,6 +243,8 @@ textarea.field{resize:vertical}
 .profileActions{display:flex;gap:9px;margin:4px 0 13px}
 .profileActions button{flex:1;border:1px solid #ddd;background:#fff;border-radius:10px;padding:10px;font-weight:700}
 .filterNote{font-size:12px;color:#666;margin:7px 0 12px;line-height:1.5}
+.profileCard .deleteReelBtn{background:#fff;color:#b91c1c;border:1px solid #f0bcbc;margin-top:6px}
+a.playManageBtn{display:block;text-align:center;text-decoration:none;margin:8px 0}
 .accountExists{background:#3b2a12;border:1px solid #f59e0b;color:#fde68a;border-radius:12px;padding:14px;margin:0 0 14px;text-align:left}
 .accountExists b{display:block;color:#fbbf24;font-size:15px;margin-bottom:6px}
 .accountExists p{margin:4px 0 10px;font-size:13px;line-height:1.5;color:#fef3c7}
@@ -389,7 +391,7 @@ a.uploadOption{text-decoration:none;color:#111;display:flex;align-items:center}
    and size each reel as a % of it. The earlier 100dvh arithmetic came out
    ~100px short inside the Android WebView, leaving a dead strip at the bottom. */
 @media (max-width:699px){
-  .feed{position:fixed;top:0;bottom:70px;left:0;right:0;height:auto;margin:0}
+  .feed{position:fixed;top:0;bottom:calc(70px + env(safe-area-inset-bottom,0px));left:0;right:0;height:auto;margin:0}
   .reel{height:calc(100% - 10px);min-height:0}
 }
 
@@ -591,6 +593,11 @@ function showFatalError(details){
        API_BASE='https://your-backend.onrender.com'; location.reload()  */
 var API_BASE='https://eduinsta-api.onrender.com';
 function serverMode(){return typeof API_BASE==='string' && API_BASE.length>0}
+/* Session token from /api/login or /api/signup, proving to the server that
+   sensitive requests (delete account, change photo) really come from this
+   account. Kept in `account`, so logging out drops it. */
+function authHeaders(extra){return Object.assign({},extra||{},(account&&account.token)?{Authorization:'Bearer '+account.token}:{})}
+var lastOtpTicket=null;   // one-time proof from /api/verify-otp, needed for password reset
 function currentUserId(){return (account&&account.email)||profile.username||'anonymous'}
 
 /* ---------------- Diagnostics (crash logs / errors / performance) ----------------
@@ -741,7 +748,7 @@ var profile=readJSON('er_profile',{name:"Your Name",username:"@student",role:"St
 var interests=readJSON('er_interests',[]);
 var customInterests=readJSON('er_custom_interests',[]);
 var account=readJSON('er_account',{loggedIn:false,email:"",name:""});
-var followers=uniq(readJSON('er_followers',FOLLOWERS_DEFAULT));
+var followers=uniq(readJSON('er_followers',[]));
 var erSettings=readJSON('er_settings',{});
 /* NOTE: named watchHistory, not "history" - `window.history` is the browser's
    built-in navigation API and a var/global named `history` cannot shadow it,
@@ -866,6 +873,7 @@ var subscription=readJSON('er_subscription',{status:'free',planId:null,paymentMe
      3. Create a matching product + entitlement (e.g. entitlement id
         "premium") in RevenueCat, copy the Android SDK "public" API key.
      4. Replace REVENUECAT_ANDROID_API_KEY below with that real key. */
+var APP_VERSION_LABEL='1.0';
 var REVENUECAT_ANDROID_API_KEY='goog_YUGJHLLEYqlUUnXfNNNvwvyCEhy';
 var REVENUECAT_ENTITLEMENT_ID='premium';
 var REVENUECAT_PRODUCT_ID='premium_monthly';
@@ -876,13 +884,41 @@ var PurchasesService={
               && window.Capacitor.Plugins && window.Capacitor.Plugins.Purchases);
   },
   plugin(){return window.Capacitor?.Plugins?.Purchases||null},
+  appUser:null,
+  /* Configured only once someone is signed in, and always with that
+     account's email, so a purchase is credited to the right EduInsta account
+     (never "anonymous" or a previous user on the same phone). */
   async init(){
-    if(this.ready||!this.available())return false;
+    if(!this.available()||!(account&&account.loggedIn&&account.email))return false;
+    if(this.ready)return this.identify();
     try{
-      await this.plugin().configure({apiKey:REVENUECAT_ANDROID_API_KEY,appUserID:currentUserId()});
-      this.ready=true;
+      await this.plugin().configure({apiKey:REVENUECAT_ANDROID_API_KEY,appUserID:account.email});
+      this.ready=true; this.appUser=account.email;
       return true;
     }catch(err){console.warn('RevenueCat init failed:',err);return false}
+  },
+  /* Switch RevenueCat to whoever is signed in now (login / account switch). */
+  async identify(){
+    if(!this.available()||!(account&&account.loggedIn&&account.email))return false;
+    if(!this.ready)return this.init();
+    if(this.appUser===account.email)return true;
+    try{await this.plugin().logIn({appUserID:account.email});this.appUser=account.email;return true}
+    catch(err){console.warn('RevenueCat logIn failed:',err);return false}
+  },
+  async signOut(){
+    if(!this.ready)return;
+    try{await this.plugin().logOut()}catch{}   // throws if already anonymous - harmless
+    this.appUser=null;
+  },
+  /* Google Play's own record of this account's Premium, via RevenueCat. */
+  async currentEntitlement(){
+    if(!(await this.identify()))return null;
+    try{
+      const res=await this.plugin().getCustomerInfo();
+      const info=res&&res.customerInfo?res.customerInfo:res;
+      const ent=info&&info.entitlements&&info.entitlements.active&&info.entitlements.active[REVENUECAT_ENTITLEMENT_ID];
+      return {active:!!ent,expiresAt:ent&&(ent.expirationDateMillis||Date.parse(ent.expirationDate))||null};
+    }catch(err){console.warn('RevenueCat getCustomerInfo failed:',err);return null}
   },
   /* Kicks off the native Play Billing purchase sheet. Resolves once RevenueCat
      confirms the purchase against Google; does NOT itself grant Premium --
@@ -890,7 +926,7 @@ var PurchasesService={
      it, which the RevenueCat webhook updates once the purchase settles. */
   async purchasePremium(){
     if(!this.available())throw new Error('Play Billing not available in this build');
-    if(!this.ready)await this.init();
+    if(!(await this.identify()))throw new Error('Please sign in again before purchasing');
     // purchaseStoreProduct needs the full product object from getProducts(),
     // not just the id string -- Google requires the live product/price
     // details to be shown in the purchase sheet, not just referenced by id.
@@ -902,7 +938,7 @@ var PurchasesService={
   },
   async restorePurchases(){
     if(!this.available())return false;
-    if(!this.ready)await this.init();
+    if(!(await this.identify()))return false;
     const {customerInfo}=await this.plugin().restorePurchases();
     return this.isEntitled(customerInfo);
   },
@@ -920,14 +956,14 @@ var PurchasesService={
    Ad inventory has two sources, exactly like most ad-supported apps:
    1) Paid advertiser campaigns (see "Advertise on EduInsta" below) - real
       bookings with a price, a duration, and a payment behind them.
-   2) A small pool of house creatives that fill any remaining slots when no
-      paid campaign is currently active, so the feed always has something to
-      show rather than going empty. */
+   2) (Removed) house creatives. With no paid campaign running the in-feed
+      slot now stays empty rather than showing made-up sponsors. AD_CREATIVES
+      below is kept only for the offline browser preview/tests. */
 var AD_DEFAULTS={
   enabled:true,
   frequency:6,              // in-feed sponsored reel: 1 per 6 reels (Instagram-style)
   simulateFailureRate:0.15,
-  interstitialsEnabled:false,   // OFF by default — in-feed ad reels are the primary format
+  interstitialsEnabled:true,    // AdMob full-screen ad, Android only, never for Premium (gated below)
   interstitialEvery:25,         // if enabled: only after this many reels
   interstitialMinGapMinutes:10  // AND never more than once per this many minutes
 };
@@ -1057,13 +1093,15 @@ var AdMobService={
 /* Called whenever a reel starts playing. Shows an interstitial every
    `interstitialEvery` reels - deliberately much rarer than the in-feed
    sponsored slots, because interstitials interrupt and hurt retention. */
-var reelsViewedSinceAd=0;
-function noteReelViewedForAds(){
+var reelsViewedSinceAd=0, lastAdCountedReelId=null;
+function noteReelViewedForAds(id){
   if(isPremium()||!shouldShowAds()||!AdMobService.available())return;
-  /* Interstitials are OFF by default. The in-feed sponsored reel (which the
-     user simply swipes past, exactly like an Instagram sponsored post) is the
-     primary ad format - it needs no close button and never interrupts. */
+  /* Full-screen AdMob ads: at most one per `interstitialEvery` DIFFERENT
+     reels and never within `interstitialMinGapMinutes` of the last one.
+     Pausing/resuming or replaying the same reel does not count again. */
   if(!AdConfig.interstitialsEnabled)return;
+  if(id!=null&&id===lastAdCountedReelId)return;
+  lastAdCountedReelId=id;
   reelsViewedSinceAd++;
   const every=Math.max(10,Number(AdConfig.interstitialEvery)||AD_DEFAULTS.interstitialEvery);
   if(reelsViewedSinceAd<every)return;
@@ -1091,9 +1129,10 @@ const AdManager={
       this.nextCreativeIndex++;
       return {id:'campaign_'+c.id,sponsor:c.sponsor,headline:c.headline,cta:c.cta,campaignId:c.id};
     }
-    const creative=AD_CREATIVES[this.nextCreativeIndex%AD_CREATIVES.length];
-    this.nextCreativeIndex++;
-    return creative;
+    /* No paid campaign running -> no in-feed ad. The old fallback filled the
+       slot with made-up "house" sponsors, which real users would read as real
+       ads. (AdMob banners/interstitials still run in the Android app.) */
+    return null;
   },
   recordImpression(adId){
     adState.impressions[adId]=(adState.impressions[adId]||0)+1;saveAdState();
@@ -1104,7 +1143,8 @@ const AdManager={
     adState.clicks[adId]=(adState.clicks[adId]||0)+1;saveAdState();
     const campaignId=String(adId).startsWith('campaign_')?Number(String(adId).slice(9)):null;
     if(campaignId){const c=adCampaigns.find(x=>x.id===campaignId);if(c){c.clicks=(c.clicks||0)+1;saveAdCampaigns()}}
-    toast('Opening sponsor link (demo)');
+    const c2=campaignId?adCampaigns.find(x=>x.id===campaignId):null;
+    toast(c2?`Sponsored by ${c2.sponsor}`:'Sponsored content');
   }
 };
 var activeHomeTab='All';   // default: show everything, so a new user with no interests set still sees content
@@ -1257,7 +1297,11 @@ async function fetchMyUploads(){
          - NOT currentUserId() (which is account.email once logged in). Filtering
          by the wrong value here silently matched nothing, so the Uploads tab
          always looked empty even for a user with real published reels. */
-      const res=await fetch(`${API_BASE}/api/feed?creator=${encodeURIComponent(profile.username)}&limit=50`);
+      /* By account (session token), so uploads stay listed even after the
+         @username is changed. Falls back to the public by-handle list for a
+         session from before tokens existed. */
+      let res=account&&account.token?await fetch(`${API_BASE}/api/my/reels?creator=${encodeURIComponent(profile.username)}`,{headers:authHeaders()}):null;
+      if(!res||!res.ok)res=await fetch(`${API_BASE}/api/feed?creator=${encodeURIComponent(profile.username)}&limit=50`);
       const data=await res.json();
       return (data.reels||[]).map(r=>({...r,src:resolveMediaUrl(r.src)}));
     }catch(err){
@@ -1786,7 +1830,7 @@ document.addEventListener('play',e=>{
   const reelEl=e.target.closest('.reel');
   if(!reelEl)return;
   const id=Number(reelEl.dataset.id);
-  if(Number.isFinite(id)){recordHistory(id);noteReelViewedForAds()}
+  if(Number.isFinite(id)){recordHistory(id);noteReelViewedForAds(id)}
 },true);
 
 /* In-place updates so liking/saving/following never resets scroll position. */
@@ -1961,6 +2005,12 @@ function submitReport(id){
   if(!reason){if(err)err.textContent='Please select a reason for your report.';return}
   reports=[{id:Date.now(),reelId:id,reason,details,at:Date.now(),status:'open'},...reports];
   saveReports();
+  /* Send it to the server too — a report kept only on the reporter's phone
+     never reaches the owner. Fire-and-forget so the sheet closes instantly. */
+  if(serverMode()){
+    fetch(`${API_BASE}/api/reports`,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({reelId:id,reason,details,userId:currentUserId()})}).catch(()=>{});
+  }
   closeOverlay();
   toast('Report submitted — thank you');
   addNotification('system','Report received','Thanks for reporting. Our team will review this content.');
@@ -1988,7 +2038,6 @@ function promptOwnerLogin(){
     <div class="passwordField"><input class="field" id="ownerPinInput" type="password" inputmode="numeric" placeholder="Owner PIN"><button type="button" class="passwordToggle" onclick="togglePasswordVisibility('ownerPinInput',this)">👁</button></div>
     <div class="fieldError" id="ownerPinError"></div>
     <button type="button" class="primary" style="width:100%" onclick="submitOwnerPin()">Unlock owner tools</button>
-    <div class="authGateHint">Demo PIN: ${escapeHtml(OWNER_PIN_DEFAULT)} — change it from the owner dashboard.</div>
   </div></div>`;
 }
 function submitOwnerPin(){
@@ -2068,7 +2117,7 @@ function ownerDashboardPage(){
     </div>
     <div class="card"><h3>Transactions</h3>${e.transactions.length?e.transactions.slice(0,25).map(t=>`<div class="revenueRow"><span>${escapeHtml(t.type)}<br><small class="muted">${new Date(t.at).toLocaleString()} · ${escapeHtml(t.method)}</small></span><b>${cur}${t.amount.toLocaleString('en-IN')}</b></div>`).join(''):'<p class="muted">No transactions recorded yet.</p>'}</div>
     <div class="card"><h3>Moderation queue</h3>
-      <p class="filterNote">${openReports} open report${openReports===1?'':'s'}.</p>
+      <p class="filterNote">${openReports} open report${openReports===1?'':'s'} made on this device. Reports from all users go to the server — open <b>/diagnostics?type=report&amp;key=…</b> on your backend (uses DIAGNOSTICS_ACCESS_KEY).</p>
       ${reports.length?reports.slice(0,15).map(r=>`<div class="revenueRow"><span><b>${escapeHtml(r.reason)}</b><br><small class="muted">Reel #${r.reelId} · ${relativeTime(r.at)}${r.details?' · '+escapeHtml(r.details):''}</small></span>${r.status==='open'?`<button type="button" class="networkBtn" onclick="resolveReport(${r.id})">Resolve</button>`:'<small class="muted">Resolved</small>'}</div>`).join(''):'<p class="muted">No reports submitted.</p>'}
     </div>
     <div class="profileMenuCard"><h3>Owner controls</h3>
@@ -2077,7 +2126,7 @@ function ownerDashboardPage(){
     </div>
     ${btnHtml('Change owner PIN','changeOwnerPin()')}
     ${btnHtml('Lock owner tools','ownerLogout()')}
-    <div class="infoBox">Earnings shown are from transactions recorded in this prototype. Once a real payment gateway and backend are connected, these figures come from the gateway's settlement API instead.</div>
+    <div class="infoBox">Premium subscriptions are billed through Google Play — check Play Console and RevenueCat for exact payouts.</div>
   </div>`;
 }
 function resolveReport(id){
@@ -2235,7 +2284,7 @@ async function openReel(id,srcHint){
 function upload(){
   main.innerHTML=`<div class="panel">
     <h2>Upload Reel</h2>
-    <p>Select a video from your device. It's stored locally in this browser after publishing.</p>
+    <p>Add a short educational video. Every reel gets a quick Education Check before it's published.</p>
     <p class="filterNote">EduInsta reels are vertical (9:16), like Instagram Reels. Landscape videos will be cropped to fill the screen.</p>
     <div class="uploadPicker">
       <button type="button" class="uploadCameraBtn" onclick="openUploadPicker()" aria-label="Add a video">📷</button>
@@ -2320,8 +2369,14 @@ async function runRealEducationCheck(file,title){
     form.append('video',file);
     form.append('title',title);
     form.append('userId',currentUserId());
-    const res=await fetch(`${API_BASE}/api/education-check`,{method:'POST',body:form});
+    const res=await fetch(`${API_BASE}/api/education-check`,{method:'POST',body:form,headers:authHeaders()});
     const verdict=await res.json();
+    /* A request problem (signed out, wrong file type) is not a content
+       verdict: explain it and keep the chosen video, don't discard it. */
+    if(!res.ok&&verdict&&verdict.status==='error'){
+      box.innerHTML=`<div class="checkResult checkFail"><b>⚠️ Couldn't check this video</b><p>${escapeHtml(verdict.reason||'Please try again.')}</p></div>`;
+      return;
+    }
     lastModerationVerdict=verdict;
     renderModerationVerdict(verdict);
   }catch(err){
@@ -2403,7 +2458,7 @@ async function publishToServer(file,title){
     form.append('description','Uploaded by '+profile.name);
     form.append('category',document.getElementById('upCat')?.value||'');
     form.append('subject',document.getElementById('upSub')?.value.trim()||'');
-    const res=await fetch(`${API_BASE}/api/reels`,{method:'POST',body:form});
+    const res=await fetch(`${API_BASE}/api/reels`,{method:'POST',body:form,headers:authHeaders()});
     const data=await res.json();
     if(!res.ok||!data.ok){
       if(data&&data.error==='rejected'&&data.verdict){renderRejection(data.verdict);return}
@@ -2551,7 +2606,51 @@ async function profilePage(){
 function thumbVideoHTML(src){
   const isBlob=String(src).startsWith('blob:');
   const finalSrc=isBlob?src:`${src}#t=0.5`;
-  return `<video src="${escapeAttr(finalSrc)}" muted playsinline preload="metadata" onloadedmetadata="seekThumb(this)"></video>`;
+  return `<video data-thumb-src="${escapeAttr(finalSrc)}" muted playsinline preload="metadata" onloadedmetadata="seekThumb(this)"></video>`;
+}
+/* Lazy thumbnails. Every thumbnail is a <video>, and phones cap how many
+   video players a page may hold at once (Android WebView is stricter than
+   desktop Chrome). Explore/Profile/Downloads render one per reel, so a big
+   catalogue would exhaust that cap and later thumbnails would stay black.
+   Only thumbnails near the screen get a src; ones scrolled far away release
+   their player again. */
+var thumbObserver=('IntersectionObserver' in window)?new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    const v=e.target;
+    if(e.isIntersecting){
+      if(!v.getAttribute('src')&&v.dataset.thumbSrc)v.src=v.dataset.thumbSrc;
+    }else if(v.getAttribute('src')){
+      v.removeAttribute('src'); v.classList.remove('thumbReady');
+      try{v.load()}catch{}
+    }
+  });
+},{rootMargin:'600px 0px'}):null;
+function activateThumbs(root){
+  (root||document).querySelectorAll('video[data-thumb-src]:not([data-thumb-watched])').forEach(v=>{
+    v.setAttribute('data-thumb-watched','1');
+    if(thumbObserver)thumbObserver.observe(v); else v.src=v.dataset.thumbSrc;
+  });
+}
+/* Release the decoder of any video that has left the page (screen change,
+   feed reload). Browsers do this eventually on their own, but low-memory
+   phones can run out of video players first. Checked a moment later so a
+   video that is merely being moved in the DOM is left alone. */
+function releaseRemovedVideos(nodes){
+  const vids=[];
+  nodes.forEach(n=>{ if(n.nodeType!==1)return; if(n.tagName==='VIDEO')vids.push(n); else if(n.querySelectorAll)vids.push(...n.querySelectorAll('video')); });
+  if(!vids.length)return;
+  setTimeout(()=>vids.forEach(v=>{
+    if(v.isConnected)return;
+    try{v.pause();v.removeAttribute('src');v.load()}catch{}
+  }),0);
+}
+if('MutationObserver' in window){
+  new MutationObserver(muts=>{
+    let added=false; const removed=[];
+    for(const m of muts){ if(m.addedNodes.length)added=true; if(m.removedNodes.length)removed.push(...m.removedNodes); }
+    if(removed.length)releaseRemovedVideos(removed);
+    if(added)activateThumbs(document);
+  }).observe(document.documentElement,{childList:true,subtree:true});
 }
 function seekThumb(v){
   try{
@@ -2569,7 +2668,38 @@ document.addEventListener('seeked',e=>{
 
 function profileUploads(list){
   if(!list.length)return `<div class="empty profileEmpty">🎬<br><b>No uploads yet</b><br>Published reels will appear here.</div>`;
-  return `<div class="profileGrid">${list.map(r=>`<div class="profileCard"><div class="thumb">${thumbVideoHTML(r.src)}<span>▶</span></div><b>${escapeHtml(r.title)}</b><small>${escapeHtml(r.cat)} · ${escapeHtml(r.sub)}</small><button type="button" onclick="openReel(${r.id})">Watch Reel</button></div>`).join("")}</div>`;
+  return `<div class="profileGrid">${list.map(r=>`<div class="profileCard" data-upload-id="${r.id}"><div class="thumb">${thumbVideoHTML(r.src)}<span>▶</span></div><b>${escapeHtml(r.title)}</b><small>${escapeHtml(r.cat)} · ${escapeHtml(r.sub)}</small><button type="button" onclick="openReel(${r.id})">Watch Reel</button><button type="button" class="deleteReelBtn" onclick="deleteMyReel(${r.id})">🗑 Delete</button></div>`).join("")}</div>`;
+}
+/* Creators can remove their own reels. The server only deletes it if this
+   account uploaded it; the video file, comments and likes go with it. */
+async function deleteMyReel(id){
+  if(!window.confirm('Delete this reel? It will be removed for everyone and cannot be undone.'))return;
+  const card=document.querySelector(`.profileCard[data-upload-id="${id}"]`);
+  const btn=card&&card.querySelector('.deleteReelBtn'); if(btn){btn.disabled=true;btn.textContent='Deleting…'}
+  try{
+    if(serverMode()){
+      const res=await fetch(`${API_BASE}/api/my/reels/${encodeURIComponent(id)}`,{method:'DELETE',headers:authHeaders()});
+      const data=await res.json().catch(()=>({}));
+      if(!res.ok||!data.ok){
+        if(btn){btn.disabled=false;btn.textContent='🗑 Delete'}
+        toast(data.error||'Could not delete the reel. Please try again.',6000);
+        return;
+      }
+    }else{
+      const db=await dbOpen();
+      await new Promise((resolve,reject)=>{const tx=db.transaction(ER_STORE,'readwrite');tx.objectStore(ER_STORE).delete(id);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)});
+    }
+    saved=saved.filter(x=>x!==id); likes=likes.filter(x=>x!==id);
+    watchHistory=watchHistory.filter(h=>h.id!==id);
+    saveState(); saveHistoryState();
+    invalidateReelCache();
+    toast('Reel deleted');
+    profileTab='uploads'; profilePage();
+  }catch(err){
+    console.warn(err);
+    if(btn){btn.disabled=false;btn.textContent='🗑 Delete'}
+    toast('Could not delete the reel — check your connection and try again');
+  }
 }
 function profileDownloads(list){
   if(!list.length)return `<div class="empty profileEmpty">🔖<br><b>No downloads yet</b><br>Tap Save on a reel and it will appear here.</div>`;
@@ -2603,7 +2733,7 @@ function editProfilePage(){
         <div class="erPhotoActions">
           <label class="primary erUploadPhoto">Upload profile photo<input id="profilePhotoInput" type="file" accept="image/*" onchange="handleProfilePhoto(this)"></label>
           ${photoSrc()?'<button type="button" class="optionBtn" onclick="removeProfilePhoto()">Remove photo</button>':''}
-          <small>Choose an image up to 10 MB. It's resized for local prototype storage.</small>
+          <small>Choose an image up to 10 MB. It's resized automatically.</small>
         </div>
       </div>
       <input class="field" id="pname" value="${escapeAttr(profile.name)}" placeholder="Name" autocomplete="name">
@@ -2651,7 +2781,7 @@ function uploadProfilePhoto(blob){
   const form=new FormData();
   form.append('avatar',blob,'avatar.jpg');
   form.append('userId',currentUserId());
-  fetch(`${API_BASE}/api/profile/avatar`,{method:'POST',body:form})
+  fetch(`${API_BASE}/api/profile/avatar`,{method:'POST',body:form,headers:authHeaders()})
     .then(r=>r.json())
     .then(result=>{
       if(!result.ok)return;
@@ -2669,7 +2799,7 @@ function removeProfilePhoto(){
   delete profile.avatarData; delete profile.avatar; delete profile.avatarUrl;
   saveState(); toast('Profile photo removed'); editProfilePage();
   if(serverMode()){
-    fetch(`${API_BASE}/api/profile/avatar/${encodeURIComponent(currentUserId())}`,{method:'DELETE'}).catch(()=>{});
+    fetch(`${API_BASE}/api/profile/avatar/${encodeURIComponent(currentUserId())}`,{method:'DELETE',headers:authHeaders()}).catch(()=>{});
     delete creatorAvatars[currentUserId()];
   }
 }
@@ -2846,11 +2976,11 @@ function settingsPage(){
       <div class="settingSection"><h3>App & media</h3>${settingsRow('⬇️','Downloads & media','Quality, storage and offline behavior','downloads')}${settingsRow('♿','Accessibility','Captions, motion and readable controls','accessibility')}${settingsRow('🌐','Language','Choose the app display language','language')}${settingsRow('📶','Data & playback','Data saver and autoplay behavior','data')}</div>
       <div class="settingSection"><h3>Privacy & community</h3>${settingsRow('🛡️','Privacy','Control profile visibility and interactions','privacy')}${settingsRow('⭐','Study circle','A private list for sharing learning posts','circle')}${settingsRow('🗨️','Comment controls','Choose who can comment on your reels','comments')}${settingsRow('⚠️','Blocked accounts','Manage accounts you blocked','blocked')}</div>
       <div class="settingSection"><h3>Creator tools</h3>${settingsRow('🎥','Creator settings','Upload defaults and education-check behavior','creator')}${settingsRow('✓','Creator trust','View your demo education-trust status','trust')}</div>
-      <div class="settingSection"><h3>Help & information</h3>${settingsRow('❓','Help centre','Common questions and quick guidance','help')}${settingsRow('🐞','Report a problem','Send feedback about the prototype','problem')}${settingsRow('✅','Account status','See whether your account has restrictions','status')}${settingsRow('ℹ️','About EduInsta','Version and product information','about')}</div>
+      <div class="settingSection"><h3>Help & information</h3>${settingsRow('❓','Help centre','Common questions and quick guidance','help')}${settingsRow('🐞','Report a problem','Send us feedback or report a bug','problem')}${settingsRow('✅','Account status','See whether your account has restrictions','status')}${settingsRow('ℹ️','About EduInsta','Version and product information','about')}</div>
       ${isOwner()
         ?`<div class="settingSection"><h3>Owner tools 🔒</h3>${settingsRow('📊','Owner dashboard','Earnings, transactions and moderation','ownerDashboard')}${settingsRow('📢','Advertiser campaigns','Manage booked sponsored placements','ads')}${settingsRow('🛠️','App configuration','Ad frequency, advertiser rates and Premium pricing','adminConfig')}</div>`
         :`<div class="settingSection"><h3>App owner</h3>${settingsRow('🔒','Owner sign-in','Restricted — app owner access only','ownerLogin')}</div>`}
-      <div class="settingSection loginSection">${settingsRow('➕','Add another account','Switch between local demo accounts','addAccount')}${settingsRow('🚪','Log out','Sign out of this device','logout')}</div>
+      <div class="settingSection loginSection">${settingsRow('➕','Add another account','Sign in with a different account','addAccount')}${settingsRow('🚪','Log out','Sign out of this device','logout')}</div>
       <div class="settingSection"><h3>Danger zone</h3>${settingsRow('🗑️','Delete account','Permanently delete your account, uploads and data','deleteAccount')}</div>
     </div>
   </div>`;
@@ -2912,8 +3042,8 @@ function settingDetail(key){
   const titleMap={accountDetails:'Account details',security:'Sign-in & security',devices:'Active devices',activity:'Your activity',notifications:'Notifications',time:'Learning time',content:'Learning preferences',counts:'Engagement display',muted:'Muted creators',downloads:'Downloads & media',accessibility:'Accessibility',language:'Language',data:'Data & playback',privacy:'Privacy',circle:'Study Circle',comments:'Comment controls',blocked:'Blocked accounts',creator:'Creator settings',trust:'Creator trust',help:'Help centre',problem:'Report a problem',status:'Account status',about:'About EduInsta'};
   let body='';
   if(key==='accountDetails') body=`<div class="card"><p><b>Name</b><br>${escapeHtml(profile.name)}</p><p><b>Username</b><br>${escapeHtml(profile.username)}</p><p><b>Role</b><br>${escapeHtml(profile.role)}</p><p><b>Login</b><br>${account.loggedIn?escapeHtml(account.email):'Not signed in'}</p><p><b>Phone number</b><br>${profile.phone?escapeHtml(maskPhone(profile.phone)):'Not added'}</p>${btnHtml(profile.phone?'Update phone number':'Add phone number',"updatePhonePage()")}${btnHtml('Edit profile',"editProfilePage()")}${btnHtml('Open account / sign-in',"authPage()")}</div>`;
-  if(key==='security') body=`<div class="card">${toggleLine('loginAlerts','New sign-in alerts','Save a preference for new-device alerts.',true)}${toggleLine('rememberDevice','Remember this device','Keep the local demo session active.',true)}${btnHtml('Change password',"securityAction('password')")}${btnHtml('Sign out other sessions',"securityAction('sessions')")}</div>`;
-  if(key==='devices') body=`<div class="card"><div class="deviceItem"><span>📱</span><div><b>This device</b><small>Current EduInsta browser session</small></div><em>Active</em></div>${btnHtml('Refresh device status',"toast('Device status refreshed')")}${btnHtml('Sign out this device',"logout()")}</div>`;
+  if(key==='security') body=`<div class="card">${toggleLine('loginAlerts','New sign-in alerts','Save a preference for new-device alerts.',true)}${toggleLine('rememberDevice','Remember this device','Stay signed in on this device.',true)}${btnHtml('Change password',"securityAction('password')")}</div>`;
+  if(key==='devices') body=`<div class="card"><div class="deviceItem"><span>📱</span><div><b>This device</b><small>Current EduInsta session</small></div><em>Active</em></div>${btnHtml('Refresh device status',"toast('Device status refreshed')")}${btnHtml('Sign out this device',"logout()")}</div>`;
   if(key==='activity') body=`<div class="statsLarge"><div><b>${likes.length}</b><span>Liked reels</span></div><div><b>${Object.values(comments).reduce((a,x)=>a+x.length,0)}</b><span>Comments</span></div><div><b>${following.length}</b><span>Following</span></div></div>${btnHtml('Open saved learning',"page('downloads')")}${btnHtml('View profile uploads',"profileTab='uploads';profilePage()")}${btnHtml('Clear local activity',"clearActivity()")}`;
   if(key==='notifications') body=`<div class="card">${toggleLine('notifyFollowers','New followers','Alerts when someone follows your learning profile.',true)}${toggleLine('notifyComments','Comments & replies','Alerts about conversations on your reels.',true)}${toggleLine('notifyLearning','Learning reminders','Recommended learning reminders and new-topic alerts.',true)}${toggleLine('notifySystem','EduInsta updates','Important product and account notices.',true)}${btnHtml('View notifications',"openNotifications()")}</div>`;
   if(key==='time') body=`<div class="card">${toggleLine('focusReminder','Learning reminder','Remind me to take a focused learning session.',false)}${selectLine('reminderTime','Reminder time',['08:00','12:00','18:00','21:00'],erGet('reminderTime','18:00'))}<div class="infoBox">${erGet('focusReminder',false)?'Reminder preference is ON.':'Reminder preference is OFF.'}</div></div>`;
@@ -2929,16 +3059,16 @@ function settingDetail(key){
   if(key==='comments') body=`<div class="card">${selectLine('commentPermission','Who can comment',['Everyone','Followers','People I follow','Nobody'],erGet('commentPermission','Everyone'))}${toggleLine('filterKeywords','Filter unwanted words','Hide comments matching your local keyword list.',true)}${toggleLine('approveComments','Approve comments first','Hold new comments for approval in a future server version.',false)}</div>`;
   if(key==='blocked') body=`<div class="card">${(erGet('blockedAccounts',[]).length?erGet('blockedAccounts',[]).map(x=>`<div class="deviceItem"><div><b>${escapeHtml(x)}</b><small>Blocked account</small></div>${btnHtml('Unblock',`unblockAccount('${escapeAttr(x)}')`)}</div>`).join(''):'<div class="empty">No blocked accounts.</div>')}${btnHtml('Block an account',"blockAccount()")}</div>`;
   if(key==='creator') body=`<div class="card">${selectLine('defaultUploadCategory','Default upload category',['School','Engineering','Medical','Competitive Exams','UPSC / IAS','Government Jobs'],erGet('defaultUploadCategory','Engineering'))}${toggleLine('educationCheck','Require Education Check','Keep the education check before publishing every reel.',true)}${toggleLine('allowCommentsOnOwn','Allow comments on my reels','Enable comments on newly published reels.',true)}${btnHtml('Open upload studio',"page('upload')")}</div>`;
-  if(key==='trust') body=`<div class="card"><div class="trustBadge">✓ Education creator — demo status</div><p>Your creator trust status is calculated from the prototype profile and education-check flow.</p>${btnHtml('Request trust review',"requestTrustReview()")}</div>`;
+  if(key==='trust') body=`<div class="card"><div class="trustBadge">✓ Education creator</div><p>Your creator status is based on your profile and the Education Check results of your reels.</p>${btnHtml('Request trust review',"requestTrustReview()")}</div>`;
   if(key==='help') body=`<div class="card"><h3>EduInsta Help</h3><p>Search educational reels, choose interests, save useful content, and publish only education-focused videos.</p>${btnHtml('Getting started',"helpArticle('start')")}${btnHtml('How upload works',"helpArticle('upload')")}${btnHtml('How to report content',"helpArticle('report')")}</div>`;
   if(key==='problem') body=`<div class="card"><textarea class="field" id="problemText" rows="5" placeholder="Describe the issue or suggestion"></textarea><button type="button" class="primary" onclick="submitProblem()">Send feedback</button><div class="infoBox">Feedback is saved locally in this prototype.</div></div>`;
-  if(key==='status') body=`<div class="card"><div class="statusGood">✓ No current restrictions</div><p>Your demo account has no restrictions.</p>${btnHtml('Review status details',"toast('No restrictions found')")}</div>`;
-  if(key==='about') body=`<div class="card"><h3>EduInsta</h3><p>Education-first short video learning platform.</p><p><b>Prototype version:</b> Stability build</p><p>Original EduInsta product concept and interface.</p></div>`;
+  if(key==='status') body=`<div class="card"><div class="statusGood">✓ No current restrictions</div><p>Your account has no restrictions.</p>${btnHtml('Review status details',"toast('No restrictions found')")}</div>`;
+  if(key==='about') body=`<div class="card"><h3>EduInsta</h3><p>Education-first short video learning platform.</p><p><b>Version:</b> ${escapeHtml(APP_VERSION_LABEL)}</p><p>Original EduInsta product concept and interface.</p></div>`;
   detail(titleMap[key]||'Setting',body||'<div class="empty">This setting is ready for expansion.</div>');
 }
 
 function securityAction(type){
-  toast(type==='password'?'Password change requires the production account service.':'Other demo sessions signed out');
+  if(type==='password'){toast('To change your password, log out and tap "Forgot password?" on the sign-in screen.',5000);return}
   if(type==='sessions')erSet('otherSessionsSignedOut',true);
 }
 function clearActivity(){
@@ -3026,6 +3156,23 @@ async function refreshSubscriptionFromServer(){
     subscription.renewsAt=data.expiresAt||null;
     saveSubscription();
   }catch{ /* offline: keep the cached value rather than locking the user out */ }
+  await applyPlayEntitlement();
+}
+/* On Android, Google Play (through RevenueCat) is the source of truth for
+   Premium. The server's copy only updates when a webhook arrives, so without
+   this a server restart or a delayed webhook made a paying user look free. */
+async function applyPlayEntitlement(){
+  if(!PurchasesService.available())return;
+  const ent=await PurchasesService.currentEntitlement();
+  if(!ent)return;                                   // couldn't check - keep what we have
+  if(ent.active){
+    subscription.status='active';
+    subscription.expiresAt=ent.expiresAt||subscription.expiresAt||Date.now()+30*86400000;
+    subscription.renewsAt=subscription.expiresAt;
+  }else if(subscription.status==='active'){
+    subscription.status='expired';
+  }
+  saveSubscription();
 }
 
 /* ---- Payment gateway (SIMULATED) ----
@@ -3156,8 +3303,20 @@ function resumeSubscription(){
    query the App Store / Play Store / payment provider for prior purchases
    tied to the account. Here it demonstrates the same UX pattern against
    this device's local storage. */
-function restorePurchases(){
+async function restorePurchases(){
   toast('Restoring purchases…');
+  if(PurchasesService.available()){
+    /* Real restore: asks Google Play (via RevenueCat) for this account's
+       purchases, e.g. after reinstalling or on a new phone. */
+    try{
+      const entitled=await PurchasesService.restorePurchases();
+      await refreshSubscriptionFromServer();
+      syncAdMobWithSubscription();
+      toast(entitled||isPremium()?'Purchase restored — Premium is active':'No active Premium purchase found for this Google account');
+    }catch(err){console.warn(err);toast('Could not reach Google Play — please try again.')}
+    if(document.getElementById('managePanel'))manageSubscriptionPage();
+    return;
+  }
   setTimeout(()=>{
     checkSubscriptionExpiry();
     const stored=readJSON('er_subscription',null);
@@ -3208,7 +3367,8 @@ async function startCheckout(){
     try{
       const entitled=await PurchasesService.purchasePremium();
       if(!entitled){toast('Purchase completed but Premium isn\'t active yet — pull to refresh in a moment.');return}
-      await refreshSubscriptionFromServer();
+      await refreshSubscriptionFromServer();   // includes Google Play's own record via RevenueCat
+      syncAdMobWithSubscription();
       if(!isPremium()){
         // RevenueCat's webhook to our backend hasn't landed yet; the purchase
         // itself succeeded with Google, so tell the user rather than erroring.
@@ -3263,10 +3423,14 @@ function manageSubscriptionPage(){
       <p><b>Status</b><br>${subscription.status==='active'?(subscription.cancelAtPeriodEnd?'Active (will not renew)':'Active'):subscription.status==='expired'?'Expired':'Free plan'}</p>
       ${subscription.status==='active'?`<p><b>Plan</b><br>${escapeHtml(plan.label)} — ${PREMIUM_CONFIG.currency}${plan.price}/${plan.interval}</p><p><b>${subscription.cancelAtPeriodEnd?'Ends on':'Next renewal'}</b><br>${new Date(subscription.expiresAt).toLocaleDateString()}</p>`:''}
     </div>
-    ${subscription.status==='active'?(subscription.cancelAtPeriodEnd?btnHtml('Resume subscription','resumeSubscription();manageSubscriptionPage()'):btnHtml('Cancel subscription','cancelSubscription();manageSubscriptionPage()')):btnHtml('View Premium','premiumPage()')}
+    ${PurchasesService.available()
+      ?(subscription.status==='active'
+        ?`<a class="primary playManageBtn" href="https://play.google.com/store/account/subscriptions?sku=${encodeURIComponent(REVENUECAT_PRODUCT_ID)}&package=com.eduinsta.app" target="_blank" rel="noopener">Manage or cancel in Google Play</a><p class="filterNote">Premium is billed by Google Play, so cancelling or changing it is done there.</p>`
+        :btnHtml('View Premium','premiumPage()'))
+      :(subscription.status==='active'?(subscription.cancelAtPeriodEnd?btnHtml('Resume subscription','resumeSubscription();manageSubscriptionPage()'):btnHtml('Cancel subscription','cancelSubscription();manageSubscriptionPage()')):btnHtml('View Premium','premiumPage()'))}
     ${btnHtml('Restore purchases','restorePurchases()')}
     <div class="card"><h3>Billing history</h3>${(subscription.history||[]).length?subscription.history.slice().reverse().map(h=>`<p style="font-size:12px;margin:4px 0">${new Date(h.at).toLocaleString()} — ${escapeHtml(h.type)}${h.price?` (${PREMIUM_CONFIG.currency}${h.price})`:''}</p>`).join(''):'<p class="muted">No billing history yet.</p>'}</div>
-    <div class="infoBox">🛠️ Prototype tools, for demoing renewal/expiry without waiting for real time to pass:<br>${btnHtml('Simulate renewal now','devSimulateRenewal()')}${btnHtml('Simulate expiry now','devSimulateExpiry()')}</div>
+    ${serverMode()?'':`<div class="infoBox">🛠️ Prototype tools, for demoing renewal/expiry without waiting for real time to pass:<br>${btnHtml('Simulate renewal now','devSimulateRenewal()')}${btnHtml('Simulate expiry now','devSimulateExpiry()')}</div>`}
   </div>`;
 }
 
@@ -3422,11 +3586,11 @@ function updatePremiumPrice(v){
 }
 function adminConfigPage(){
   markPage(adminConfigPage);
-  main.innerHTML=`<div class="panel"><div class="detailHead"><button type="button" onclick="navBack(settingsPage)">‹</button><h2>Admin / demo config</h2></div>
+  main.innerHTML=`<div class="panel"><div class="detailHead"><button type="button" onclick="navBack(settingsPage)">‹</button><h2>App configuration</h2></div>
     <div class="card"><h3>Advertising</h3>
       <div class="toggleRow"><div><b>Ads enabled</b><small>Master switch for the whole ad system</small></div><button type="button" class="switch ${AdConfig.enabled?'on':''}" onclick="toggleAdEnabled(this)"><i></i></button></div>
       <div class="selectRow"><b>In-feed sponsored slot (1 per N reels)</b><input class="field" style="width:70px" type="number" min="1" max="20" id="adFreqInput" value="${AdConfig.frequency}" onchange="updateAdFrequency(this.value)"></div>
-      <div class="toggleRow"><div><b>Fullscreen interstitials</b><small>Off by default — in-feed sponsored reels are less intrusive</small></div><button type="button" class="switch ${AdConfig.interstitialsEnabled?'on':''}" onclick="toggleInterstitials(this)"><i></i></button></div>
+      <div class="toggleRow"><div><b>Fullscreen interstitials</b><small>On by default — at most one per the reels/minutes set below, never for Premium</small></div><button type="button" class="switch ${AdConfig.interstitialsEnabled?'on':''}" onclick="toggleInterstitials(this)"><i></i></button></div>
       <div class="selectRow"><b>Interstitial: min reels between</b><input class="field" style="width:70px" type="number" min="10" max="100" id="adInterstitialInput" value="${AdConfig.interstitialEvery||AD_DEFAULTS.interstitialEvery}" onchange="updateInterstitialFrequency(this.value)"></div>
       <div class="selectRow"><b>Interstitial: min minutes between</b><input class="field" style="width:70px" type="number" min="1" max="120" id="adGapInput" value="${AdConfig.interstitialMinGapMinutes||AD_DEFAULTS.interstitialMinGapMinutes}" onchange="updateInterstitialGap(this.value)"></div>
       <p class="filterNote">AdMob: ${AdMobService.available()?'<b>active</b> (native app build)':'not available in a browser — in-feed sponsored slots are used instead'}${ADMOB_CONFIG.useTestAds?' · <b>TEST ad units</b>':''}</p>
@@ -3555,6 +3719,7 @@ async function verifyOtpCode(input){
         body:JSON.stringify({target:pendingOtp.target,code:String(input||'').trim()})
       });
       const data=await res.json();
+      if(data.ok)lastOtpTicket=data.ticket||null;
       return data.ok?{ok:true,purpose:pendingOtp.purpose,target:pendingOtp.target}
                     :{ok:false,error:data.error||'Incorrect code. Please try again.'};
     }catch{
@@ -3625,6 +3790,7 @@ function validateSignupFields({name,identifier,password,confirmPassword}){
    cache once you've successfully signed in on this device at least once. */
 async function performSignup({name,identifier,password}){
   name=(name||'').trim(); identifier=(identifier||'').trim();
+  let signupToken=null;
   if(serverMode()){
     try{
       const res=await fetch(`${API_BASE}/api/signup`,{
@@ -3633,6 +3799,7 @@ async function performSignup({name,identifier,password}){
       });
       const data=await res.json();
       if(!data.ok)return{ok:false,exists:res.status===409||/already exists/i.test(data.error||''),error:data.error||'Could not create your account. Please try again.'};
+      signupToken=data.token||null;
     }catch{
       return{ok:false,error:'Could not reach the server. Check your connection and try again.'};
     }
@@ -3640,20 +3807,17 @@ async function performSignup({name,identifier,password}){
   /* A signup creates a FRESH account record. Do NOT inherit the email or phone
      of whoever was registered before - that would leak the previous user's
      contact details into the new account and let them receive its OTPs. */
+  switchUserData(identifier);
   registeredAccount={name,password,email:identifier,phone:null};
   profile.phone=null;
   lsSet('er_registered_account',JSON.stringify(registeredAccount));
-  account={loggedIn:true,email:registeredAccount.email||registeredAccount.phone,name};
+  account={loggedIn:true,email:registeredAccount.email||registeredAccount.phone,name,...(signupToken?{token:signupToken}:{})};
   lsSet('er_account',JSON.stringify(account));
   profile.name=name;
   profile.username="@"+name.toLowerCase().replace(/[^a-z0-9]+/g,"").slice(0,20)||"@student";
   saveState();
   addNotification('system','Welcome to EduInsta 🎉','Your account was created successfully.');
   addNotification('learning','Personalize your feed','Pick a few interests in your profile to fine-tune your For You feed.');
-  FOLLOWERS_DEFAULT.forEach(u=>{
-    const p=personMap()[u];
-    addNotification('follower','New follower',`${p?p.name:u} started following you.`);
-  });
   syncOwnAvatarFromServer();
   return{ok:true};
 }
@@ -3669,11 +3833,13 @@ async function performLogin({identifier,password}){
       });
       const data=await res.json();
       if(data.ok){
+        switchUserData(identifier);
         registeredAccount={name:data.name||identifier,password,email:identifier,phone:data.phone||null};
         lsSet('er_registered_account',JSON.stringify(registeredAccount));
-        account={loggedIn:true,email:identifier,name:data.name||identifier};
+        account={loggedIn:true,email:identifier,name:data.name||identifier,...(data.token?{token:data.token}:{})};
         lsSet('er_account',JSON.stringify(account));
         if(!profile.name||profile.name==='Your Name')profile.name=data.name||identifier;
+        if(!profile.username||profile.username==='@student')profile.username="@"+String(profile.name).toLowerCase().replace(/[^a-z0-9]+/g,"").slice(0,20)||"@student";
         if(data.phone)profile.phone=data.phone;
         saveState();
         addNotification('security','New sign-in','Your account was signed in on this device.');
@@ -3702,6 +3868,7 @@ async function performLogin({identifier,password}){
   const matchesPhone=!!registeredAccount.phone && idDigits.length>=7 && idDigits===digitsOnly(registeredAccount.phone);
   if(!(matchesEmail||matchesPhone)||password!==registeredAccount.password)
     return{ok:false,error:'Incorrect email/mobile or password.'};
+  switchUserData(registeredAccount.email);
   account={loggedIn:true,email:registeredAccount.email,name:registeredAccount.name};
   lsSet('er_account',JSON.stringify(account));
   if(!profile.name||profile.name==='Your Name')profile.name=registeredAccount.name;
@@ -3769,9 +3936,68 @@ async function completeModalSignup(){
   if(!result.ok){toast(result.error||'Something went wrong — please try again');authForm('signup');return}
   closeOverlay(); toast("Account created"); page('profile');
 }
+/* ---- Per-account local data ----
+   Saved reels, likes, follows, profile, history, interests, notifications,
+   settings and the Premium cache live in localStorage. They used to be shared
+   by whoever signed in on the phone, so a second person saw the first
+   person's saves, likes and even name. Each account now gets its own copy:
+   stashed on logout / account switch, restored when that account signs in. */
+const USER_DATA_KEYS=['er_comments','er_following','er_saved','er_likes','er_profile','er_followers','er_history','er_interests','er_custom_interests','er_notifications','er_subscription','er_settings','er_reports'];
+function userBucketKey(email){return 'er_user_'+norm(email||'')}
+function stashUserData(email){
+  if(!email)return;
+  const bucket={};
+  USER_DATA_KEYS.forEach(k=>{const v=lsGetRaw(k);if(v!==null)bucket[k]=v});
+  if(!Object.keys(bucket).length)return;   // nothing live to save -> never wipe an existing stash
+  lsSet(userBucketKey(email),JSON.stringify(bucket));
+}
+function reloadUserStateFromStorage(){
+  comments=readJSON('er_comments',{});
+  following=readJSON('er_following',[]);
+  saved=readJSON('er_saved',[]);
+  likes=readJSON('er_likes',[]);
+  profile=readJSON('er_profile',{name:"Your Name",username:"@student",role:"Student / Creator"});
+  followers=uniq(readJSON('er_followers',[]));
+  watchHistory=readJSON('er_history',[]);
+  interests=readJSON('er_interests',[]);
+  customInterests=readJSON('er_custom_interests',[]);
+  notifications=readJSON('er_notifications',[]);
+  subscription=readJSON('er_subscription',{status:'free',planId:null,paymentMethod:null,startedAt:null,expiresAt:null,renewsAt:null,cancelAtPeriodEnd:false,history:[]});
+  erSettings=readJSON('er_settings',{});
+  reports=readJSON('er_reports',[]);
+  try{if(typeof invalidateReelCache==='function')invalidateReelCache()}catch{}
+}
+/* Call BEFORE a new account's session is written. Restores that account's
+   own data if it has signed in on this phone before, otherwise starts clean.
+   Signing back into the same account keeps everything as it is. */
+function switchUserData(newEmail){
+  const cur=lsGetRaw('er_active_user')||'';
+  if(cur && norm(cur)===norm(newEmail||''))return;
+  /* Before this update there was no er_active_user: the plain keys belong to
+     whoever was last signed in (account) or registered (registeredAccount). */
+  const legacyEmail=cur?'':((account&&account.email)||(registeredAccount&&registeredAccount.email)||'');
+  const bucket=readJSON(userBucketKey(newEmail),null);
+  const legacyOwner=!cur && !bucket && legacyEmail && norm(legacyEmail)===norm(newEmail||'');
+  if(cur)stashUserData(cur);
+  else if(legacyEmail && !legacyOwner)stashUserData(legacyEmail);
+  if(!legacyOwner){
+    USER_DATA_KEYS.forEach(k=>{try{localStorage.removeItem(k)}catch{}});
+    if(bucket)Object.keys(bucket).forEach(k=>lsSet(k,bucket[k]));
+  }
+  lsSet('er_active_user',newEmail||'');
+  reloadUserStateFromStorage();
+}
 function logout(){
+  const leaving=account&&account.email;
+  if(leaving){
+    stashUserData(leaving);
+    USER_DATA_KEYS.forEach(k=>{try{localStorage.removeItem(k)}catch{}});
+    try{localStorage.removeItem('er_active_user')}catch{}
+    reloadUserStateFromStorage();
+  }
   account={loggedIn:false,email:"",name:""};
   lsSet('er_account',JSON.stringify(account));
+  PurchasesService.signOut();
   closeOverlay(); toast("Logged out");
   renderAuthGate('login');
 }
@@ -3800,7 +4026,6 @@ function renderAuthGate(mode){
         <button type="button" id="gateTabSignup" class="${gateTab==='signup'?'on':''}" onclick="renderAuthGate('signup')">Sign up</button>
       </div>
       <div id="gateForm"></div>
-      <div class="authGateHint">This is a local prototype — your account, profile and content are stored only on this device.</div>
     </div>
   </div>`;
   renderGateForm();
@@ -3989,7 +4214,7 @@ async function submitPasswordReset(){
     try{
       const res=await fetch(`${API_BASE}/api/reset-password`,{
         method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({email:target,newPassword:p1})
+        body:JSON.stringify({email:target,newPassword:p1,ticket:lastOtpTicket})
       });
       const data=await res.json();
       if(btn)btn.disabled=false;
@@ -4020,6 +4245,9 @@ async function submitPasswordReset(){
 function exitAuthGate(){
   document.querySelector('.app').classList.remove('authGateMode');
   page('home');
+  /* A different account may have just signed in: point RevenueCat at it and
+     re-check Premium, so ads/Premium always match THIS account. */
+  refreshSubscriptionFromServer().then(()=>{syncAdMobWithSubscription();if(document.querySelector('.feed'))home(activeHomeTab)}).catch(()=>{});
   updateNotificationBadge();
   // A deep-linked reel that arrived before the user finished logging in
   // (e.g. tapped a shared WhatsApp link while signed out) - open it now.
@@ -4055,8 +4283,13 @@ async function confirmDeleteAccount(){
   if(btn){btn.disabled=true;btn.textContent='Deleting…'}
   try{
     if(serverMode()){
-      const res=await fetch(`${API_BASE}/api/account/${encodeURIComponent(userId)}`,{method:'DELETE'});
+      const res=await fetch(`${API_BASE}/api/account/${encodeURIComponent(userId)}`,{method:'DELETE',headers:authHeaders()});
       const result=await res.json().catch(()=>({ok:false}));
+      if(res.status===401){
+        if(btn){btn.disabled=false;btn.textContent='Permanently delete my account'}
+        toast(result.error||'For your security, please log out and log in again, then delete your account.',6000);
+        return;
+      }
       if(!result.ok)throw new Error(result.error||'Delete failed');
     }
     wipeLocalAccountData();
@@ -4068,13 +4301,19 @@ async function confirmDeleteAccount(){
   }
 }
 function wipeLocalAccountData(){
+  /* Remove only the deleted account's data. Other accounts that have signed
+     in on this phone, and device settings (owner PIN, ad config), stay. */
+  const email=account&&account.email;
   try{
-    Object.keys(localStorage).filter(k=>k.startsWith('er_')).forEach(k=>localStorage.removeItem(k));
+    USER_DATA_KEYS.forEach(k=>localStorage.removeItem(k));
+    ['er_account','er_active_user'].forEach(k=>localStorage.removeItem(k));
+    if(email)localStorage.removeItem(userBucketKey(email));
+    if(registeredAccount&&norm(registeredAccount.email||'')===norm(email||''))localStorage.removeItem('er_registered_account');
   }catch{}
+  PurchasesService.signOut();
   account={loggedIn:false,email:"",name:""};
-  profile={name:"Your Name",username:"@student",role:"Student / Creator"};
-  comments={};following=[];saved=[];likes=[];interests=[];customInterests=[];
-  erSettings={};registeredAccount=null;
+  registeredAccount=null;
+  reloadUserStateFromStorage();   // resets saves, likes, history, notifications, Premium cache…
 }
 
 /* ---- Update phone number (Settings > Account details), OTP-verified ---- */

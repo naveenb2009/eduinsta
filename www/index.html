@@ -455,8 +455,8 @@ a.uploadOption{text-decoration:none;color:#111;display:flex;align-items:center}
 .payMethod input{margin:0}
 
 /* ---------- Ads ---------- */
-.adSlot{background:linear-gradient(160deg,#101826,#1a1230);flex-direction:column;align-items:center;justify-content:center;padding:26px 22px;text-align:center}
-.adBadge{position:absolute;left:14px;top:14px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);border-radius:10px;padding:3px 9px;font-size:11px;letter-spacing:.03em}
+.adSlot{background:linear-gradient(160deg,#101826,#1a1230);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:26px 22px;text-align:center}
+.adBadge{position:absolute;left:14px;top:calc(104px + env(safe-area-inset-top,0px));background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);border-radius:10px;padding:3px 9px;font-size:11px;letter-spacing:.03em}
 .adContent{max-width:340px}
 .adSponsor{color:#5eead4;font-weight:700;font-size:13px;margin-bottom:8px}
 .adHeadline{font-size:20px;font-weight:800;margin-bottom:18px;line-height:1.3}
@@ -501,6 +501,8 @@ body.a11yReducedMotion *,body.a11yReducedMotion *::before,body.a11yReducedMotion
 
 /* ---------- Advertiser campaigns ---------- */
 .campaignRow{display:flex;align-items:center;gap:10px;justify-content:space-between;padding:12px 0;border-top:1px solid #f0f0f0;font-size:13px}
+.campaignActions{display:flex;flex-direction:column;gap:6px;flex-shrink:0}
+.campaignActions .btnSecondary{margin:0;padding:6px 10px;font-size:12px}
 .campaignRow:first-child{border-top:0}
 .campaignRow small{color:#777}
 </style>
@@ -1116,9 +1118,34 @@ function noteReelViewedForAds(id){
   AdMobService.showInterstitial();
 }
 
+/* ---- Direct ad campaigns from the server (owner-managed, paid outside the
+   app). Cached here so the synchronous feed builder can use them. ---- */
+var serverCampaigns=[];
+async function refreshServerCampaigns(){
+  if(!serverMode())return;
+  try{
+    const ctrl=new AbortController(); const t=setTimeout(()=>ctrl.abort(),2500);
+    const res=await fetch(`${API_BASE}/api/campaigns/active`,{signal:ctrl.signal});
+    clearTimeout(t);
+    const data=await res.json();
+    if(data&&Array.isArray(data.campaigns))serverCampaigns=data.campaigns;
+  }catch{ /* keep the last list; ads are never worth blocking the feed */ }
+}
+function deviceId(){
+  let id=lsGetRaw('er_device_id');
+  if(!id){id='d'+Date.now().toString(36)+Math.random().toString(36).slice(2,10);lsSet('er_device_id',id)}
+  return id;
+}
 const AdManager={
   nextCreativeIndex:0,
   getAdForSlot(){
+    if(serverMode()){
+      /* Real paid campaigns: always shown in their slot (no simulated drops). */
+      if(!serverCampaigns.length)return null;
+      const c=serverCampaigns[this.nextCreativeIndex%serverCampaigns.length];
+      this.nextCreativeIndex++;
+      return {id:'srv_'+c.id,sponsor:c.sponsor,headline:c.headline,cta:c.cta||'Learn more',link:c.link||null,serverCampaignId:c.id};
+    }
     /* Simulated ad-network call: occasionally "fails" so the feed's graceful
        degradation (skip the slot, never show broken/blank ad content) is a
        real, exercised code path rather than a theoretical one. */
@@ -1136,11 +1163,23 @@ const AdManager={
   },
   recordImpression(adId){
     adState.impressions[adId]=(adState.impressions[adId]||0)+1;saveAdState();
+    if(String(adId).startsWith('srv_')){
+      fetch(`${API_BASE}/api/campaigns/${encodeURIComponent(String(adId).slice(4))}/impression`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({deviceId:deviceId()})}).catch(()=>{});
+      return;
+    }
     const campaignId=String(adId).startsWith('campaign_')?Number(String(adId).slice(9)):null;
     if(campaignId){const c=adCampaigns.find(x=>x.id===campaignId);if(c){c.impressions=(c.impressions||0)+1;saveAdCampaigns()}}
   },
   recordClick(adId){
     adState.clicks[adId]=(adState.clicks[adId]||0)+1;saveAdState();
+    if(String(adId).startsWith('srv_')){
+      const id=String(adId).slice(4);
+      fetch(`${API_BASE}/api/campaigns/${encodeURIComponent(id)}/click`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({deviceId:deviceId()})}).catch(()=>{});
+      const c=serverCampaigns.find(x=>String(x.id)===id);
+      if(c&&c.link)window.open(c.link,'_blank','noopener');
+      else toast(c?`Sponsored by ${c.sponsor}`:'Sponsored content');
+      return;
+    }
     const campaignId=String(adId).startsWith('campaign_')?Number(String(adId).slice(9)):null;
     if(campaignId){const c=adCampaigns.find(x=>x.id===campaignId);if(c){c.clicks=(c.clicks||0)+1;saveAdCampaigns()}}
     const c2=campaignId?adCampaigns.find(x=>x.id===campaignId):null;
@@ -1457,7 +1496,7 @@ async function home(tab){
   if(tab)activeHomeTab=tab;
   const active=HOME_TABS.includes(activeHomeTab)?activeHomeTab:'For You';
   activeHomeTab=active;
-  const all=await allReelsCached();
+  const [all]=await Promise.all([allReelsCached(),isPremium()?null:refreshServerCampaigns()]);
   let list;
   if(active==='Following')      list=sortFeedByPriority(all.filter(r=>following.includes(r.creator)));
   else if(active==='All')       list=sortFeedByPriority(all);   // everything, newest first, follows bumped up
@@ -3454,7 +3493,104 @@ function setAdConsent(v){
    the standard flat-rate-by-duration flow used by most small/medium apps'
    self-serve sponsored-placement products. ---- */
 var newCampaignDays=AdRateCard.minDurationDays;
+/* ======== Owner: direct ad campaigns stored on the server ========
+   Needs the server's OWNER_TOKEN once per phone ("owner key"), because the
+   PIN only unlocks the screen on this device; the key is what the server
+   actually trusts. */
+function ownerKey(){return lsGetRaw('er_owner_key')||''}
+function ownerFetch(path,opts){
+  opts=opts||{};
+  return fetch(`${API_BASE}${path}`,{...opts,headers:{'Content-Type':'application/json',...(opts.headers||{}),Authorization:'Bearer '+ownerKey()}});
+}
+async function serverCampaignsPage(){
+  markPage(adCampaignsPage);
+  const head=`<div class="detailHead"><button type="button" onclick="navBack(settingsPage)">‹</button><h2>Advertiser campaigns</h2></div>`;
+  if(!ownerKey()){
+    main.innerHTML=`<div class="panel">${head}
+      <p class="filterNote">To manage ads for all users, enter your server owner key once on this phone. It is the <b>OWNER_TOKEN</b> value in Render → eduinsta-api → Environment.</p>
+      <input class="field" id="ownerKeyInput" type="password" placeholder="Owner key (OWNER_TOKEN)" autocomplete="off">
+      <div class="fieldError" id="ownerKeyError"></div>
+      <button type="button" class="primary" style="width:100%" onclick="saveOwnerKey()">Connect</button>
+    </div>`;
+    return;
+  }
+  main.innerHTML=`<div class="panel">${head}<p class="filterNote">Loading campaigns…</p></div>`;
+  let list=null, err='';
+  try{
+    const res=await ownerFetch('/api/owner/campaigns');
+    if(res.status===403){lsSet('er_owner_key','');toast('Owner key was rejected — please enter it again',5000);return serverCampaignsPage()}
+    const data=await res.json(); list=data.campaigns||[];
+  }catch{err='Could not reach the server. Check your connection and try again.'}
+  if(currentPageFn!==adCampaignsPage)return;   // user navigated away while loading
+  const now=Date.now();
+  const running=(list||[]).filter(c=>c.status==='active'&&c.endAt>now);
+  const total=(list||[]).reduce((s,c)=>s+(c.price||0),0);
+  main.innerHTML=`<div class="panel">${head}
+    <p class="filterNote">How it works: the business pays you directly (UPI / bank transfer). Add their campaign here and it appears as a <b>Sponsored</b> reel for every free user until it ends. Premium users never see ads.</p>
+    <button type="button" class="primary" style="width:100%" onclick="newServerCampaignPage()">+ New campaign</button>
+    ${err?`<div class="checkResult checkFail"><p>${escapeHtml(err)}</p></div>`:`
+    <div class="card"><h3>Summary</h3><p>${running.length} running · ${list.length} total · ${PREMIUM_CONFIG.currency}${total.toLocaleString('en-IN')} booked</p></div>
+    <div class="card"><h3>Campaigns</h3>${list.length?list.map(c=>{
+      const live=c.status==='active'&&c.endAt>now;
+      const ctr=c.impressions?((c.clicks/c.impressions)*100).toFixed(1):'0.0';
+      return `<div class="campaignRow"><div><b>${escapeHtml(c.sponsor)}</b> — ${escapeHtml(c.headline)}<br>
+        <small>${new Date(c.startAt).toLocaleDateString()} – ${new Date(c.endAt).toLocaleDateString()} · ${live?'🟢 running':'⚪ ended'}${c.price!=null?` · ${PREMIUM_CONFIG.currency}${c.price}`:''}${c.paymentNote?` · ${escapeHtml(c.paymentNote)}`:''}</small><br>
+        <small>👁 ${c.impressions} views · 🖱 ${c.clicks} clicks · ${ctr}% click rate${c.link?` · ${escapeHtml(c.link)}`:''}</small></div>
+        <div class="campaignActions">${live?`<button type="button" class="btnSecondary" onclick="endServerCampaign(${c.id})">End now</button>`:''}<button type="button" class="btnSecondary" onclick="deleteServerCampaign(${c.id})">Delete</button></div></div>`}).join(''):'<p class="muted">No campaigns yet.</p>'}</div>`}
+    <button type="button" class="btnSecondary" onclick="lsSet('er_owner_key','');serverCampaignsPage()">Change owner key</button>
+  </div>`;
+}
+async function saveOwnerKey(){
+  const k=(document.getElementById('ownerKeyInput')?.value||'').trim();
+  const err=document.getElementById('ownerKeyError');
+  if(!k){if(err)err.textContent='Enter the owner key.';return}
+  try{
+    const res=await fetch(`${API_BASE}/api/owner/verify`,{headers:{Authorization:'Bearer '+k}});
+    if(!res.ok){if(err)err.textContent='That key was not accepted by the server.';return}
+  }catch{if(err)err.textContent='Could not reach the server.';return}
+  lsSet('er_owner_key',k); toast('Connected'); serverCampaignsPage();
+}
+function newServerCampaignPage(){
+  markPage(newServerCampaignPage);
+  main.innerHTML=`<div class="panel"><div class="detailHead"><button type="button" onclick="navBack(adCampaignsPage)">‹</button><h2>New campaign</h2></div>
+    <p class="filterNote">Collect payment from the advertiser first, then add the campaign.</p>
+    <label class="fieldLabel">Sponsor / business name</label><input class="field" id="scSponsor" maxlength="60" placeholder="e.g. BrightPath Coaching">
+    <label class="fieldLabel">Ad headline</label><input class="field" id="scHeadline" maxlength="120" placeholder="e.g. NEET crash course — 30% off this month">
+    <label class="fieldLabel">Button text</label><input class="field" id="scCta" maxlength="24" placeholder="Learn more">
+    <label class="fieldLabel">Link (optional)</label><input class="field" id="scLink" inputmode="url" placeholder="https://their-website.com">
+    <label class="fieldLabel">Duration (days)</label><input class="field" id="scDays" type="number" min="1" max="365" value="7">
+    <label class="fieldLabel">Amount received (${PREMIUM_CONFIG.currency}, for your records)</label><input class="field" id="scPrice" type="number" min="0" placeholder="e.g. 2500">
+    <label class="fieldLabel">Payment note (optional)</label><input class="field" id="scNote" maxlength="200" placeholder="e.g. UPI ref 4821…, invoice #12">
+    <div class="fieldError" id="scError"></div>
+    <button type="button" class="primary" style="width:100%" onclick="createServerCampaign()">Publish campaign</button>
+  </div>`;
+}
+async function createServerCampaign(){
+  const v=id=>(document.getElementById(id)?.value||'').trim();
+  const body={sponsor:v('scSponsor'),headline:v('scHeadline'),cta:v('scCta')||'Learn more',link:v('scLink'),days:Number(v('scDays')),price:v('scPrice'),paymentNote:v('scNote')};
+  const err=document.getElementById('scError');
+  if(!body.sponsor||!body.headline){if(err)err.textContent='Enter the sponsor name and headline.';return}
+  try{
+    const res=await ownerFetch('/api/owner/campaigns',{method:'POST',body:JSON.stringify(body)});
+    const data=await res.json();
+    if(!data.ok){if(err)err.textContent=data.error||'Could not create the campaign.';return}
+  }catch{if(err)err.textContent='Could not reach the server.';return}
+  toast('🎉 Campaign is live for all free users');
+  await refreshServerCampaigns();
+  serverCampaignsPage();
+}
+async function endServerCampaign(id){
+  if(!window.confirm('End this campaign now? It stops showing immediately.'))return;
+  try{await ownerFetch(`/api/owner/campaigns/${id}/end`,{method:'POST'});toast('Campaign ended')}catch{toast('Could not reach the server')}
+  await refreshServerCampaigns(); serverCampaignsPage();
+}
+async function deleteServerCampaign(id){
+  if(!window.confirm('Delete this campaign and its statistics? This cannot be undone.'))return;
+  try{await ownerFetch(`/api/owner/campaigns/${id}`,{method:'DELETE'});toast('Campaign deleted')}catch{toast('Could not reach the server')}
+  await refreshServerCampaigns(); serverCampaignsPage();
+}
 function adCampaignsPage(){
+  if(serverMode())return serverCampaignsPage();
   markPage(adCampaignsPage);
   refreshCampaignStatuses();
   main.innerHTML=`<div class="panel"><div class="detailHead"><button type="button" onclick="navBack(settingsPage)">‹</button><h2>Advertise on EduInsta</h2></div>

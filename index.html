@@ -164,6 +164,8 @@ header>*{pointer-events:auto}
 .chip.on{background:#111;color:#fff}
 .cards{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 .card{background:#fff;border:1px solid #ddd;border-radius:12px;padding:12px}
+.loadMoreBtn{display:block;width:100%;margin:14px 0 6px;border:1px solid #ccc;background:#fff;color:#111;border-radius:12px;padding:12px;font-weight:600}
+.loadMoreBtn:disabled{opacity:.6}
 /* Scoped so it only styles plain action buttons. Without :not(), this rule
    overrode .switch/.chip/.networkBtn (higher specificity) and stretched them
    into full-width black bars inside settings cards. */
@@ -673,14 +675,9 @@ window.fetch=function(input,init){
    real uploaded reel once that id number was taken. Negative ids can never
    collide with a database sequence (always positive) or a local upload id
    (Date.now()-based, always a large positive number). */
-const reels=[
-  {id:-1,cat:"School",sub:"Mathematics",creator:"@mathminute",title:"Why is the area of a circle πr²?",desc:"A quick visual explanation of the circle area formula.",src:"https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"},
-  {id:-2,cat:"Engineering",sub:"Physics",creator:"@engineeringbytes",title:"Ohm's Law explained in one minute",desc:"Understand voltage, current and resistance with a simple example.",src:"https://www.w3schools.com/html/mov_bbb.mp4"},
-  {id:-3,cat:"Medical",sub:"Biology",creator:"@medstudy",title:"DNA: the four bases",desc:"A short introduction to A, T, C and G.",src:"https://media.w3.org/2010/05/sintel/trailer.mp4"},
-  {id:-4,cat:"Competitive Exams",sub:"General Knowledge",creator:"@upscquick",title:"Fundamental Rights – quick revision",desc:"A concise revision-style explainer for exam preparation.",src:"https://media.w3.org/2010/05/bunny/trailer.mp4"},
-  {id:-5,cat:"Engineering",sub:"Aerospace",creator:"@aerospacelab",title:"Inside a jet engine: turbomachinery explained",desc:"A deep-dive into how turbomachinery powers modern jet engines.",src:"https://media.w3.org/2010/05/bunny/trailer.mp4"},
-  {id:-6,cat:"Computer Science",sub:"Data Science",creator:"@datasciencehub",title:"Building your first machine learning model",desc:"A step-by-step walkthrough of a simple ML pipeline.",src:"https://www.w3schools.com/html/mov_bbb.mp4"}
-];
+/* No built-in sample reels: the feed shows only real published reels. The
+   (empty) list is kept because offline lookups still reference it. */
+const reels=[];
 
 const ER_INTEREST_LIBRARY=[
   'Mathematics','Arithmetic','Algebra','Geometry','Trigonometry','Calculus','Statistics','Probability','Discrete Mathematics','Number Theory','Linear Algebra','Coordinate Geometry','Mensuration','Logical Reasoning','Quantitative Aptitude',
@@ -1282,8 +1279,6 @@ function blobUrlFor(obj){
 /* In SERVER MODE the feed comes from the backend, so every user sees every
    reel. In prototype mode it falls back to this device's own IndexedDB, which
    only the uploader can see - fine for a demo, not a platform. */
-var serverFeedCursor=null;
-var serverFeedExhausted=false;
 /* The server may hand back a RELATIVE video path (/api/video/...). Inside the
    Android app the page origin is localhost, so a relative path resolves to
    https://localhost/... and the video silently fails to load. Resolve any
@@ -1294,33 +1289,59 @@ function resolveMediaUrl(src){
   if(!API_BASE)return src;                                   // prototype mode
   return `${API_BASE.replace(/\/$/,'')}${src.startsWith('/')?'':'/'}${src}`;
 }
-async function fetchServerFeed(reset){
-  if(reset){serverFeedCursor=null;serverFeedExhausted=false}
-  const url=`${API_BASE}/api/feed?limit=30${serverFeedCursor?`&cursor=${encodeURIComponent(serverFeedCursor)}`:''}`;
-  const res=await fetch(url);
-  if(!res.ok)throw new Error('feed request failed');
-  const data=await res.json();
-  serverFeedCursor=data.nextCursor;
-  if(!data.nextCursor)serverFeedExhausted=true;
-  return (data.reels||[]).map(r=>({...r,src:resolveMediaUrl(r.src)}));
+/* ---------------- Reel streams (unlimited, Instagram-style) ----------------
+   Every reel stays available until its uploader deletes it - there is NO cap
+   on how many exist. The app never downloads "all reels"; it asks the server
+   for one page (newest first) and asks for the next page as the user nears
+   the end, exactly like Instagram Reels / YouTube Shorts. Home tabs, Explore
+   chips and Search each use their own stream with their own server filter. */
+const STREAM_PAGE=20;
+function makeStream(params,filter){
+  return {params:params||{},filter:filter||null,cursor:null,exhausted:false,items:[],seen:new Set(),busy:null};
 }
-async function allReels(){
-  if(serverMode()){
-    try{
-      const remote=await fetchServerFeed(true);
-      /* Show server reels AND the built-in demo reels together. Returning only
-         the remote list would make the feed look empty until people upload
-         real content. De-duplicated by id - safe because demo reels use
-         negative ids that can never collide with a real server reel id. */
-      const remoteIds=new Set(remote.map(r=>r.id));
-      return [...remote,...reels.filter(r=>!remoteIds.has(r.id))];
-    }catch(err){
-      console.warn('Server feed unavailable, showing local content:',err);
-      toast('Could not reach the server — showing offline content');
-    }
-  }
+/* Local uploads only exist in prototype/offline mode (no server). */
+async function localReels(){
   const uploads=await dbAll();
-  return reels.concat(uploads.map(u=>({...u,uploaded:true,src:blobUrlFor(u)})));
+  return uploads.map(u=>({...u,uploaded:true,src:blobUrlFor(u)}));
+}
+/* Loads pages until `want` new reels arrived (or the end). Returns the new
+   reels. Concurrent calls share the same request. Throws on a network error
+   for the FIRST page so callers can show a retry message. */
+function streamNext(s,want){
+  if(s.busy)return s.busy;
+  s.busy=(async()=>{
+    const added=[];
+    const take=list=>{for(const r of list){if(s.seen.has(r.id))continue;if(s.filter&&!s.filter(r))continue;s.seen.add(r.id);added.push(r)}};
+    if(!serverMode()){
+      if(!s.exhausted){take((await localReels()).reverse());s.exhausted=true}
+    }else{
+      let pages=0;
+      while(!s.exhausted&&added.length<(want||STREAM_PAGE)&&pages<5){
+        pages++;
+        const qs=new URLSearchParams({limit:String(STREAM_PAGE)});
+        Object.entries(s.params).forEach(([k,v])=>{if(v!=null&&v!=='')qs.set(k,v)});
+        if(s.cursor)qs.set('cursor',s.cursor);
+        let data;
+        try{
+          const res=await fetch(`${API_BASE}/api/feed?${qs}`);
+          if(!res.ok)throw new Error('feed request failed');
+          data=await res.json();
+        }catch(err){if(!s.items.length&&!added.length)throw err;break}
+        s.cursor=data.nextCursor||null;
+        if(!data.nextCursor)s.exhausted=true;
+        take((data.reels||[]).map(r=>({...r,src:resolveMediaUrl(r.src)})));
+      }
+    }
+    s.items.push(...added);
+    return added;
+  })().finally(()=>{s.busy=null});
+  return s.busy;
+}
+/* First page of the general feed (used only as a lookup fallback). */
+async function allReels(){
+  const s=makeStream();
+  try{await streamNext(s)}catch(err){console.warn('Server feed unavailable:',err);return []}
+  return s.items;
 }
 
 /* Fetches the CURRENT user's own reels directly from the server (filtered
@@ -1328,29 +1349,40 @@ async function allReels(){
    page of the general feed - fixes the profile "Uploads" tab, which used to
    read from local IndexedDB (dbAll()) even though reels haven't been stored
    there since server mode shipped, so it always showed empty. */
-async function fetchMyUploads(){
+/* One page of the signed-in creator's reels. The returned array also
+   carries .total (all uploads, for the profile count) and .nextCursor (when
+   more exist, Profile shows "Load more"). No cap on how many are reachable. */
+var myUploadsCursor=null;
+async function fetchMyUploads(cursor){
   if(serverMode()){
     try{
-      /* Reels are stored on the server with creator=profile.username (see
-         publishToServer(), which sends form.append('creator',profile.username))
-         - NOT currentUserId() (which is account.email once logged in). Filtering
-         by the wrong value here silently matched nothing, so the Uploads tab
-         always looked empty even for a user with real published reels. */
-      /* By account (session token), so uploads stay listed even after the
-         @username is changed. Falls back to the public by-handle list for a
-         session from before tokens existed. */
-      let res=account&&account.token?await fetch(`${API_BASE}/api/my/reels?creator=${encodeURIComponent(profile.username)}`,{headers:authHeaders()}):null;
-      if(!res||!res.ok)res=await fetch(`${API_BASE}/api/feed?creator=${encodeURIComponent(profile.username)}&limit=50`);
+      const qs=`creator=${encodeURIComponent(profile.username)}&limit=30${cursor?`&cursor=${encodeURIComponent(cursor)}`:''}`;
+      let res=account&&account.token?await fetch(`${API_BASE}/api/my/reels?${qs}`,{headers:authHeaders()}):null;
+      if(!res||!res.ok)res=await fetch(`${API_BASE}/api/feed?${qs}`);
       const data=await res.json();
-      return (data.reels||[]).map(r=>({...r,src:resolveMediaUrl(r.src)}));
+      const list=(data.reels||[]).map(r=>({...r,src:resolveMediaUrl(r.src)}));
+      list.nextCursor=data.nextCursor||null;
+      list.total=typeof data.total==='number'?data.total:null;
+      myUploadsCursor=list.nextCursor;
+      return list;
     }catch(err){
       console.warn('Could not load your uploads from the server:',err);
       toast('Could not reach the server — showing offline content');
     }
   }
-  const uploads=await dbAll();
-  return uploads.map(u=>({...u,uploaded:true,src:blobUrlFor(u)}));
+  const list=await localReels();
+  list.nextCursor=null; list.total=list.length; myUploadsCursor=null;
+  return list;
 }
+async function loadMoreUploads(btn){
+  if(!myUploadsCursor)return;
+  if(btn){btn.disabled=true;btn.textContent='Loading…'}
+  const more=await fetchMyUploads(myUploadsCursor);
+  const grid=document.querySelector('#profileContent .profileGrid');
+  if(grid&&more.length){grid.insertAdjacentHTML('beforeend',more.map(uploadCardHTML).join(''));activateThumbs(grid)}
+  if(btn){if(more.nextCursor){btn.disabled=false;btn.textContent='Load more'}else btn.remove()}
+}
+
 /* Fetches specific reels by id (e.g. saved/watch-history ids from local
    storage) directly, instead of hoping they're on whichever single feed
    page happens to already be loaded - a saved reel from a few days ago is
@@ -1484,37 +1516,68 @@ const FEED_PAGE_SIZE=8;      // items rendered per page
 const VIDEO_WINDOW=3;        // reels either side of current that keep their src
 var feedState={items:[],rendered:0,loading:false,tab:null};
 
-/* allReels() hits IndexedDB; cache it so scrolling and re-renders don't. */
-var __reelCache=null;
-function invalidateReelCache(){__reelCache=null}
+/* Home tab streams are kept while the app is open, so going back to Home
+   doesn't refetch from scratch. Cleared after an upload/delete. */
+var homeStreams={};
+var __reelCache=null;   // kept for older callers; no longer holds "all reels"
+function invalidateReelCache(){__reelCache=null;homeStreams={}}
+/* Every reel the app has loaded so far, across all streams. */
+function loadedReels(){
+  const out=[],seen=new Set();
+  Object.values(homeStreams).forEach(st=>st.items.forEach(r=>{if(!seen.has(r.id)){seen.add(r.id);out.push(r)}}));
+  [exploreStream,searchStream].forEach(st=>st&&st.items.forEach(r=>{if(!seen.has(r.id)){seen.add(r.id);out.push(r)}}));
+  return out;
+}
 async function allReelsCached(){
+  const got=loadedReels();
+  if(got.length)return got;
   if(!__reelCache)__reelCache=await allReels();
   return __reelCache;
+}
+function homeStreamFor(tab){
+  if(tab==='Following'){
+    const key='Following:'+following.join(',');
+    if(!homeStreams[key])homeStreams[key]=following.length?makeStream({creators:following.join(',')}):Object.assign(makeStream(),{exhausted:true});
+    return homeStreams[key];
+  }
+  if(tab==='For You'){
+    const key='For You:'+interests.join(',');
+    if(!homeStreams[key])homeStreams[key]=makeStream(interests.length?{any:interests.join(',')}:{},reelMatchesInterests);
+    return homeStreams[key];
+  }
+  return homeStreams.All||(homeStreams.All=makeStream());
 }
 
 async function home(tab){
   if(tab)activeHomeTab=tab;
   const active=HOME_TABS.includes(activeHomeTab)?activeHomeTab:'For You';
   activeHomeTab=active;
-  const [all]=await Promise.all([allReelsCached(),isPremium()?null:refreshServerCampaigns()]);
-  let list;
-  if(active==='Following')      list=sortFeedByPriority(all.filter(r=>following.includes(r.creator)));
-  else if(active==='All')       list=sortFeedByPriority(all);   // everything, newest first, follows bumped up
-  else                          list=sortFeedByPriority(all.filter(r=>reelMatchesInterests(r)));
+  const stream=homeStreamFor(active);
+  let loadFailed=false;
+  const first=(!stream.items.length&&!stream.exhausted)
+    ?streamNext(stream,FEED_PAGE_SIZE).catch(err=>{loadFailed=true;console.warn('Feed unavailable:',err)})
+    :null;
+  await Promise.all([first,isPremium()?null:refreshServerCampaigns()]);
+  if(loadFailed)toast('Could not reach the server — check your connection');
 
-  feedState={items:buildFeedWithAds(list),rendered:0,loading:false,tab:active};
+  feedState={items:buildFeedWithAds(sortFeedByPriority(stream.items)),rendered:0,loading:false,tab:active,stream};
 
-  const emptyMsg=active==='Following'
+  const emptyMsg=loadFailed
+    ? 'Could not load reels. Check your internet connection and try again.'
+    : active==='Following'
     ? 'Follow educational creators to see their reels here.'
     : active==='All'
       ? 'No reels have been published yet.'
       : 'No reels match your interests yet — try the All tab to see everything.';
+  const emptyBtn=loadFailed
+    ? `<button type="button" class="primary" style="width:auto;margin-top:14px" onclick="invalidateReelCache();home('${active}')">Try again</button>`
+    : active!=='All'?`<button type="button" class="primary" style="width:auto;margin-top:14px" onclick="home('All')">Browse all reels</button>`:'';
   main.innerHTML=`
     <div class="homeTabs" role="tablist" aria-label="Home feed">
       ${HOME_TABS.map(t=>`<button type="button" class="homeTab ${active===t?'active':''}" onclick="home('${t}')" role="tab" aria-selected="${active===t}">${t}</button>`).join('')}
     </div>
     <div class="feed" id="feed">
-      ${feedState.items.length?'':`<div class="empty" style="margin-top:112px;color:#fff"><h3>No reels here</h3><p>${emptyMsg}</p>${active!=='All'?`<button type="button" class="primary" style="width:auto;margin-top:14px" onclick="home('All')">Browse all reels</button>`:''}</div>`}
+      ${feedState.items.length?'':`<div class="empty" style="margin-top:112px;color:#fff"><h3>No reels here</h3><p>${emptyMsg}</p>${emptyBtn}</div>`}
     </div>`;
   renderNextFeedPage();
   attachFeedScrollLoader();
@@ -1524,6 +1587,16 @@ async function home(tab){
     __reportedBootPerf=true;
     reportDiagnostic('performance',`Time to first feed render: ${Math.round(performance.now()-__bootStart)}ms`);
   }
+}
+/* Fetch the next server page for the current Home tab and append it. */
+async function loadMoreFeedFromServer(){
+  const st=feedState.stream;
+  if(!st||st.exhausted||st.busy)return;
+  let added=[];
+  try{added=await streamNext(st,FEED_PAGE_SIZE)}catch{return}
+  if(feedState.stream!==st||!added.length)return;   // user switched tab meanwhile
+  feedState.items.push(...buildFeedWithAds(sortFeedByPriority(added)));
+  renderNextFeedPage();
 }
 var __reportedBootPerf=false;
 
@@ -1549,7 +1622,11 @@ function attachFeedScrollLoader(){
   const feed=document.getElementById('feed');
   if(!feed)return;
   feed.onscroll=()=>{
-    if(feedHasMore()&&feed.scrollTop+feed.clientHeight*2>=feed.scrollHeight)renderNextFeedPage();
+    if(feed.scrollTop+feed.clientHeight*2>=feed.scrollHeight){
+      if(feedHasMore())renderNextFeedPage();
+      /* Prefetch the next server page before the user reaches the end. */
+      if(feedState.items.length-feedState.rendered<FEED_PAGE_SIZE)loadMoreFeedFromServer();
+    }
     applyVideoWindow();
   };
 }
@@ -1986,8 +2063,9 @@ function copyShareText(t){
 
 async function shareReel(id,e){
   e?.stopPropagation();
-  const all=await allReelsCached();
-  const r=all.find(x=>x.id===id); if(!r)return;
+  let r=loadedReels().find(x=>x.id===id);
+  if(!r)[r]=await fetchReelsByIds([id]);
+  if(!r)return;
   /* Share a link to OUR OWN /reel/:id landing page - never the raw video
      file. The raw file URL is what made WhatsApp show a bare "website
      address" instead of a reel: it has no title/thumbnail preview and just
@@ -2259,8 +2337,18 @@ function eduCategoryOptions(){
 }
 
 /* ---------------- Explore ---------------- */
+/* Paged like the Home feed: shows the first page for the selected chip and
+   loads the next page as the user scrolls to the bottom (or taps Load more),
+   so every reel ever published is reachable - nothing drops off. */
+var exploreStream=null;
+var exploreObserver=null;
+function exploreStreamFor(q){
+  if(!q||q==='All')return makeStream();
+  const grp=EDU_GROUPS.find(gr=>gr.g===q);   // a group chip matches every category inside it
+  if(grp)return makeStream({topics:grp.items.join(',')},r=>grp.items.includes(r.cat)||grp.items.includes(r.sub));
+  return makeStream({any:q});
+}
 async function explore(){
-  const all=await allReels();
   const cats=["All"].concat(EDU_GROUPS.map(gr=>gr.g));
   const subs=["Mathematics","Physics","Chemistry","Computer Science","Biology","General Knowledge","ECE","CSE","Mechanical","Civil","IIT/JEE","NEET","CAT","Banking","Polity","History","Geography","Economy"];
   main.innerHTML=`<div class="panel">
@@ -2268,22 +2356,55 @@ async function explore(){
     <div class="chips" id="exploreCatChips">${cats.map(c=>`<button type="button" class="chip ${c==='All'?'on':''}" onclick="filterExplore('${escapeAttr(c)}',this)">${escapeHtml(c)}</button>`).join("")}</div>
     <h3>Topics</h3>
     <div class="chips" id="exploreSubChips">${subs.map(s=>`<button type="button" class="chip" onclick="filterExplore('${escapeAttr(s)}',this)">${escapeHtml(s)}</button>`).join("")}</div>
-    <div id="exploreResults">${cards(all)}</div>
+    <div id="exploreResults"><div class="empty">Loading reels…</div></div>
   </div>`;
+  await showExploreStream(exploreStreamFor('All'));
 }
 async function filterExplore(q,btn){
   document.querySelectorAll('#exploreCatChips .chip,#exploreSubChips .chip').forEach(c=>c.classList.remove('on'));
   btn?.classList.add('on');
-  const all=await allReels();
-  const grp=EDU_GROUPS.find(gr=>gr.g===q);   // a group chip matches every category inside it
-  const list=all.filter(r=>q==="All"||r.cat===q||r.sub===q||(grp&&(grp.items.includes(r.cat)||grp.items.includes(r.sub)))||String(r.title||'').toLowerCase().includes(q.toLowerCase()));
-  document.getElementById("exploreResults").innerHTML=cards(list);
+  const box=document.getElementById("exploreResults"); if(box)box.innerHTML='<div class="empty">Loading reels…</div>';
+  await showExploreStream(exploreStreamFor(q));
+}
+async function showExploreStream(st){
+  exploreStream=st;
+  try{await streamNext(st,STREAM_PAGE)}
+  catch{const box=document.getElementById("exploreResults");if(box&&exploreStream===st)box.innerHTML='<div class="empty">Could not load reels. Check your connection and try again.</div>';return}
+  const box=document.getElementById("exploreResults");
+  if(!box||exploreStream!==st)return;
+  box.innerHTML=cards(st.items)+exploreMoreHTML(st);
+  activateThumbs(box);
+  watchExploreEnd();
+}
+function exploreMoreHTML(st){
+  return st.exhausted?'':`<button type="button" class="loadMoreBtn" id="exploreMore" onclick="loadMoreExplore()">Load more</button>`;
+}
+async function loadMoreExplore(){
+  const st=exploreStream; if(!st||st.exhausted||st.busy)return;
+  const btn=document.getElementById('exploreMore'); if(btn){btn.disabled=true;btn.textContent='Loading…'}
+  let added=[]; try{added=await streamNext(st,STREAM_PAGE)}catch{}
+  if(exploreStream!==st)return;
+  const grid=document.querySelector('#exploreResults .cards');
+  if(grid&&added.length){grid.insertAdjacentHTML('beforeend',added.map(cardHTML).join(''));activateThumbs(grid)}
+  const b2=document.getElementById('exploreMore');
+  if(b2){if(st.exhausted)b2.remove();else{b2.disabled=false;b2.textContent='Load more'}}
+  watchExploreEnd();
+}
+/* Auto-load the next page when the Load more button scrolls into view. */
+function watchExploreEnd(){
+  const btn=document.getElementById('exploreMore');
+  if(!btn||!('IntersectionObserver' in window))return;
+  if(exploreObserver)exploreObserver.disconnect();
+  exploreObserver=new IntersectionObserver(es=>{if(es.some(e=>e.isIntersecting))loadMoreExplore()},{rootMargin:'400px 0px'});
+  exploreObserver.observe(btn);
+}
+function cardHTML(r){
+  return `<div class="card"><div class="thumb">${thumbVideoHTML(r.src)}<span>▶</span></div><b>${escapeHtml(r.title)}</b><p>${escapeHtml(r.creator)}</p><small>${escapeHtml(r.cat)} • ${escapeHtml(r.sub)}</small><button type="button" onclick="openReel(${r.id})">Watch</button></div>`;
 }
 function cards(list){
-  /* Used by Explore's grid. Now includes the same video thumbnail
-     (thumbVideoHTML) as the Profile Saved/Uploads/History tabs and the
-     Downloads page, instead of a text-only card. */
-  return list.length?`<div class="cards">${list.map(r=>`<div class="card"><div class="thumb">${thumbVideoHTML(r.src)}<span>▶</span></div><b>${escapeHtml(r.title)}</b><p>${escapeHtml(r.creator)}</p><small>${escapeHtml(r.cat)} • ${escapeHtml(r.sub)}</small><button type="button" onclick="openReel(${r.id})">Watch</button></div>`).join("")}</div>`:'<div class="empty">No reels found.</div>';
+  /* Used by Explore's grid, with the same lazy video thumbnail
+     (thumbVideoHTML) as the Profile tabs and Downloads. */
+  return list.length?`<div class="cards">${list.map(cardHTML).join("")}</div>`:'<div class="empty">No reels found.</div>';
 }
 async function openReel(id,srcHint){
   await home('For You');
@@ -2542,34 +2663,17 @@ function openSearch(){
   </div></div>`;
   setTimeout(()=>document.getElementById("searchInput")?.focus(),50);
 }
-async function doSearch(){
-  const q=(document.getElementById("searchInput")?.value||"").trim().toLowerCase();
-  const results=document.getElementById("searchResults"); if(!results)return;
-  if(!q){results.innerHTML='<div class="empty">Start typing to search.</div>';return}
-  let all=[];
-  try{all=await allReels()}catch{results.innerHTML='<div class="empty">Search is temporarily unavailable.</div>';return}
-  const terms=q.split(/\s+/).filter(Boolean);
-  const scored=all.map(r=>{
-    const title=(r.title||"").toLowerCase(), sub=(r.sub||"").toLowerCase(), cat=(r.cat||"").toLowerCase();
-    const desc=(r.desc||"").toLowerCase(), creator=(r.creator||"").toLowerCase();
-    const hay=[title,sub,cat,desc,creator].join(" ");
-    let score=0;
-    terms.forEach(t=>{
-      if(title.includes(t))score+=8;
-      if(sub.includes(t))score+=7;
-      if(cat.includes(t))score+=6;
-      if(desc.includes(t))score+=4;
-      if(creator.includes(t))score+=2;
-      if(hay.includes(t))score+=1;
-    });
-    return {r,score};
-  }).filter(x=>x.score>0).sort((a,b)=>b.score-a.score).map(x=>x.r);
-
-  if(!scored.length){
-    results.innerHTML=`<div class="empty">No reels found for "${escapeHtml(q)}".<br><br>Try a subject, technology, exam, creator or topic.</div>`;
-    return;
-  }
-  results.innerHTML=scored.map(r=>`<div class="searchReel" onclick="closeOverlay();openReel(${r.id})">
+/* Search runs on the SERVER across every reel ever published (not just the
+   ones already loaded), newest matches first, with Load more for the rest.
+   Typing is debounced so each keystroke doesn't fire a request. */
+var searchStream=null;
+var __searchTimer=null;
+function doSearch(){
+  clearTimeout(__searchTimer);
+  __searchTimer=setTimeout(runSearch,300);
+}
+function searchReelHTML(r){
+  return `<div class="searchReel" onclick="closeOverlay();openReel(${r.id})">
     ${thumbVideoHTML(r.src)}
     <div class="searchReelInfo">
       <b>${escapeHtml(r.title)}</b>
@@ -2577,7 +2681,48 @@ async function doSearch(){
       <div class="searchDesc">${escapeHtml(r.desc||"Educational reel")}</div>
       <button type="button" class="primary" onclick="event.stopPropagation();closeOverlay();openReel(${r.id})">▶ Open Reel</button>
     </div>
-  </div>`).join("");
+  </div>`;
+}
+/* Within a page, best matches first (title > subject > category > text). */
+function rankSearch(list,q){
+  const terms=q.split(/\s+/).filter(Boolean);
+  return list.map(r=>{
+    const title=(r.title||"").toLowerCase(), sub=(r.sub||"").toLowerCase(), cat=(r.cat||"").toLowerCase();
+    const desc=(r.desc||"").toLowerCase(), creator=(r.creator||"").toLowerCase();
+    let score=0;
+    terms.forEach(t=>{
+      if(title.includes(t))score+=8; if(sub.includes(t))score+=7; if(cat.includes(t))score+=6;
+      if(desc.includes(t))score+=4; if(creator.includes(t))score+=2;
+    });
+    return {r,score};
+  }).filter(x=>x.score>0).sort((a,b)=>b.score-a.score).map(x=>x.r);
+}
+async function runSearch(){
+  const q=(document.getElementById("searchInput")?.value||"").trim().toLowerCase();
+  const results=document.getElementById("searchResults"); if(!results)return;
+  if(!q){searchStream=null;results.innerHTML='<div class="empty">Start typing to search.</div>';return}
+  const st=makeStream({q},r=>rankSearch([r],q).length>0);
+  st.q=q; searchStream=st;
+  try{await streamNext(st,STREAM_PAGE)}
+  catch{if(searchStream===st)results.innerHTML='<div class="empty">Search is temporarily unavailable.</div>';return}
+  if(searchStream!==st)return;      // a newer search replaced this one
+  if(!st.items.length){
+    results.innerHTML=`<div class="empty">No reels found for "${escapeHtml(q)}".<br><br>Try a subject, technology, exam, creator or topic.</div>`;
+    return;
+  }
+  results.innerHTML=rankSearch(st.items,q).map(searchReelHTML).join("")
+    +(st.exhausted?'':`<button type="button" class="loadMoreBtn" id="searchMore" onclick="loadMoreSearch()">Load more results</button>`);
+  activateThumbs(results);
+}
+async function loadMoreSearch(){
+  const st=searchStream; if(!st||st.exhausted||st.busy)return;
+  const btn=document.getElementById('searchMore'); if(btn){btn.disabled=true;btn.textContent='Loading…'}
+  let added=[]; try{added=await streamNext(st,STREAM_PAGE)}catch{}
+  if(searchStream!==st)return;
+  const b2=document.getElementById('searchMore');
+  if(b2&&added.length)b2.insertAdjacentHTML('beforebegin',rankSearch(added,st.q).map(searchReelHTML).join(''));
+  const results=document.getElementById("searchResults"); if(results)activateThumbs(results);
+  if(b2){if(st.exhausted)b2.remove();else{b2.disabled=false;b2.textContent='Load more results'}}
 }
 
 /* ================= Profile ================= */
@@ -2614,7 +2759,7 @@ async function profilePage(){
       ?`<div class="premiumBadgeRow" onclick="goTo(manageSubscriptionPage)">👑 <b>EduInsta Premium</b><span>Manage ›</span></div>`
       :`<div class="upgradeBanner" onclick="goTo(premiumPage)">✨ <b>Go Premium</b> — remove ads from your feed<span>›</span></div>`}
     <div class="profileStats">
-      <button type="button" onclick="profileTab='uploads';profilePage()"><b>${uploads.length}</b><small>Uploads</small></button>
+      <button type="button" onclick="profileTab='uploads';profilePage()"><b>${uploads.total!=null?uploads.total:uploads.length}</b><small>Uploads</small></button>
       <button type="button" onclick="profileTab='downloads';profilePage()"><b>${downloadsList.length}</b><small>Saved</small></button>
       <button type="button" onclick="goTo(()=>networkPage('followers'))"><b>${followers.length}</b><small>Followers</small></button>
       <button type="button" onclick="goTo(()=>networkPage('following'))"><b>${following.length}</b><small>Following</small></button>
@@ -2705,9 +2850,12 @@ document.addEventListener('seeked',e=>{
   if(v&&v.tagName==='VIDEO'&&v.closest('.thumb, .searchReel'))v.classList.add('thumbReady');
 },true);
 
+function uploadCardHTML(r){
+  return `<div class="profileCard" data-upload-id="${r.id}"><div class="thumb">${thumbVideoHTML(r.src)}<span>▶</span></div><b>${escapeHtml(r.title)}</b><small>${escapeHtml(r.cat)} · ${escapeHtml(r.sub)}</small><button type="button" onclick="openReel(${r.id})">Watch Reel</button><button type="button" class="deleteReelBtn" onclick="deleteMyReel(${r.id})">🗑 Delete</button></div>`;
+}
 function profileUploads(list){
   if(!list.length)return `<div class="empty profileEmpty">🎬<br><b>No uploads yet</b><br>Published reels will appear here.</div>`;
-  return `<div class="profileGrid">${list.map(r=>`<div class="profileCard" data-upload-id="${r.id}"><div class="thumb">${thumbVideoHTML(r.src)}<span>▶</span></div><b>${escapeHtml(r.title)}</b><small>${escapeHtml(r.cat)} · ${escapeHtml(r.sub)}</small><button type="button" onclick="openReel(${r.id})">Watch Reel</button><button type="button" class="deleteReelBtn" onclick="deleteMyReel(${r.id})">🗑 Delete</button></div>`).join("")}</div>`;
+  return `<div class="profileGrid">${list.map(uploadCardHTML).join("")}</div>${list.nextCursor?`<button type="button" class="loadMoreBtn" onclick="loadMoreUploads(this)">Load more</button>`:''}`;
 }
 /* Creators can remove their own reels. The server only deletes it if this
    account uploaded it; the video file, comments and likes go with it. */

@@ -153,6 +153,13 @@ header>*{pointer-events:auto}
 .act span{display:block;font-size:24px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))}
 .act small{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 /* Like / comment / share totals are shown beside the icon, like Instagram. */
+.likeWrap{display:flex;align-items:center}
+.likeWrap .likeBtn{min-width:34px;padding:0 1px 0 5px}
+.likeCountBtn{background:none;border:0;padding:8px 3px 8px 1px;margin:0;color:#fff;font-size:13px;font-weight:700;line-height:1;text-shadow:0 1px 2px rgba(0,0,0,.7);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.likerRow{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f0f0f0}
+.likerRow .commentAvatar{width:40px;height:40px}
+.likerRow b{font-size:14px}
+.likerYou{margin-left:6px;font-size:11px;color:#777;font-weight:600}
 .act small.actCount{position:static;width:auto;height:auto;overflow:visible;clip:auto;font-size:13px;font-weight:700;line-height:1;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.7)}
 .act.liked{color:#ff5d73}
 .act.saved{color:#5eead4}
@@ -225,9 +232,23 @@ textarea.field{resize:vertical}
 .commentList{max-height:45dvh;overflow:auto;padding:2px 0;min-height:120px}
 .commentRow{display:flex;gap:10px;padding:12px 0;border-bottom:1px solid #f0f0f0}
 .commentAvatar{width:38px;height:38px;flex:none;border-radius:50%;background:#e7e7e7;display:flex;align-items:center;justify-content:center;font-weight:700;color:#333}
-.commentBody{font-size:14px;line-height:1.4}
+.commentBody{font-size:14px;line-height:1.4;flex:1;min-width:0;overflow-wrap:anywhere}
 .commentBody b{font-size:13px}
 .commentBody small{display:block;color:#999;margin-top:4px}
+/* Instagram-style comment actions: time · Reply on the left, heart on the right */
+.commentMeta{display:flex;align-items:center;gap:14px;margin-top:4px}
+.commentMeta small{margin:0}
+.commentReplyBtn{background:none;border:0;padding:0;color:#777;font-weight:700;font-size:12px;cursor:pointer}
+.commentLike{flex:none;align-self:flex-start;background:none;border:0;padding:6px 2px 0;min-width:34px;display:flex;flex-direction:column;align-items:center;gap:2px;color:#8a8a8a;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.commentLike span{font-size:16px;line-height:1}
+.commentLike small{font-size:11px;color:#8a8a8a;min-height:12px}
+.commentLike.liked span{color:#ed4956}
+.commentRow.reply{margin-left:48px;padding:8px 0;border-bottom:0}
+.commentRow.reply .commentAvatar{width:28px;height:28px;font-size:12px}
+.viewReplies{display:flex;align-items:center;gap:8px;margin:0 0 8px 48px;background:none;border:0;padding:4px 0;color:#777;font-weight:700;font-size:12px;cursor:pointer}
+.viewReplies::before{content:"";width:22px;border-top:1px solid #bbb}
+.replyBar{display:flex;justify-content:space-between;align-items:center;gap:8px;background:#f2f2f5;border-radius:10px;padding:8px 12px;margin-top:8px;font-size:13px;color:#555}
+.replyBar button{background:none;border:0;font-size:18px;line-height:1;color:#777;padding:0 2px}
 .commentsEmpty{padding:35px 10px!important;line-height:1.8}
 .commentComposer{padding:12px 0 0;border-top:1px solid #eee;display:flex;gap:8px;margin-top:8px}
 .commentComposer input{flex:1;border:1px solid #ddd;border-radius:22px;padding:11px 14px;outline:none}
@@ -427,12 +448,6 @@ a.uploadOption{text-decoration:none;color:#111;display:flex;align-items:center}
   .panel{max-width:760px;margin:0 auto;left:0;right:0}
 }
 
-/* Small phones (320-350px): room for counts like 12.3K beside the icons */
-@media(max-width:350px){
-  .act{min-width:28px;padding:0 2px;gap:2px}
-  .act span{font-size:19px}
-  .act small.actCount{font-size:11px}
-}
 /* Very wide screens: keep the reading column sane */
 @media (min-width:1100px){
   .panel{max-width:860px}
@@ -443,11 +458,23 @@ a.uploadOption{text-decoration:none;color:#111;display:flex;align-items:center}
   .act{min-width:32px;padding:0 3px;gap:3px}
   .act span{font-size:21px}
   .act small.actCount{font-size:12px}
+  .likeCountBtn{font-size:12px;padding-right:3px}
+  .likeWrap .likeBtn{min-width:32px;padding:0 1px 0 4px}
   .actGroup{gap:0}
   .profileStats b{font-size:15px}.profileStats small{font-size:9px}
   .interestGrid{grid-template-columns:1fr}
   .networkQuick button{font-size:11px}
 }
+/* Small phones (320-350px): room for counts like 12.3K beside the icons */
+@media(max-width:350px){
+  .act{min-width:28px;padding:0 2px;gap:2px}
+  .act span{font-size:19px}
+  .act small.actCount{font-size:11px}
+  .likeCountBtn{font-size:11px;padding-right:2px}
+  .likeWrap .likeBtn{min-width:28px;padding:0 1px 0 2px}
+  .act{min-width:27px}
+}
+
 
 /* ---------- Premium ---------- */
 .premiumCrown{font-size:16px}
@@ -1786,7 +1813,7 @@ function reelHTML(r){
     <div class="reelPanel">
       <div class="actions">
         <div class="actGroup">
-          <button type="button" class="act likeBtn ${liked?"liked":""}" aria-label="Like" aria-pressed="${liked}" onclick="toggleLike(${r.id},event)"><span>♥</span><small class="${countCls(likeLabel(r.id))}">${likeLabel(r.id)}</small></button>
+          <span class="likeWrap"><button type="button" class="act likeBtn ${liked?"liked":""}" aria-label="Like" aria-pressed="${liked}" onclick="toggleLike(${r.id},event)"><span>♥</span><small>${liked?"Liked":"Like"}</small></button><button type="button" class="likeCountBtn${likeCountText(r.id)?'':' hidden'}" aria-label="See who liked this reel" onclick="openLikers(${r.id},event)">${likeCountText(r.id)}</button></span>
           <button type="button" class="act commentBtn" aria-label="Comments" onclick="commentsPanel(${r.id},event)"><span>💬</span><small class="${countCls(commentLabel(r.id))}">${commentLabel(r.id)}</small></button>
           <button type="button" class="act shareBtn" aria-label="Share" onclick="shareReel(${r.id},event)"><span>↗</span><small class="${countCls(shareLabel(r.id))}">${shareLabel(r.id)}</small></button>
         </div>
@@ -2000,7 +2027,8 @@ function absorbServerReel(r){
   return r;
 }
 function statOf(id,k){const s=reelStats[Number(id)];return s?s[k]:0}
-function likeLabel(id){const n=statOf(id,'likes');return erGet('showLikeCounts',true)&&n>0?fmtCount(n):(likes.includes(id)?'Liked':'Like')}
+/* The visible like number (its own button: tap it to see who liked). */
+function likeCountText(id){const n=statOf(id,'likes');return erGet('showLikeCounts',true)&&n>0?fmtCount(n):''}
 function commentLabel(id){const n=statOf(id,'comments');return n>0?fmtCount(n):'Comment'}
 function shareLabel(id){const n=statOf(id,'shares');return erGet('showShareCounts',true)&&n>0?fmtCount(n):'Share'}
 function countCls(t){return /^\d/.test(t)?'actCount':''}
@@ -2008,7 +2036,9 @@ function updateCountsUI(id){
   document.querySelectorAll('.reel').forEach(sec=>{
     if(Number(sec.dataset.id)!==id)return;
     const set=(sel,txt)=>{const el=sec.querySelector(sel+' small');if(el){el.textContent=txt;el.className=countCls(txt)}};
-    set('.likeBtn',likeLabel(id)); set('.commentBtn',commentLabel(id)); set('.shareBtn',shareLabel(id));
+    const lb=sec.querySelector('.likeBtn small'); if(lb){lb.textContent=likes.includes(id)?'Liked':'Like';lb.className=''}
+    const lc=sec.querySelector('.likeCountBtn'); if(lc){const t=likeCountText(id);lc.textContent=t;lc.classList.toggle('hidden',!t)}
+    set('.commentBtn',commentLabel(id)); set('.shareBtn',shareLabel(id));
   });
 }
 function updateLikeUI(id){
@@ -2348,12 +2378,61 @@ function resolveReport(id){
    previously these lived only in the poster's own browser storage, so
    nobody else could ever see them. `comments[id]` (local storage) is kept
    only as an offline fallback for when the server can't be reached. */
+/* ================= Who liked this reel =================
+   Tapping the number beside the heart opens the list of people who liked
+   the reel (names, newest first, Load more for the rest), like Instagram. */
+var likersState={reelId:null,cursor:null};
+function likerRowHTML(l){
+  const name=String(l.name||'EduInsta user');
+  return `<div class="likerRow"><div class="commentAvatar">${escapeHtml(name.charAt(0).toUpperCase()||'E')}</div><b>${escapeHtml(name)}</b>${l.you?'<span class="likerYou">You</span>':''}</div>`;
+}
+async function openLikers(id,e){
+  e?.stopPropagation();
+  likersState={reelId:id,cursor:null};
+  overlay.innerHTML=`<div class="modal" onclick="closeOverlay()"><div class="sheet" onclick="event.stopPropagation()">
+    <div class="commentHeader"><div><h3>Likes</h3><small id="likersCount">Loading…</small></div><button type="button" class="close" onclick="closeOverlay()">×</button></div>
+    <div class="commentList" id="likersList"><div class="empty commentsEmpty">Loading…</div></div>
+  </div></div>`;
+  await loadLikers(true);
+}
+async function loadLikers(first){
+  const id=likersState.reelId, list=document.getElementById('likersList'); if(!list)return;
+  if(!serverMode()){list.innerHTML='<div class="empty commentsEmpty">Likes are shown when you are online.</div>';return}
+  const more=document.getElementById('likersMore'); if(more){more.disabled=true;more.textContent='Loading…'}
+  try{
+    const qs=`limit=30${likersState.cursor?`&cursor=${encodeURIComponent(likersState.cursor)}`:''}`;
+    const res=await fetch(`${API_BASE}/api/reels/${id}/likes?${qs}`,{headers:authHeaders()});
+    const data=await res.json().catch(()=>({}));
+    if(likersState.reelId!==id)return;
+    if(!res.ok||!data.ok){list.innerHTML=`<div class="empty commentsEmpty">${escapeHtml(res.status===401?'Please log out and log in again to see likes.':(data.error||'Could not load likes.'))}</div>`;return}
+    likersState.cursor=data.nextCursor||null;
+    const cnt=document.getElementById('likersCount');
+    if(cnt)cnt.textContent=`${fmtCount(data.total)} like${data.total===1?'':'s'}`;
+    if(typeof data.total==='number'){reelStats[id]=reelStats[id]||{likes:0,comments:0,shares:0};if(reelStats[id].likes!==data.total){reelStats[id].likes=data.total;updateCountsUI(id)}}
+    const rows=(data.likers||[]).map(likerRowHTML).join('');
+    if(first)list.innerHTML=rows||'<div class="empty commentsEmpty">♡<br><b>No likes yet</b></div>';
+    else{const btn=document.getElementById('likersMore');if(btn)btn.insertAdjacentHTML('beforebegin',rows)}
+    document.getElementById('likersMore')?.remove();
+    if(likersState.cursor)list.insertAdjacentHTML('beforeend','<button type="button" class="loadMoreBtn" id="likersMore" onclick="loadLikers(false)">Load more</button>');
+  }catch{
+    if(first)list.innerHTML='<div class="empty commentsEmpty">Could not reach the server. Check your connection and try again.</div>';
+    const b=document.getElementById('likersMore'); if(b){b.disabled=false;b.textContent='Load more'}
+  }
+}
+
+/* ================= Comments: hearts + replies (like Instagram) =================
+   Each comment has a heart (with its count) and a Reply button. Replies are
+   one level deep and sit under their comment, hidden behind "View N
+   replies" until opened. commentState holds the open panel's data. */
+var commentState={reelId:null,list:[],replyTo:null,expanded:new Set()};
 async function commentsPanel(id,e){
   e?.stopPropagation();
+  commentState={reelId:id,list:[],replyTo:null,expanded:new Set()};
   overlay.innerHTML=`<div class="modal" onclick="closeOverlay()"><div class="sheet" onclick="event.stopPropagation()">
     <div class="commentHeader"><div><h3>Comments</h3><small id="commentCount">Loading…</small></div><button type="button" class="close" onclick="closeOverlay()">×</button></div>
     <div class="commentList" id="commentList"><div class="empty commentsEmpty">Loading comments…</div></div>
-    <div class="commentComposer"><input id="commentInput" maxlength="300" placeholder="Add a thoughtful comment…" onkeydown="if(event.key==='Enter'){event.preventDefault();addComment(${id})}"><button type="button" onclick="addComment(${id})">➤</button></div>
+    <div class="replyBar hidden" id="replyBar"></div>
+    <div class="commentComposer"><input id="commentInput" maxlength="300" placeholder="Add a thoughtful comment…" onkeydown="if(event.key==='Enter'){event.preventDefault();addComment(${id})}"><button type="button" aria-label="Post" onclick="addComment(${id})">➤</button></div>
   </div></div>`;
   await loadComments(id);
 }
@@ -2361,7 +2440,7 @@ async function loadComments(id){
   let arr=comments[id]||[];
   if(serverMode()){
     try{
-      const res=await fetch(`${API_BASE}/api/reels/${id}/comments`);
+      const res=await fetch(`${API_BASE}/api/reels/${id}/comments`,{headers:authHeaders()});
       const data=await res.json();
       if(data.ok){
         arr=data.comments;
@@ -2372,38 +2451,101 @@ async function loadComments(id){
       // than showing an empty/broken panel.
     }
   }
+  if(commentState.reelId===id)commentState.list=arr;
   renderCommentList(arr);
 }
 /* Comments show the person's name (from their account), like Instagram;
    the @handle is only a fallback for very old comments. */
 function commenterName(c){return String((c&&(c.name||c.user))||'Student').trim()||'Student'}
+function commentRowHTML(c,isReply){
+  const liked=!!c.likedByMe, n=Number(c.likes)||0, name=commenterName(c);
+  return `<div class="commentRow${isReply?' reply':''}" data-comment-id="${c.id}">
+    <div class="commentAvatar">${escapeHtml(name.replace("@","").charAt(0).toUpperCase()||"S")}</div>
+    <div class="commentBody"><b>${escapeHtml(name)}</b><div class="commentText">${escapeHtml(c.text)}</div>
+      <div class="commentMeta"><small>${c.createdAt?relativeTime(new Date(c.createdAt).getTime()):'Just now'}</small>${c.id!=null?`<button type="button" class="commentReplyBtn" onclick="startReply(${jsArg(c.id)})">Reply</button>`:''}</div>
+    </div>
+    ${c.id!=null?`<button type="button" class="commentLike${liked?' liked':''}" aria-label="Like comment" aria-pressed="${liked}" onclick="toggleCommentLike(${jsArg(c.id)})"><span>${liked?'♥':'♡'}</span><small>${n>0?fmtCount(n):''}</small></button>`:''}
+  </div>`;
+}
 function renderCommentList(arr){
   const list=document.getElementById('commentList'); if(!list)return;
   const count=document.getElementById('commentCount');
   if(count)count.textContent=`${arr.length} comment${arr.length===1?'':'s'}`;
-  list.innerHTML=arr.length
-    ?arr.map(c=>`<div class="commentRow"><div class="commentAvatar">${escapeHtml(commenterName(c).replace("@","").charAt(0).toUpperCase()||"S")}</div><div class="commentBody"><b>${escapeHtml(commenterName(c))}</b><div>${escapeHtml(c.text)}</div><small>${c.createdAt?relativeTime(new Date(c.createdAt).getTime()):'Just now'}</small></div></div>`).join("")
-    :`<div class="empty commentsEmpty">💬<br><b>No comments yet</b><br><span>Be the first to share your thoughts.</span></div>`;
+  if(!arr.length){list.innerHTML=`<div class="empty commentsEmpty">💬<br><b>No comments yet</b><br><span>Be the first to share your thoughts.</span></div>`;return}
+  const byParent=new Map();
+  arr.forEach(c=>{if(c.parentId!=null){const k=String(c.parentId);byParent.set(k,[...(byParent.get(k)||[]),c])}});
+  const tops=arr.filter(c=>c.parentId==null||!arr.some(p=>String(p.id)===String(c.parentId)));
+  list.innerHTML=tops.map(c=>{
+    const replies=byParent.get(String(c.id))||[];
+    const open=commentState.expanded.has(String(c.id));
+    return commentRowHTML(c,false)
+      +(replies.length?(open
+        ?replies.map(r=>commentRowHTML(r,true)).join('')+`<button type="button" class="viewReplies" onclick="toggleReplies(${jsArg(c.id)})">Hide replies</button>`
+        :`<button type="button" class="viewReplies" onclick="toggleReplies(${jsArg(c.id)})">View ${replies.length} ${replies.length===1?'reply':'replies'}</button>`):'');
+  }).join('');
+}
+function toggleReplies(id){
+  const k=String(id);
+  commentState.expanded.has(k)?commentState.expanded.delete(k):commentState.expanded.add(k);
+  renderCommentList(commentState.list);
+}
+function findComment(id){return commentState.list.find(c=>String(c.id)===String(id))}
+/* Reply: remembers which comment, shows "Replying to <name>" above the box. */
+function startReply(id){
+  const c=findComment(id); if(!c)return;
+  const top=c.parentId!=null?c.parentId:c.id;   // replies stay one level deep
+  commentState.replyTo={id:top,name:commenterName(c)};
+  const bar=document.getElementById('replyBar');
+  if(bar){bar.innerHTML=`<span>Replying to <b>${escapeHtml(commenterName(c))}</b></span><button type="button" aria-label="Cancel reply" onclick="cancelReply()">×</button>`;bar.classList.remove('hidden')}
+  const x=document.getElementById('commentInput');
+  if(x){x.placeholder=`Reply to ${commenterName(c)}…`;x.focus()}
+}
+function cancelReply(){
+  commentState.replyTo=null;
+  const bar=document.getElementById('replyBar'); if(bar){bar.classList.add('hidden');bar.innerHTML=''}
+  const x=document.getElementById('commentInput'); if(x)x.placeholder='Add a thoughtful comment…';
+}
+/* Heart a comment: instant on screen, then saved on the server. */
+function toggleCommentLike(id){
+  const c=findComment(id); if(!c)return;
+  const now=!c.likedByMe;
+  c.likedByMe=now; c.likes=Math.max(0,(Number(c.likes)||0)+(now?1:-1));
+  renderCommentList(commentState.list);
+  if(!serverMode()||c.local){saveState();return}
+  fetch(`${API_BASE}/api/comments/${encodeURIComponent(id)}/like`,{method:'POST',headers:{'Content-Type':'application/json',...authHeaders()},body:JSON.stringify({liked:now})})
+    .then(async res=>{
+      const data=await res.json().catch(()=>({}));
+      const cur=findComment(id); if(!cur)return;
+      if(res.status===401||res.status===404){
+        cur.likedByMe=!now; cur.likes=Math.max(0,(Number(cur.likes)||0)+(now?-1:1));
+        toast(res.status===401?'Please log out and log in again to like comments':'That comment was deleted');
+      }else if(res.ok&&typeof data.likes==='number'){cur.likes=data.likes;cur.likedByMe=data.liked}
+      renderCommentList(commentState.list);
+    }).catch(()=>{});
 }
 async function addComment(id){
   const x=document.getElementById("commentInput"), t=x&&x.value.trim();
   if(!t)return;
   x.value='';
+  const parentId=commentState.replyTo?commentState.replyTo.id:null;
   if(serverMode()){
     try{
       const res=await fetch(`${API_BASE}/api/reels/${id}/comments`,{
         method:'POST', headers:{'Content-Type':'application/json',...authHeaders()},
-        body:JSON.stringify({username:profile.username||"@student",text:t})
+        body:JSON.stringify({username:profile.username||"@student",text:t,parentId})
       });
       const data=await res.json();
       if(res.status===401){x.value=t;toast('Please log out and log in again to comment');return}
+      if(!data.ok&&res.status===404&&parentId!=null){x.value=t;cancelReply();toast(data.error||'That comment was deleted');await loadComments(id);return}
       if(!data.ok)throw new Error(data.error||'failed');
       if(typeof data.comments==='number'){
         reelStats[id]=reelStats[id]||{likes:0,comments:0,shares:0};
         reelStats[id].comments=data.comments; updateCountsUI(id);
       }
+      if(parentId!=null)commentState.expanded.add(String(parentId));
+      cancelReply();
       await loadComments(id);
-      toast("Comment posted");
+      toast(parentId!=null?"Reply posted":"Comment posted");
       return;
     }catch{
       toast("Could not reach the server — comment saved on this device only");
@@ -2411,8 +2553,11 @@ async function addComment(id){
     }
   }
   comments[id]=comments[id]||[];
-  comments[id].push({user:profile.username||"@student",name:profile.name,text:t});
+  comments[id].push({id:'local'+Date.now(),local:true,parentId,user:profile.username||"@student",name:profile.name,text:t,likes:0});
+  if(parentId!=null)commentState.expanded.add(String(parentId));
+  cancelReply();
   saveState();
+  commentState.list=comments[id];
   renderCommentList(comments[id]);
 }
 

@@ -152,6 +152,8 @@ header>*{pointer-events:auto}
 .act:active{transform:scale(.88)}
 .act span{display:block;font-size:24px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))}
 .act small{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+/* Like / comment / share totals are shown beside the icon, like Instagram. */
+.act small.actCount{position:static;width:auto;height:auto;overflow:visible;clip:auto;font-size:13px;font-weight:700;line-height:1;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.7)}
 .act.liked{color:#ff5d73}
 .act.saved{color:#5eead4}
 .act.soundOn{color:#5eead4}
@@ -164,6 +166,12 @@ header>*{pointer-events:auto}
 .chip.on{background:#111;color:#fff}
 .cards{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 .card{background:#fff;border:1px solid #ddd;border-radius:12px;padding:12px}
+.modal.exitModal{align-items:center;justify-content:center;padding:16px}
+.sheet.exitSheet{width:100%;max-width:340px;margin:0;text-align:center;border-radius:18px;padding:22px 18px 18px}
+.exitSheet h3{margin:0 0 6px;font-size:19px}
+.exitSheet p{margin:0 0 18px;color:#555}
+.exitBtns{display:flex;gap:10px}
+.exitBtns button{flex:1;width:auto;margin:0;padding:12px;border-radius:12px;font-weight:700}
 .loadMoreBtn{display:block;width:100%;margin:14px 0 6px;border:1px solid #ccc;background:#fff;color:#111;border-radius:12px;padding:12px;font-weight:600}
 .loadMoreBtn:disabled{opacity:.6}
 /* Scoped so it only styles plain action buttons. Without :not(), this rule
@@ -419,6 +427,12 @@ a.uploadOption{text-decoration:none;color:#111;display:flex;align-items:center}
   .panel{max-width:760px;margin:0 auto;left:0;right:0}
 }
 
+/* Small phones (320-350px): room for counts like 12.3K beside the icons */
+@media(max-width:350px){
+  .act{min-width:28px;padding:0 2px;gap:2px}
+  .act span{font-size:19px}
+  .act small.actCount{font-size:11px}
+}
 /* Very wide screens: keep the reading column sane */
 @media (min-width:1100px){
   .panel{max-width:860px}
@@ -426,7 +440,10 @@ a.uploadOption{text-decoration:none;color:#111;display:flex;align-items:center}
 
 @media(max-width:390px){
   .homeTab{padding:6px 9px 7px;font-size:13px}
-  .act{min-width:36px;padding:0 4px}
+  .act{min-width:32px;padding:0 3px;gap:3px}
+  .act span{font-size:21px}
+  .act small.actCount{font-size:12px}
+  .actGroup{gap:0}
   .profileStats b{font-size:15px}.profileStats small{font-size:9px}
   .interestGrid{grid-template-columns:1fr}
   .networkQuick button{font-size:11px}
@@ -720,6 +737,14 @@ const FOLLOWERS_DEFAULT=['@aerospacelab','@physicsworld','@jeeacademy','@techmen
 /* ---------------- Small utilities ---------------- */
 function escapeHtml(x){return String(x??'').replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
 function escapeAttr(x){return escapeHtml(x)}
+/* A string as a JS argument inside an onclick="..." attribute. Wrapping
+   escapeAttr() output in '...' is NOT safe: the browser decodes &#039; back
+   to ' before running the code, so a value like "Newton's laws" broke the
+   handler with "SyntaxError: missing ) after argument list". JSON.stringify
+   makes a proper JS string literal, then escapeAttr protects the attribute. */
+/* "Category • Subject", skipping blanks/duplicates (subject is now set by the AI). */
+function catSub(r,sep){return [r.cat,r.sub].filter((v,i,a)=>v&&String(v).trim()&&a.indexOf(v)===i).map(escapeHtml).join(sep||' • ')}
+function jsArg(x){return escapeAttr(JSON.stringify(String(x??'')))}
 function uniq(a){return [...new Set((a||[]).map(x=>String(x).trim()).filter(Boolean))]}
 function norm(x){return String(x??'').trim().toLowerCase().replace(/\s+/g,' ')}
 /* Safe localStorage wrappers - some browsing contexts (sandboxed iframes,
@@ -1323,13 +1348,13 @@ function streamNext(s,want){
         if(s.cursor)qs.set('cursor',s.cursor);
         let data;
         try{
-          const res=await fetch(`${API_BASE}/api/feed?${qs}`);
+          const res=await fetch(`${API_BASE}/api/feed?${qs}`,{headers:authHeaders()});
           if(!res.ok)throw new Error('feed request failed');
           data=await res.json();
         }catch(err){if(!s.items.length&&!added.length)throw err;break}
         s.cursor=data.nextCursor||null;
         if(!data.nextCursor)s.exhausted=true;
-        take((data.reels||[]).map(r=>({...r,src:resolveMediaUrl(r.src)})));
+        take((data.reels||[]).map(r=>absorbServerReel({...r,src:resolveMediaUrl(r.src)})));
       }
     }
     s.items.push(...added);
@@ -1360,7 +1385,7 @@ async function fetchMyUploads(cursor){
       let res=account&&account.token?await fetch(`${API_BASE}/api/my/reels?${qs}`,{headers:authHeaders()}):null;
       if(!res||!res.ok)res=await fetch(`${API_BASE}/api/feed?${qs}`);
       const data=await res.json();
-      const list=(data.reels||[]).map(r=>({...r,src:resolveMediaUrl(r.src)}));
+      const list=(data.reels||[]).map(r=>absorbServerReel({...r,src:resolveMediaUrl(r.src)}));
       list.nextCursor=data.nextCursor||null;
       list.total=typeof data.total==='number'?data.total:null;
       myUploadsCursor=list.nextCursor;
@@ -1406,10 +1431,10 @@ async function fetchReelsByIds(ids){
   const byId=new Map();
   if(serverMode()){
     try{
-      const res=await fetch(`${API_BASE}/api/reels/batch?ids=${encodeURIComponent(wanted.join(','))}`);
+      const res=await fetch(`${API_BASE}/api/reels/batch?ids=${encodeURIComponent(wanted.join(','))}`,{headers:authHeaders()});
       const data=await res.json();
       if(data.ok){
-        data.reels.forEach(r=>byId.set(Number(r.id),{...r,id:Number(r.id),src:resolveMediaUrl(r.src)}));
+        data.reels.forEach(r=>byId.set(Number(r.id),absorbServerReel({...r,id:Number(r.id),src:resolveMediaUrl(r.src)})));
       }
     }catch(err){
       console.warn('Could not load reels by id from the server:',err);
@@ -1691,7 +1716,7 @@ function adSlotHTML(ad){
     <div class="adContent">
       <div class="adSponsor">${escapeHtml(ad.sponsor)}</div>
       <div class="adHeadline">${escapeHtml(ad.headline)}</div>
-      <button type="button" class="primary adCta" onclick="AdManager.recordClick('${escapeAttr(ad.id)}')">${escapeHtml(ad.cta)}</button>
+      <button type="button" class="primary adCta" onclick="AdManager.recordClick(${jsArg(ad.id)})">${escapeHtml(ad.cta)}</button>
       <div class="adDisclosure">Sponsored content, not verified by EduInsta. <button type="button" class="adRemoveLink" onclick="event.stopPropagation();premiumPage()">Remove ads with Premium</button></div>
     </div>
     <div class="adSkipHint">Swipe up to continue ↑</div>
@@ -1761,9 +1786,9 @@ function reelHTML(r){
     <div class="reelPanel">
       <div class="actions">
         <div class="actGroup">
-          <button type="button" class="act likeBtn ${liked?"liked":""}" aria-label="Like" onclick="toggleLike(${r.id},event)"><span>♥</span><small>${liked?"Liked":"Like"}</small></button>
-          <button type="button" class="act" aria-label="Comments" onclick="commentsPanel(${r.id},event)"><span>💬</span><small>Comment</small></button>
-          <button type="button" class="act" aria-label="Share" onclick="shareReel(${r.id},event)"><span>↗</span><small>Share</small></button>
+          <button type="button" class="act likeBtn ${liked?"liked":""}" aria-label="Like" aria-pressed="${liked}" onclick="toggleLike(${r.id},event)"><span>♥</span><small class="${countCls(likeLabel(r.id))}">${likeLabel(r.id)}</small></button>
+          <button type="button" class="act commentBtn" aria-label="Comments" onclick="commentsPanel(${r.id},event)"><span>💬</span><small class="${countCls(commentLabel(r.id))}">${commentLabel(r.id)}</small></button>
+          <button type="button" class="act shareBtn" aria-label="Share" onclick="shareReel(${r.id},event)"><span>↗</span><small class="${countCls(shareLabel(r.id))}">${shareLabel(r.id)}</small></button>
         </div>
         <div class="actGroup">
           <button type="button" class="act replayBtn" aria-label="Replay from start" onclick="replayReel(event,this)"><span>↺</span><small>Replay</small></button>
@@ -1773,9 +1798,9 @@ function reelHTML(r){
         </div>
       </div>
       <div class="info">
-        <div class="creator">${avatarSpanHTML(r.creator)}<span class="creatorName">${escapeHtml(r.creator)}</span><button type="button" class="follow ${isFollowing?'on':''}" onclick="followCreator('${escapeAttr(r.creator)}',event)">${isFollowing?"Following":"Follow"}</button></div>
+        <div class="creator">${avatarSpanHTML(r.creator)}<span class="creatorName">${escapeHtml(r.creator)}</span><button type="button" class="follow ${isFollowing?'on':''}" onclick="followCreator(${jsArg(r.creator)},event)">${isFollowing?"Following":"Follow"}</button></div>
         <div class="title">${escapeHtml(r.title)}</div>
-        <div class="meta"><b>${escapeHtml(r.cat)} • ${escapeHtml(r.sub)}</b> · ${escapeHtml(r.desc||"Educational video on EduInsta.")}</div>
+        <div class="meta"><b>${catSub(r)}</b> · ${escapeHtml(r.desc||"Educational video on EduInsta.")}</div>
       </div>
     </div>
   </section>`;
@@ -1950,14 +1975,51 @@ document.addEventListener('play',e=>{
 },true);
 
 /* In-place updates so liking/saving/following never resets scroll position. */
+/* ================= Like / comment / share counts =================
+   Shown under each button like Instagram (1, 999, 1.2K, 3.4M). The numbers
+   come from the server with every reel; reelStats keeps the latest so a tap
+   updates every copy of that reel on screen at once. Settings > "Show like
+   counts" / "Show share counts" can hide them (the label shows instead). */
+var reelStats={};
+function fmtCount(n){
+  n=Number(n)||0;
+  if(n<1000)return String(n);
+  const f=(v,u)=>(v>=100?Math.floor(v):Math.floor(v*10)/10).toString().replace(/\.0$/,'')+u;
+  if(n<1e6)return f(n/1e3,'K');
+  if(n<1e9)return f(n/1e6,'M');
+  return f(n/1e9,'B');
+}
+/* Remember a server reel's counts and whether I liked it (from the server,
+   so the red heart survives a reinstall or a new phone). */
+function absorbServerReel(r){
+  if(!r||r.id==null)return r;
+  const id=Number(r.id);
+  reelStats[id]={likes:Number(r.likes)||0,comments:Number(r.comments)||0,shares:Number(r.shares)||0};
+  if(r.likedByMe===true&&!likes.includes(id)){likes.push(id);saveState()}
+  else if(r.likedByMe===false&&likes.includes(id)){likes=likes.filter(x=>x!==id);saveState()}
+  return r;
+}
+function statOf(id,k){const s=reelStats[Number(id)];return s?s[k]:0}
+function likeLabel(id){const n=statOf(id,'likes');return erGet('showLikeCounts',true)&&n>0?fmtCount(n):(likes.includes(id)?'Liked':'Like')}
+function commentLabel(id){const n=statOf(id,'comments');return n>0?fmtCount(n):'Comment'}
+function shareLabel(id){const n=statOf(id,'shares');return erGet('showShareCounts',true)&&n>0?fmtCount(n):'Share'}
+function countCls(t){return /^\d/.test(t)?'actCount':''}
+function updateCountsUI(id){
+  document.querySelectorAll('.reel').forEach(sec=>{
+    if(Number(sec.dataset.id)!==id)return;
+    const set=(sel,txt)=>{const el=sec.querySelector(sel+' small');if(el){el.textContent=txt;el.className=countCls(txt)}};
+    set('.likeBtn',likeLabel(id)); set('.commentBtn',commentLabel(id)); set('.shareBtn',shareLabel(id));
+  });
+}
 function updateLikeUI(id){
   const liked=likes.includes(id);
   document.querySelectorAll('.reel').forEach(sec=>{
     if(Number(sec.dataset.id)!==id)return;
     const b=sec.querySelector('.likeBtn'); if(!b)return;
     b.classList.toggle('liked',liked);
-    b.querySelector('small').textContent=liked?'Liked':'Like';
+    b.setAttribute('aria-pressed',String(liked));
   });
+  updateCountsUI(id);
 }
 function updateSaveUI(id){
   const isSaved=saved.includes(id);
@@ -1980,14 +2042,29 @@ function updateFollowUI(creator){
 
 function toggleLike(id,e){
   e?.stopPropagation();
-  likes.includes(id)?likes=likes.filter(x=>x!==id):likes.push(id);
+  const nowLiked=!likes.includes(id);
+  likes=nowLiked?[...likes,id]:likes.filter(x=>x!==id);
+  /* Optimistic: the heart and number change instantly; the server's real
+     total replaces the number when it answers. */
+  if(reelStats[id])reelStats[id].likes=Math.max(0,reelStats[id].likes+(nowLiked?1:-1));
   saveState(); updateLikeUI(id);
-  /* Fire-and-forget: the UI already updated, so a slow or failed network
-     never makes the button feel unresponsive. */
-  if(serverMode()){
+  if(serverMode()&&id>0){
     fetch(`${API_BASE}/api/reels/${id}/like`,{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({userId:currentUserId()})
+      method:'POST',headers:{'Content-Type':'application/json',...authHeaders()},
+      body:JSON.stringify({liked:nowLiked})
+    }).then(async res=>{
+      const data=await res.json().catch(()=>({}));
+      if(res.status===401){
+        likes=nowLiked?likes.filter(x=>x!==id):[...likes,id];
+        if(reelStats[id])reelStats[id].likes=Math.max(0,reelStats[id].likes+(nowLiked?-1:1));
+        saveState(); updateLikeUI(id);
+        toast('Please log out and log in again to like reels');
+        return;
+      }
+      if(res.ok&&typeof data.likes==='number'){
+        reelStats[id]=reelStats[id]||{likes:0,comments:0,shares:0};
+        reelStats[id].likes=data.likes; updateCountsUI(id);
+      }
     }).catch(()=>{});
   }
 }
@@ -2051,7 +2128,7 @@ function showShareFallbackSheet(text){
     <a class="uploadOption" href="https://t.me/share/url?url=${enc}" target="_blank" rel="noopener"><span>✈️</span>Telegram</a>
     <a class="uploadOption" href="mailto:?subject=EduInsta&body=${enc}"><span>📧</span>Email</a>
     <a class="uploadOption" href="sms:?body=${enc}"><span>💌</span>Messages</a>
-    <button type="button" class="uploadOption" onclick="copyShareText('${escapeAttr(text)}')"><span>📋</span>Copy text</button>
+    <button type="button" class="uploadOption" onclick="copyShareText(${jsArg(text)})"><span>📋</span>Copy text</button>
     <button type="button" class="btnSecondary" onclick="closeOverlay()">Cancel</button>
   </div></div>`;
 }
@@ -2076,12 +2153,26 @@ async function shareReel(id,e){
      /.well-known/assetlinks.json) - the same trick Instagram/TikTok use for
      their reel share links. */
   const link=serverMode()?`${API_BASE.replace(/\/$/,'')}/reel/${id}`:null;
-  await shareContent({
+  const result=await shareContent({
     title:'EduInsta',
     text:`${r.title} — ${r.creator} on EduInsta`,
     url:link,
     dialogTitle:'Share this reel'
   });
+  /* Count real shares only: the system share sheet, the browser's share,
+     or copying the link. Not when the user cancels. */
+  if(['native','web','clipboard'].includes(result))countShare(id);
+}
+/* Adds one to the reel's share count (the server ignores quick repeats). */
+function countShare(id){
+  if(!serverMode()||!(id>0))return;
+  fetch(`${API_BASE}/api/reels/${id}/share`,{method:'POST',headers:{'Content-Type':'application/json',...authHeaders()},body:JSON.stringify({deviceId:deviceId()})})
+    .then(r=>r.json()).then(data=>{
+      if(data&&typeof data.shares==='number'){
+        reelStats[id]=reelStats[id]||{likes:0,comments:0,shares:0};
+        reelStats[id].shares=data.shares; updateCountsUI(id);
+      }
+    }).catch(()=>{});
 }
 /* Report flow: a proper dropdown of reasons (spam, copyright, etc.) plus an
    optional detail box, matching how mainstream apps handle reports. Reports
@@ -2272,7 +2363,10 @@ async function loadComments(id){
     try{
       const res=await fetch(`${API_BASE}/api/reels/${id}/comments`);
       const data=await res.json();
-      if(data.ok)arr=data.comments;
+      if(data.ok){
+        arr=data.comments;
+        if(reelStats[id]&&reelStats[id].comments!==arr.length){reelStats[id].comments=arr.length;updateCountsUI(id)}
+      }
     }catch{
       // Server unreachable - fall back to whatever's cached locally rather
       // than showing an empty/broken panel.
@@ -2280,12 +2374,15 @@ async function loadComments(id){
   }
   renderCommentList(arr);
 }
+/* Comments show the person's name (from their account), like Instagram;
+   the @handle is only a fallback for very old comments. */
+function commenterName(c){return String((c&&(c.name||c.user))||'Student').trim()||'Student'}
 function renderCommentList(arr){
   const list=document.getElementById('commentList'); if(!list)return;
   const count=document.getElementById('commentCount');
   if(count)count.textContent=`${arr.length} comment${arr.length===1?'':'s'}`;
   list.innerHTML=arr.length
-    ?arr.map(c=>`<div class="commentRow"><div class="commentAvatar">${escapeHtml((c.user||"S").replace("@","").charAt(0).toUpperCase())}</div><div class="commentBody"><b>${escapeHtml(c.user||"@student")}</b><div>${escapeHtml(c.text)}</div><small>${c.createdAt?relativeTime(new Date(c.createdAt).getTime()):'Just now'}</small></div></div>`).join("")
+    ?arr.map(c=>`<div class="commentRow"><div class="commentAvatar">${escapeHtml(commenterName(c).replace("@","").charAt(0).toUpperCase()||"S")}</div><div class="commentBody"><b>${escapeHtml(commenterName(c))}</b><div>${escapeHtml(c.text)}</div><small>${c.createdAt?relativeTime(new Date(c.createdAt).getTime()):'Just now'}</small></div></div>`).join("")
     :`<div class="empty commentsEmpty">💬<br><b>No comments yet</b><br><span>Be the first to share your thoughts.</span></div>`;
 }
 async function addComment(id){
@@ -2295,11 +2392,16 @@ async function addComment(id){
   if(serverMode()){
     try{
       const res=await fetch(`${API_BASE}/api/reels/${id}/comments`,{
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({userId:currentUserId(),username:profile.username||"@student",text:t})
+        method:'POST', headers:{'Content-Type':'application/json',...authHeaders()},
+        body:JSON.stringify({username:profile.username||"@student",text:t})
       });
       const data=await res.json();
+      if(res.status===401){x.value=t;toast('Please log out and log in again to comment');return}
       if(!data.ok)throw new Error(data.error||'failed');
+      if(typeof data.comments==='number'){
+        reelStats[id]=reelStats[id]||{likes:0,comments:0,shares:0};
+        reelStats[id].comments=data.comments; updateCountsUI(id);
+      }
       await loadComments(id);
       toast("Comment posted");
       return;
@@ -2309,7 +2411,7 @@ async function addComment(id){
     }
   }
   comments[id]=comments[id]||[];
-  comments[id].push({user:profile.username||"@student",text:t});
+  comments[id].push({user:profile.username||"@student",name:profile.name,text:t});
   saveState();
   renderCommentList(comments[id]);
 }
@@ -2353,9 +2455,9 @@ async function explore(){
   const subs=["Mathematics","Physics","Chemistry","Computer Science","Biology","General Knowledge","ECE","CSE","Mechanical","Civil","IIT/JEE","NEET","CAT","Banking","Polity","History","Geography","Economy"];
   main.innerHTML=`<div class="panel">
     <h2>Explore</h2>
-    <div class="chips" id="exploreCatChips">${cats.map(c=>`<button type="button" class="chip ${c==='All'?'on':''}" onclick="filterExplore('${escapeAttr(c)}',this)">${escapeHtml(c)}</button>`).join("")}</div>
+    <div class="chips" id="exploreCatChips">${cats.map(c=>`<button type="button" class="chip ${c==='All'?'on':''}" onclick="filterExplore(${jsArg(c)},this)">${escapeHtml(c)}</button>`).join("")}</div>
     <h3>Topics</h3>
-    <div class="chips" id="exploreSubChips">${subs.map(s=>`<button type="button" class="chip" onclick="filterExplore('${escapeAttr(s)}',this)">${escapeHtml(s)}</button>`).join("")}</div>
+    <div class="chips" id="exploreSubChips">${subs.map(s=>`<button type="button" class="chip" onclick="filterExplore(${jsArg(s)},this)">${escapeHtml(s)}</button>`).join("")}</div>
     <div id="exploreResults"><div class="empty">Loading reels…</div></div>
   </div>`;
   await showExploreStream(exploreStreamFor('All'));
@@ -2399,7 +2501,7 @@ function watchExploreEnd(){
   exploreObserver.observe(btn);
 }
 function cardHTML(r){
-  return `<div class="card"><div class="thumb">${thumbVideoHTML(r.src)}<span>▶</span></div><b>${escapeHtml(r.title)}</b><p>${escapeHtml(r.creator)}</p><small>${escapeHtml(r.cat)} • ${escapeHtml(r.sub)}</small><button type="button" onclick="openReel(${r.id})">Watch</button></div>`;
+  return `<div class="card"><div class="thumb">${thumbVideoHTML(r.src)}<span>▶</span></div><b>${escapeHtml(r.title)}</b><p>${escapeHtml(r.creator)}</p><small>${catSub(r)}</small><button type="button" onclick="openReel(${r.id})">Watch</button></div>`;
 }
 function cards(list){
   /* Used by Explore's grid, with the same lazy video thumbnail
@@ -2451,9 +2553,8 @@ function upload(){
       <div class="uploadPickHint" id="uploadPickHint"><b>Add a reel</b>Camera, gallery or files</div>
     </div>
     <div id="preview"></div>
-    <input class="field" id="upTitle" placeholder="Video title">
+    <input class="field" id="upTitle" maxlength="150" placeholder="Video title (optional — AI can suggest one)">
     <select class="field" id="upCat" aria-label="Education category">${eduCategoryOptions()}</select>
-    <input class="field" id="upSub" placeholder="Subject / topic (e.g. Newton's laws)">
     <input id="upFilePicker" type="file" accept="video/*" class="hidden" onchange="onUploadFileChosen()">
     <button type="button" class="primary" onclick="checkUpload()">Submit for Education Check</button>
     <div id="check"></div>
@@ -2499,7 +2600,7 @@ var lastModerationVerdict=null;
 function checkUpload(){
   const fileInput=document.getElementById("upFilePicker"), f=fileInput?.files[0], t=document.getElementById("upTitle").value.trim();
   if(!f){toast("Add a video first (camera, gallery or files)");return}
-  if(!t){toast("Enter a title");return}
+  /* No title needed for the check: the AI watches the video and suggests one. */
   if(!f.type.startsWith("video/")){toast("Please select a video file");return}
   lastModerationVerdict=null;
   if(serverMode())return runRealEducationCheck(f,t);
@@ -2552,9 +2653,13 @@ async function runRealEducationCheck(file,title){
 function renderModerationVerdict(v){
   const box=document.getElementById("check");
   if(v.status==='approved'){
+    /* Empty title? Fill in the AI's suggestion so the user can publish
+       straight away (they can still edit it). */
+    const titleEl=document.getElementById('upTitle');
+    if(titleEl&&!titleEl.value.trim()&&v.suggested_title)titleEl.value=cleanTitle(v.suggested_title);
     box.innerHTML=`<div class="checkResult checkPass"><b>✅ Education Check passed</b>
       <p>${v.unreviewed?'Automatic review was unavailable, so this was approved by default.':`Identified as <b>${escapeHtml(v.subject||v.category||'educational content')}</b>${v.confidence?` · ${Math.round(v.confidence*100)}% confidence`:''}`}</p>
-      ${v.suggested_title?`<p class="suggestTitle">Suggested title: “${escapeHtml(v.suggested_title)}” <button type="button" onclick="useSuggestedTitle('${escapeAttr(v.suggested_title)}')">Use this</button></p>`:''}
+      ${v.suggested_title?`<p class="suggestTitle">Suggested title: “${escapeHtml(v.suggested_title)}” <button type="button" onclick="useSuggestedTitle()">Use this</button></p>`:''}
       </div>
       <button type="button" class="primary" onclick="publishUpload()">Publish Reel</button>`;
     return;
@@ -2582,13 +2687,25 @@ function renderRejection(v){
     <p class="filterNote">EduInsta only accepts educational content — school and college subjects, exam preparation, technology, skills, languages, health and more. Please choose a different video.</p>
     <button type="button" class="primary" onclick="openUploadPicker()">Choose another video</button>`;
 }
-function useSuggestedTitle(t){
+/* Titles are plain text, one line, at most 150 characters. */
+function cleanTitle(t){return String(t||'').replace(/\s+/g,' ').trim().slice(0,150)}
+/* Reads the suggestion from the stored verdict instead of from the button's
+   onclick text, so titles with quotes/apostrophes can't break the button. */
+function useSuggestedTitle(){
+  const t=cleanTitle(lastModerationVerdict&&lastModerationVerdict.suggested_title);
   const el=document.getElementById('upTitle');
-  if(el){el.value=t;toast('Title updated')}
+  if(el&&t){el.value=t;toast('Title updated')}
+}
+/* The title to publish with: what the user typed, else the AI suggestion,
+   else the detected subject. */
+function publishTitle(){
+  const typed=cleanTitle(document.getElementById("upTitle")?.value);
+  const v=lastModerationVerdict||{};
+  return typed||cleanTitle(v.suggested_title)||cleanTitle(v.subject?v.subject+' explained':'')||'Educational reel';
 }
 async function publishUpload(){
-  const f=document.getElementById("upFilePicker")?.files[0], title=document.getElementById("upTitle")?.value.trim();
-  if(!f||!title){toast("Video/title missing");return}
+  const f=document.getElementById("upFilePicker")?.files[0], title=publishTitle();
+  if(!f){toast("Add a video first");return}
   if(serverMode())return publishToServer(f,title);
   /* Publishing requires a passing verdict. Prevents the Publish button being
      reached by any route that skipped the check. */
@@ -2597,7 +2714,7 @@ async function publishUpload(){
   }
   const id=Date.now();
   const cat=document.getElementById("upCat").value;
-  const sub=document.getElementById("upSub").value.trim()||cat;
+  const sub=(lastModerationVerdict&&lastModerationVerdict.subject)||cat;
   await dbPut({id,cat,sub,creator:profile.username,title,desc:"Uploaded by "+profile.name,blob:f});
   invalidateReelCache();
   toast("🎉 Reel published successfully");
@@ -2617,7 +2734,7 @@ async function publishToServer(file,title){
     form.append('creator',profile.username);
     form.append('description','Uploaded by '+profile.name);
     form.append('category',document.getElementById('upCat')?.value||'');
-    form.append('subject',document.getElementById('upSub')?.value.trim()||'');
+    form.append('subject','');   // the server uses the subject the AI detected
     const res=await fetch(`${API_BASE}/api/reels`,{method:'POST',body:form,headers:authHeaders()});
     const data=await res.json();
     if(!res.ok||!data.ok){
@@ -2649,7 +2766,7 @@ async function downloads(){
      used by Explore, so a saved reel's video preview actually shows here
      too, matching what the Profile tab already displays correctly. */
   const body=list.length
-    ?`<div class="profileGrid">${list.map(r=>`<div class="profileCard"><div class="thumb">${thumbVideoHTML(r.src)}<span>▶</span></div><b>${escapeHtml(r.title)}</b><small>${escapeHtml(r.creator)} · ${escapeHtml(r.sub)}</small><button type="button" onclick="openReel(${r.id})">Watch Reel</button></div>`).join("")}</div>`
+    ?`<div class="profileGrid">${list.map(r=>`<div class="profileCard"><div class="thumb">${thumbVideoHTML(r.src)}<span>▶</span></div><b>${escapeHtml(r.title)}</b><small>${escapeHtml(r.creator)}${r.sub?` · ${escapeHtml(r.sub)}`:""}</small><button type="button" onclick="openReel(${r.id})">Watch Reel</button></div>`).join("")}</div>`
     :'<div class="empty">No reels found.</div>';
   main.innerHTML=`<div class="panel"><h2>Downloads / Saved</h2>${body}</div>`;
 }
@@ -2677,7 +2794,7 @@ function searchReelHTML(r){
     ${thumbVideoHTML(r.src)}
     <div class="searchReelInfo">
       <b>${escapeHtml(r.title)}</b>
-      <div class="searchMeta">${escapeHtml(r.creator)} • ${escapeHtml(r.cat)} • ${escapeHtml(r.sub)}</div>
+      <div class="searchMeta">${escapeHtml(r.creator)} • ${catSub(r)}</div>
       <div class="searchDesc">${escapeHtml(r.desc||"Educational reel")}</div>
       <button type="button" class="primary" onclick="event.stopPropagation();closeOverlay();openReel(${r.id})">▶ Open Reel</button>
     </div>
@@ -2851,7 +2968,7 @@ document.addEventListener('seeked',e=>{
 },true);
 
 function uploadCardHTML(r){
-  return `<div class="profileCard" data-upload-id="${r.id}"><div class="thumb">${thumbVideoHTML(r.src)}<span>▶</span></div><b>${escapeHtml(r.title)}</b><small>${escapeHtml(r.cat)} · ${escapeHtml(r.sub)}</small><button type="button" onclick="openReel(${r.id})">Watch Reel</button><button type="button" class="deleteReelBtn" onclick="deleteMyReel(${r.id})">🗑 Delete</button></div>`;
+  return `<div class="profileCard" data-upload-id="${r.id}"><div class="thumb">${thumbVideoHTML(r.src)}<span>▶</span></div><b>${escapeHtml(r.title)}</b><small>${catSub(r,' · ')}</small><button type="button" onclick="openReel(${r.id})">Watch Reel</button><button type="button" class="deleteReelBtn" onclick="deleteMyReel(${r.id})">🗑 Delete</button></div>`;
 }
 function profileUploads(list){
   if(!list.length)return `<div class="empty profileEmpty">🎬<br><b>No uploads yet</b><br>Published reels will appear here.</div>`;
@@ -2890,7 +3007,7 @@ async function deleteMyReel(id){
 }
 function profileDownloads(list){
   if(!list.length)return `<div class="empty profileEmpty">🔖<br><b>No downloads yet</b><br>Tap Save on a reel and it will appear here.</div>`;
-  return `<div class="profileGrid">${list.map(r=>`<div class="profileCard"><div class="thumb">${thumbVideoHTML(r.src)}<span>▶</span></div><b>${escapeHtml(r.title)}</b><small>${escapeHtml(r.creator)} · ${escapeHtml(r.sub)}</small><button type="button" onclick="openReel(${r.id})">Watch Reel</button></div>`).join("")}</div>`;
+  return `<div class="profileGrid">${list.map(r=>`<div class="profileCard"><div class="thumb">${thumbVideoHTML(r.src)}<span>▶</span></div><b>${escapeHtml(r.title)}</b><small>${escapeHtml(r.creator)}${r.sub?` · ${escapeHtml(r.sub)}`:""}</small><button type="button" onclick="openReel(${r.id})">Watch Reel</button></div>`).join("")}</div>`;
 }
 async function profileHistory(){
   const found=await fetchReelsByIds(watchHistory.map(h=>h.id));
@@ -2898,7 +3015,7 @@ async function profileHistory(){
   const list=watchHistory.map(h=>({...byId.get(h.id),watchedAt:h.watchedAt})).filter(r=>r&&r.id!==undefined);
   if(!list.length)return `<div class="empty profileEmpty">🕘<br><b>No watch history yet</b><br>Reels you play will appear here.</div>`;
   return `<div class="historyClearBar"><button type="button" onclick="clearHistory()">Clear history</button></div>
-    <div class="profileGrid">${list.map(r=>`<div class="profileCard"><div class="thumb">${thumbVideoHTML(r.src)}<span>▶</span></div><b>${escapeHtml(r.title)}</b><small>${escapeHtml(r.creator)} · ${escapeHtml(r.sub)}</small><small class="historyMeta">Watched ${relativeTime(r.watchedAt)}</small><button type="button" onclick="openReel(${r.id})">Watch again</button></div>`).join("")}</div>`;
+    <div class="profileGrid">${list.map(r=>`<div class="profileCard"><div class="thumb">${thumbVideoHTML(r.src)}<span>▶</span></div><b>${escapeHtml(r.title)}</b><small>${escapeHtml(r.creator)}${r.sub?` · ${escapeHtml(r.sub)}`:""}</small><small class="historyMeta">Watched ${relativeTime(r.watchedAt)}</small><button type="button" onclick="openReel(${r.id})">Watch again</button></div>`).join("")}</div>`;
 }
 function saveProfile(){
   profile={
@@ -2909,8 +3026,20 @@ function saveProfile(){
     avatar:profile.avatar
   };
   saveState();
+  syncNameToServer();
   toast("Profile saved");
   profilePage();
+}
+/* Sends the profile name to the server so it shows on this user's comments
+   (on every phone). Skipped when unchanged since the last successful sync. */
+function syncNameToServer(){
+  if(!serverMode()||!(account&&account.loggedIn&&account.token))return;
+  const name=String(profile.name||'').trim();
+  if(!name||name==='Your Name')return;
+  const mark=account.email+'|'+name;
+  if(lsGetRaw('er_name_synced')===mark)return;
+  fetch(`${API_BASE}/api/profile/name`,{method:'POST',headers:{'Content-Type':'application/json',...authHeaders()},body:JSON.stringify({name})})
+    .then(r=>{if(r.ok)lsSet('er_name_synced',mark)}).catch(()=>{});
 }
 function editProfilePage(){
   markPage(editProfilePage);
@@ -3079,8 +3208,8 @@ function personRow(u,mode){
   const isFollowing=following.some(x=>norm(x)===norm(u));
   const isSelf=norm(u)===norm(profile.username);
   const action=mode==='followers'
-    ? (isFollowing?`<button type="button" class="networkBtn following" onclick="unfollowUser('${escapeAttr(u)}')">Following</button>`:`<button type="button" class="networkBtn" onclick="followUser('${escapeAttr(u)}')">Follow back</button>`)
-    : `<button type="button" class="networkBtn following" onclick="unfollowUser('${escapeAttr(u)}')">Following</button>`;
+    ? (isFollowing?`<button type="button" class="networkBtn following" onclick="unfollowUser(${jsArg(u)})">Following</button>`:`<button type="button" class="networkBtn" onclick="followUser(${jsArg(u)})">Follow back</button>`)
+    : `<button type="button" class="networkBtn following" onclick="unfollowUser(${jsArg(u)})">Following</button>`;
   return `<div class="personRow"><div class="personAvatar">${escapeHtml((p.name||p.u).charAt(0).toUpperCase())}</div><div class="personInfo"><b>${escapeHtml(p.name)}</b><small>${escapeHtml(p.u)} · ${escapeHtml(p.role)}</small></div>${!isSelf?action:'<span class="youBadge">You</span>'}</div>`;
 }
 function followUser(u){
@@ -3147,8 +3276,51 @@ function navBack(fallbackFn){
 /* Switching top-level tabs resets the stack - you're starting a new journey. */
 function resetNav(){navStack=[];currentPageFn=null}
 
+/* ================= Android back button =================
+   Without a listener Android's default is to close the app instantly on the
+   first Back press. Now Back behaves like Instagram:
+     1. closes an open popup / sheet / error box
+     2. on an inner screen (Settings, Edit profile...) goes to the previous one
+     3. on another tab (Explore, Upload, Profile) goes to Home
+     4. on Home (or the login screen) asks "Exit EduInsta?" - Exit / Cancel
+   Pressing Back while the exit dialog is open simply cancels it. */
+function isOnHomeScreen(){return !!(document.getElementById('feed')&&document.querySelector('.homeTabs'))}
+function isAuthGateShown(){return !!document.querySelector('.authGate')}
+function showExitPrompt(){
+  overlay.innerHTML=`<div class="modal exitModal" onclick="closeOverlay()"><div class="sheet exitSheet" role="alertdialog" aria-modal="true" aria-labelledby="exitTitle" onclick="event.stopPropagation()">
+    <h3 id="exitTitle">Exit EduInsta?</h3>
+    <p>Do you want to close the app?</p>
+    <div class="exitBtns">
+      <button type="button" class="btnSecondary" id="exitCancelBtn" onclick="closeOverlay()">Cancel</button>
+      <button type="button" class="primary" id="exitConfirmBtn" onclick="exitApp()">Exit</button>
+    </div>
+  </div></div>`;
+  setTimeout(()=>document.getElementById('exitCancelBtn')?.focus(),30);
+}
+function exitApp(){
+  closeOverlay();
+  document.querySelectorAll('video').forEach(v=>{try{v.pause()}catch{}});
+  const app=window.Capacitor?.Plugins?.App;
+  if(app?.exitApp){app.exitApp();return}
+  try{window.close()}catch{}
+}
+function handleBackButton(){
+  const fatal=document.getElementById('fatalErrorBox');
+  if(fatal){fatal.remove();return}
+  if(overlay&&overlay.innerHTML.trim()){closeOverlay();return}
+  if(isAuthGateShown()||isOnHomeScreen()){showExitPrompt();return}
+  if(navStack.length){navBack();return}
+  page('home');
+}
+function initBackButton(){
+  const app=window.Capacitor?.Plugins?.App;
+  if(!app?.addListener)return;
+  /* Registering a listener replaces Android's "close the app" default. */
+  app.addListener('backButton',()=>{try{handleBackButton()}catch(e){console.error(e)}});
+}
+
 function settingsRow(icon,title,sub,key){
-  return `<button type="button" class="settingRow" onclick="goTo(()=>settingDetail('${escapeAttr(key)}'))"><span class="settingIcon">${icon}</span><span class="settingText"><b>${escapeHtml(title)}</b>${sub?`<small>${escapeHtml(sub)}</small>`:''}</span><span class="chev">›</span></button>`;
+  return `<button type="button" class="settingRow" onclick="goTo(()=>settingDetail(${jsArg(key)}))"><span class="settingIcon">${icon}</span><span class="settingText"><b>${escapeHtml(title)}</b>${sub?`<small>${escapeHtml(sub)}</small>`:''}</span><span class="chev">›</span></button>`;
 }
 function settingsPage(){
   markPage(settingsPage);
@@ -3303,7 +3475,10 @@ function submitProblem(){
 }
 
 /* ================= Premium subscription logic ================= */
-function saveSubscription(){lsSet('er_subscription',JSON.stringify(subscription))}
+/* Every change bumps __subEpoch, so a refresh that started before the change
+   knows its answer is stale and asks again instead of overwriting it. */
+var __subEpoch=0;
+function saveSubscription(){__subEpoch++;lsSet('er_subscription',JSON.stringify(subscription))}
 /* Runs on every read of subscription status. If a paid period has actually
    elapsed (per stored timestamps) since we last checked, this either
    auto-renews (simulating a successful recurring charge) or, if the user
@@ -3332,34 +3507,47 @@ function isPremium(){checkSubscriptionExpiry();return subscription.status==='act
 /* In SERVER MODE the server is the authority on subscription status. This runs
    at boot and after every payment, so editing localStorage to fake Premium is
    overwritten on the next launch. In prototype mode it is a no-op. */
-async function refreshSubscriptionFromServer(){
-  if(!serverMode())return;
-  try{
-    const res=await fetch(`${API_BASE}/api/subscription/${encodeURIComponent(currentUserId())}`);
-    if(!res.ok)return;
-    const data=await res.json();
-    subscription.status=data.status||'free';
-    subscription.expiresAt=data.expiresAt||null;
-    subscription.renewsAt=data.expiresAt||null;
-    saveSubscription();
-  }catch{ /* offline: keep the cached value rather than locking the user out */ }
-  await applyPlayEntitlement();
+/* Premium status = the server's record (RevenueCat webhook) checked against
+   Google Play's own record (via RevenueCat on the phone); Google Play wins.
+   Only ONE refresh runs at a time: startup, login and the purchase flow
+   used to start overlapping refreshes, and a slow server answer ("free",
+   webhook not arrived yet) could land after Google Play's "Premium" and
+   switch a paying user back to free until the next refresh. A refresh
+   whose answer is out of date by the time it arrives (account switched,
+   purchase just made) is thrown away and asked again. */
+var __subRun=null,__subRerun=false;
+function refreshSubscriptionFromServer(){
+  if(!serverMode())return Promise.resolve();
+  if(__subRun){__subRerun=true;return __subRun}
+  __subRun=(async()=>{
+    let rounds=0;
+    do{__subRerun=false;await refreshSubscriptionOnce()}while(__subRerun&&++rounds<4);
+  })().finally(()=>{__subRun=null});
+  return __subRun;
 }
-/* On Android, Google Play (through RevenueCat) is the source of truth for
-   Premium. The server's copy only updates when a webhook arrives, so without
-   this a server restart or a delayed webhook made a paying user look free. */
-async function applyPlayEntitlement(){
-  if(!PurchasesService.available())return;
-  const ent=await PurchasesService.currentEntitlement();
-  if(!ent)return;                                   // couldn't check - keep what we have
-  if(ent.active){
-    subscription.status='active';
-    subscription.expiresAt=ent.expiresAt||subscription.expiresAt||Date.now()+30*86400000;
-    subscription.renewsAt=subscription.expiresAt;
-  }else if(subscription.status==='active'){
-    subscription.status='expired';
+async function refreshSubscriptionOnce(){
+  const who=currentUserId(), epoch=__subEpoch, record=subscription;
+  const [srv,play]=await Promise.all([
+    fetch(`${API_BASE}/api/subscription/${encodeURIComponent(who)}`)
+      .then(r=>r.ok?r.json():null).catch(()=>null),     // offline: keep the cached value
+    PurchasesService.available()?PurchasesService.currentEntitlement().catch(()=>null):Promise.resolve(null)
+  ]);
+  if(currentUserId()!==who||subscription!==record||__subEpoch!==epoch){__subRerun=true;return}
+  if(srv){
+    subscription.status=srv.status||'free';
+    subscription.expiresAt=srv.expiresAt||null;
+    subscription.renewsAt=srv.expiresAt||null;
   }
-  saveSubscription();
+  if(play){
+    if(play.active){
+      subscription.status='active';
+      subscription.expiresAt=play.expiresAt||subscription.expiresAt||Date.now()+30*86400000;
+      subscription.renewsAt=subscription.expiresAt;
+    }else if(subscription.status==='active'){
+      subscription.status='expired';
+    }
+  }
+  if(srv||play)saveSubscription();
 }
 
 /* ---- Payment gateway (SIMULATED) ----
@@ -3982,7 +4170,7 @@ function showOtpBanner(code,target){
   el.innerHTML=`<div class="otpBannerTop">Demo verification code<button type="button" aria-label="Dismiss" onclick="this.closest('.otpBanner').remove()">×</button></div>
     <div class="otpCode">${escapeHtml(code)}</div>
     <div class="otpTargetLine">for ${escapeHtml(target)}</div>
-    <button type="button" class="otpFillBtn" onclick="autofillOtp('${escapeAttr(code)}')">Tap to fill automatically</button>
+    <button type="button" class="otpFillBtn" onclick="autofillOtp(${jsArg(code)})">Tap to fill automatically</button>
     <div class="otpWhy">Shown here because this prototype has no mail/SMS server yet. See OTP_SETUP.md to send real codes.</div>`;
   document.body.appendChild(el);
 }
@@ -4410,9 +4598,9 @@ function showAccountExistsNotice(email,name){
     <b>⚠️ An account already exists</b>
     <p><span class="accountExistsEmail">${escapeHtml(email||'This email')}</span> is already registered with EduInsta.</p>
     <p>Try signing in with this email, or sign up with a different email address.</p>
-    <button type="button" class="primary" style="width:100%" onclick="goLoginWithEmail('${escapeAttr(email||'')}')">Log in with this email</button>
+    <button type="button" class="primary" style="width:100%" onclick="goLoginWithEmail(${jsArg(email||'')})">Log in with this email</button>
     <button type="button" class="btnSecondary" style="width:100%" onclick="useDifferentSignupEmail()">Use a different email</button>
-    <button type="button" class="accountExistsLink" onclick="goLoginWithEmail('${escapeAttr(email||'')}');openForgotPassword();const f=document.getElementById('forgotEmail');if(f)f.value='${escapeAttr(email||'')}'">Forgot your password?</button>
+    <button type="button" class="accountExistsLink" onclick="goLoginWithEmail(${jsArg(email||'')});openForgotPassword();const f=document.getElementById('forgotEmail');if(f)f.value=${jsArg(email||'')}">Forgot your password?</button>
   </div>`);
 }
 function goLoginWithEmail(email){
@@ -4682,6 +4870,8 @@ function boot(){
   if(AdMobService.available())AdMobService.init().then(()=>syncAdMobWithSubscription());
   if(PurchasesService.available())PurchasesService.init();
   initDeepLinks();
+  initBackButton();
+  syncNameToServer();   // names edited before this update reach the server too
 }
 /* Single place that decides whether native ads should be running at all.
    Called after boot and after any subscription change, so a user who just

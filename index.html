@@ -2726,7 +2726,11 @@ async function publishUpload(){
    moderates before storing, so a rejected video is never saved at all. */
 async function publishToServer(file,title){
   const box=document.getElementById('check');
-  if(box)box.innerHTML=`<div class="checkResult checkPending"><b>⬆️ Publishing…</b><p>Uploading your reel and running the Education Check.</p><div class="checkSpinner"></div></div>`;
+  /* The receipt from a passed Education Check lets the server skip a second
+     AI check of the same video. Without one (AI was unavailable, or an
+     older check) the server checks it while publishing. */
+  const receipt=lastModerationVerdict&&lastModerationVerdict.checkReceipt;
+  if(box)box.innerHTML=`<div class="checkResult checkPending"><b>⬆️ Publishing…</b><p>${receipt?'Uploading your reel…':'Uploading your reel and running the Education Check.'}</p><div class="checkSpinner"></div></div>`;
   try{
     const form=new FormData();
     form.append('video',file);
@@ -2735,6 +2739,7 @@ async function publishToServer(file,title){
     form.append('description','Uploaded by '+profile.name);
     form.append('category',document.getElementById('upCat')?.value||'');
     form.append('subject','');   // the server uses the subject the AI detected
+    if(receipt)form.append('checkReceipt',receipt);
     const res=await fetch(`${API_BASE}/api/reels`,{method:'POST',body:form,headers:authHeaders()});
     const data=await res.json();
     if(!res.ok||!data.ok){

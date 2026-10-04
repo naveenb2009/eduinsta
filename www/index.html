@@ -247,6 +247,16 @@ textarea.field{resize:vertical}
 .commentRow.reply .commentAvatar{width:28px;height:28px;font-size:12px}
 .viewReplies{display:flex;align-items:center;gap:8px;margin:0 0 8px 48px;background:none;border:0;padding:4px 0;color:#777;font-weight:700;font-size:12px;cursor:pointer}
 .viewReplies::before{content:"";width:22px;border-top:1px solid #bbb}
+.mention{color:#0a66c2;font-weight:600}
+.mentionBox{border:1px solid #e6e6e6;border-radius:12px;margin-top:8px;max-height:200px;overflow:auto;background:#fff}
+.mentionItem{display:flex;align-items:center;gap:10px;width:100%;background:none;border:0;border-bottom:1px solid #f2f2f2;padding:8px 10px;text-align:left;cursor:pointer}
+.mentionItem .commentAvatar{width:30px;height:30px;font-size:13px}
+.mentionItem b{display:block;font-size:13px}.mentionItem small{display:block;color:#777;font-size:12px}
+.avatarWrap{position:relative;display:inline-flex}
+.personAvatar{position:relative}
+.activeDot{position:absolute;right:-1px;bottom:-1px;width:11px;height:11px;border-radius:50%;background:#22c55e;border:2px solid #fff}
+.avatarWrap .activeDot{border-color:#111}
+.commentClosed{margin-top:10px;padding:12px;border-radius:12px;background:#f4f4f6;color:#555;font-size:13px;text-align:center}
 .replyBar{display:flex;justify-content:space-between;align-items:center;gap:8px;background:#f2f2f5;border-radius:10px;padding:8px 12px;margin-top:8px;font-size:13px;color:#555}
 .replyBar button{background:none;border:0;font-size:18px;line-height:1;color:#777;padding:0 2px}
 .commentsEmpty{padding:35px 10px!important;line-height:1.8}
@@ -834,7 +844,63 @@ function refreshNotificationPanel(){
   const count=document.getElementById('notifUnreadCount');
   if(count)count.textContent=`${notifications.filter(n=>!n.read).length} unread`;
 }
+/* ============ Presence (active status) + server notifications ============
+   While the app is open it tells the server it's in use every 2 minutes,
+   along with the two privacy switches, and picks up new notifications
+   (mentions, replies, comments on your reels, new followers) that other
+   people's actions created. */
+/* Settings that also live on the server or change the feed right away. */
+function onSettingChanged(key){
+  if(['activityStatus','allowMentions','commentPermission'].includes(key))sendPresence();
+  if(['autoplay','preload','dataSaver','wifiOnly'].includes(key))applyVideoWindow();
+}
+function sendPresence(){
+  if(!serverMode()||!(account&&account.loggedIn&&account.token))return;
+  fetch(`${API_BASE}/api/me/presence`,{method:'POST',headers:{'Content-Type':'application/json',...authHeaders()},
+    body:JSON.stringify({showActive:!!erGet('activityStatus',false),allowMentions:!!erGet('allowMentions',true),commentPermission:erGet('commentPermission','Everyone')})}).catch(()=>{});
+}
+const SERVER_NOTIF={login:{type:'security',title:'New sign-in'},follow:{type:'follower',title:'New follower'},mention:{type:'comment',title:'You were mentioned'},reply:{type:'comment',title:'New reply'},comment:{type:'comment',title:'New comment on your reel'}};
+async function pullServerNotifications(){
+  if(!serverMode()||!(account&&account.loggedIn&&account.token))return 0;
+  try{
+    const since=Number(lsGetRaw('er_notif_since')||0);
+    const res=await fetch(`${API_BASE}/api/notifications?since=${since}`,{headers:authHeaders()});
+    const d=await res.json(); if(!res.ok||!d.ok)return 0;
+    const list=(d.notifications||[]).slice().sort((a,b)=>a.id-b.id);
+    let added=0,max=since;
+    for(const n of list){
+      max=Math.max(max,n.id);
+      const m=SERVER_NOTIF[n.type]||{type:'system',title:'EduInsta'};
+      const pref=NOTIF_PREF_KEY[m.type];
+      if(pref&&!erGet(pref,true))continue;
+      if(notifications.some(x=>x.id==='srv_'+n.id))continue;
+      notifications=[{id:'srv_'+n.id,type:m.type,title:m.title,body:n.text,at:n.at,read:false,reelId:n.reelId||null},...notifications];
+      added++;
+    }
+    if(notifications.length>50)notifications.length=50;
+    lsSet('er_notif_since',String(max));
+    if(added){saveNotifications();updateNotificationBadge();refreshNotificationPanel()}
+    return added;
+  }catch{return 0}
+}
+var __presenceTimer=null;
+function startPresence(){
+  sendPresence(); pullServerNotifications();
+  if(__presenceTimer)return;
+  __presenceTimer=setInterval(()=>{if(document.visibilityState!=='hidden'){sendPresence();pullServerNotifications()}},120000);
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){sendPresence();pullServerNotifications()}});
+}
+/* "Active now" / "Active 5m ago" / "Active 2h ago" (nothing after a day). */
+function activeLabel(ms){
+  if(!ms)return '';
+  const m=Math.floor((Date.now()-ms)/60000);
+  if(m<5)return 'Active now';
+  if(m<60)return `Active ${m}m ago`;
+  const h=Math.floor(m/60);
+  return h<24?`Active ${h}h ago`:'';
+}
 function openNotifications(){
+  setTimeout(pullServerNotifications,0);
   overlay.innerHTML=`<div class="modal" onclick="closeOverlay()"><div class="sheet" onclick="event.stopPropagation()">
     <div class="commentHeader"><div><b>Notifications</b><div class="commentCount" id="notifUnreadCount">${notifications.filter(n=>!n.read).length} unread</div></div><button type="button" class="close" onclick="closeOverlay()">×</button></div>
     <div class="notifActions"><button type="button" onclick="markAllNotificationsRead()">Mark all as read</button><button type="button" onclick="clearAllNotifications()">Clear all</button></div>
@@ -844,6 +910,7 @@ function openNotifications(){
 function markNotificationRead(id){
   const n=notifications.find(x=>x.id===id);
   if(n&&!n.read){n.read=true;saveNotifications();updateNotificationBadge()}
+  if(n&&n.reelId){closeOverlay();openReel(n.reelId);return}
   refreshNotificationPanel();
 }
 function markAllNotificationsRead(){
@@ -1349,7 +1416,7 @@ function streamNext(s,want){
   if(s.busy)return s.busy;
   s.busy=(async()=>{
     const added=[];
-    const take=list=>{for(const r of list){if(s.seen.has(r.id))continue;if(s.filter&&!s.filter(r))continue;s.seen.add(r.id);added.push(r)}};
+    const take=list=>{for(const r of list){if(s.seen.has(r.id))continue;if(isMutedOrBlocked(r.creator))continue;if(s.filter&&!s.filter(r))continue;s.seen.add(r.id);added.push(r)}};
     if(!serverMode()){
       if(!s.exhausted){take((await localReels()).reverse());s.exhausted=true}
     }else{
@@ -1552,6 +1619,12 @@ function sortFeedByPriority(arr){
                 long the feed gets. */
 const FEED_PAGE_SIZE=8;      // items rendered per page
 const VIDEO_WINDOW=3;        // reels either side of current that keep their src
+/* Data & playback settings. "Mobile data" uses the phone's connection type
+   when Android reports it. */
+function onMobileData(){const c=navigator.connection||navigator.mozConnection||navigator.webkitConnection;return !!(c&&c.type==='cellular')}
+function wifiOnlyBlocks(){return !!erGet('wifiOnly',false)&&onMobileData()}
+function autoplayAllowed(){return !!erGet('autoplay',true)&&!wifiOnlyBlocks()}
+function videoWindow(){return (erGet('dataSaver',false)||!erGet('preload',true)||wifiOnlyBlocks())?0:VIDEO_WINDOW}
 var feedState={items:[],rendered:0,loading:false,tab:null};
 
 /* Home tab streams are kept while the app is open, so going back to Home
@@ -1689,7 +1762,7 @@ function applyVideoWindow(){
     const v=sec.querySelector('video.reelMain');
     if(!v)return;
     const dist=Math.abs(i-currentIndex);
-    const near=dist<=VIDEO_WINDOW;
+    const near=dist<=videoWindow();
     const real=v.dataset.src||v.getAttribute('src');
     if(near){
       if(!v.getAttribute('src')&&v.dataset.src){v.setAttribute('src',v.dataset.src);v.load()}
@@ -1812,7 +1885,7 @@ function reelHTML(r){
         </div>
       </div>
       <div class="info">
-        <div class="creator">${avatarSpanHTML(r.creator)}<span class="creatorName">${escapeHtml(r.creator)}</span>${followKey&&!isMine?`<button type="button" class="follow ${isFollowing?'on':''}" onclick="followCreator(${jsArg(followKey)},event)">${isFollowing?"Following":"Follow"}</button>`:''}</div>
+        <div class="creator">${activeLabel(r.creatorActiveAt)==='Active now'?'<span class="avatarWrap">'+avatarSpanHTML(r.creator)+'<span class="activeDot" aria-label="Active now"></span></span>':avatarSpanHTML(r.creator)}<span class="creatorName">${escapeHtml(r.creator)}</span>${followKey&&!isMine?`<button type="button" class="follow ${isFollowing?'on':''}" onclick="followCreator(${jsArg(followKey)},event)">${isFollowing?"Following":"Follow"}</button>`:''}</div>
         <div class="title">${escapeHtml(r.title)}</div>
         <div class="meta"><b>${catSub(r)}</b> · ${escapeHtml(r.desc||"Educational video on EduInsta.")}</div>
       </div>
@@ -1882,6 +1955,8 @@ function observeVideos(){
       if(!v)return;
       if(entry.isIntersecting){
         document.querySelectorAll(".reel video.reelMain").forEach(x=>{if(x!==v){x.pause();x.muted=true}});
+        // Autoplay off (or Wi-Fi only on mobile data): wait for a tap.
+        if(!autoplayAllowed()&&!v.dataset.userStarted){v.pause();updatePlayIcon(v);return}
         applySoundToVideo(v);
         /* Sound is wanted but not yet unlocked: the reel still plays (muted),
            and we surface a one-tap prompt instead of leaving the user to
@@ -1950,7 +2025,7 @@ document.addEventListener('timeupdate',e=>{
 function togglePlay(e,btn){
   e?.stopPropagation();
   const v=btn?.closest('.reel')?.querySelector('video.reelMain'); if(!v)return;
-  if(v.paused)v.play().catch(()=>{}); else v.pause();
+  if(v.paused){v.dataset.userStarted='1';if(!v.getAttribute('src')&&v.dataset.src){v.setAttribute('src',v.dataset.src);v.load()}v.play().catch(()=>{})} else v.pause();
   updatePlayIcon(v);
 }
 function toggleSound(e,btn){
@@ -2459,7 +2534,8 @@ async function commentsPanel(id,e){
     <div class="commentHeader"><div><h3>Comments</h3><small id="commentCount">Loading…</small></div><button type="button" class="close" onclick="closeOverlay()">×</button></div>
     <div class="commentList" id="commentList"><div class="empty commentsEmpty">Loading comments…</div></div>
     <div class="replyBar hidden" id="replyBar"></div>
-    <div class="commentComposer"><input id="commentInput" maxlength="300" placeholder="Add a thoughtful comment…" onkeydown="if(event.key==='Enter'){event.preventDefault();addComment(${id})}"><button type="button" aria-label="Post" onclick="addComment(${id})">➤</button></div>
+    <div class="mentionBox hidden" id="mentionBox"></div>
+    <div class="commentComposer"><input id="commentInput" maxlength="300" placeholder="Add a thoughtful comment… (type @ to mention)" oninput="onCommentInput()" onkeydown="if(event.key==='Enter'){event.preventDefault();addComment(${id})}"><button type="button" aria-label="Post" onclick="addComment(${id})">➤</button></div>
   </div></div>`;
   await loadComments(id);
 }
@@ -2471,6 +2547,7 @@ async function loadComments(id){
       const data=await res.json();
       if(data.ok){
         arr=data.comments;
+        setCommentPermission(data.canComment!==false,data.commentNote);
         if(reelStats[id]&&reelStats[id].comments!==arr.length){reelStats[id].comments=arr.length;updateCountsUI(id)}
       }
     }catch{
@@ -2488,11 +2565,60 @@ function commentRowHTML(c,isReply){
   const liked=!!c.likedByMe, n=Number(c.likes)||0, name=commenterName(c);
   return `<div class="commentRow${isReply?' reply':''}" data-comment-id="${c.id}">
     <div class="commentAvatar">${escapeHtml(name.replace("@","").charAt(0).toUpperCase()||"S")}</div>
-    <div class="commentBody"><b>${escapeHtml(name)}</b><div class="commentText">${escapeHtml(c.text)}</div>
+    <div class="commentBody"><b>${escapeHtml(name)}</b><div class="commentText">${highlightMentions(c.text,c.mentions)}</div>
       <div class="commentMeta"><small>${c.createdAt?relativeTime(new Date(c.createdAt).getTime()):'Just now'}</small>${c.id!=null?`<button type="button" class="commentReplyBtn" onclick="startReply(${jsArg(c.id)})">Reply</button>`:''}</div>
     </div>
     ${c.id!=null?`<button type="button" class="commentLike${liked?' liked':''}" aria-label="Like comment" aria-pressed="${liked}" onclick="toggleCommentLike(${jsArg(c.id)})"><span>${liked?'♥':'♡'}</span><small>${n>0?fmtCount(n):''}</small></button>`:''}
   </div>`;
+}
+/* @handles that point at real people (the server tells us which) are shown
+   highlighted; everything else stays plain text. */
+function highlightMentions(text,mentions){
+  const safe=escapeHtml(text);
+  const set=new Set((mentions||[]).map(h=>String(h).toLowerCase()));
+  if(!set.size)return safe;
+  return safe.replace(/@[A-Za-z0-9._]{1,30}/g,m=>set.has(m.toLowerCase())?`<span class="mention">${m}</span>`:m);
+}
+/* "@" suggestions while typing a comment. */
+var __mentionTimer=null;
+function mentionTokenAtCaret(input){
+  const pos=input.selectionStart??input.value.length;
+  const m=input.value.slice(0,pos).match(/(^|\s)@([A-Za-z0-9._]{0,30})$/);
+  return m?{start:pos-m[2].length-1,end:pos,q:m[2]}:null;
+}
+function onCommentInput(){
+  const x=document.getElementById('commentInput'), box=document.getElementById('mentionBox'); if(!x||!box)return;
+  const tok=mentionTokenAtCaret(x);
+  clearTimeout(__mentionTimer);
+  if(!tok||!serverMode()){box.classList.add('hidden');box.innerHTML='';return}
+  __mentionTimer=setTimeout(async()=>{
+    try{
+      const res=await fetch(`${API_BASE}/api/people/search?q=${encodeURIComponent(tok.q)}`,{headers:authHeaders()});
+      const d=await res.json();
+      const cur=mentionTokenAtCaret(x);
+      if(!cur||cur.q!==tok.q)return;
+      const people=(d.people||[]);
+      if(!people.length){box.classList.add('hidden');box.innerHTML='';return}
+      box.innerHTML=people.map(p=>`<button type="button" class="mentionItem" onmousedown="event.preventDefault()" onclick="pickMention(${jsArg(p.handle)})"><span class="commentAvatar">${escapeHtml(String(p.name||'E').charAt(0).toUpperCase())}</span><span><b>${escapeHtml(p.name)}</b><small>${escapeHtml(p.handle)}</small></span></button>`).join('');
+      box.classList.remove('hidden');
+    }catch{}
+  },200);
+}
+function pickMention(handle){
+  const x=document.getElementById('commentInput'), box=document.getElementById('mentionBox'); if(!x)return;
+  const tok=mentionTokenAtCaret(x)||{start:x.value.length,end:x.value.length};
+  const h=String(handle).startsWith('@')?handle:'@'+handle;
+  x.value=x.value.slice(0,tok.start)+h+' '+x.value.slice(tok.end);
+  const caret=tok.start+h.length+1; x.focus(); try{x.setSelectionRange(caret,caret)}catch{}
+  if(box){box.classList.add('hidden');box.innerHTML=''}
+}
+/* "Filter offensive words": a built-in list (English + common Hindi/Kannada
+   abuse, Latin script). Matching is on whole words, any case. */
+const OFFENSIVE_WORDS=['fuck','fucking','fucker','shit','bitch','bastard','asshole','dick','cunt','slut','whore','motherfucker','retard','nigger','faggot','chutiya','chutiye','madarchod','behenchod','bhenchod','bsdk','bhosdike','gandu','randi','harami','kutta','kutti','saala','sala','loda','lauda','lavde','boli','sule','bolimaga','soolemaga','tika','thika','nanmagne'];
+const OFFENSIVE_RE=new RegExp('(^|[^a-z])('+OFFENSIVE_WORDS.join('|')+')(?=$|[^a-z])','i');
+function commentHiddenForMe(c){
+  if(isBlocked(c&&c.user))return true;
+  return !!erGet('filterKeywords',true)&&OFFENSIVE_RE.test(String(c&&c.text||''));
 }
 function renderCommentList(arr){
   const list=document.getElementById('commentList'); if(!list)return;
@@ -2501,6 +2627,8 @@ function renderCommentList(arr){
   if(!arr.length){list.innerHTML=`<div class="empty commentsEmpty">💬<br><b>No comments yet</b><br><span>Be the first to share your thoughts.</span></div>`;return}
   const byParent=new Map();
   arr.forEach(c=>{if(c.parentId!=null){const k=String(c.parentId);byParent.set(k,[...(byParent.get(k)||[]),c])}});
+  arr=arr.filter(c=>!commentHiddenForMe(c));
+  if(!arr.length){list.innerHTML=`<div class="empty commentsEmpty">💬<br><b>No comments yet</b><br><span>Be the first to share your thoughts.</span></div>`;return}
   const tops=arr.filter(c=>c.parentId==null||!arr.some(p=>String(p.id)===String(c.parentId)));
   list.innerHTML=tops.map(c=>{
     const replies=byParent.get(String(c.id))||[];
@@ -2510,6 +2638,15 @@ function renderCommentList(arr){
         ?replies.map(r=>commentRowHTML(r,true)).join('')+`<button type="button" class="viewReplies" onclick="toggleReplies(${jsArg(c.id)})">Hide replies</button>`
         :`<button type="button" class="viewReplies" onclick="toggleReplies(${jsArg(c.id)})">View ${replies.length} ${replies.length===1?'reply':'replies'}</button>`):'');
   }).join('');
+}
+/* The reel owner's "Who can comment" setting, as decided by the server. */
+function setCommentPermission(ok,note){
+  const comp=document.querySelector('.commentComposer'); if(!comp)return;
+  let box=document.getElementById('commentClosed');
+  if(ok){comp.classList.remove('hidden');box?.remove();return}
+  comp.classList.add('hidden');
+  if(!box){comp.insertAdjacentHTML('afterend','<div class="commentClosed" id="commentClosed"></div>');box=document.getElementById('commentClosed')}
+  box.textContent=note||'Comments are limited on this reel.';
 }
 function toggleReplies(id){
   const k=String(id);
@@ -2530,7 +2667,7 @@ function startReply(id){
 function cancelReply(){
   commentState.replyTo=null;
   const bar=document.getElementById('replyBar'); if(bar){bar.classList.add('hidden');bar.innerHTML=''}
-  const x=document.getElementById('commentInput'); if(x)x.placeholder='Add a thoughtful comment…';
+  const x=document.getElementById('commentInput'); if(x)x.placeholder='Add a thoughtful comment… (type @ to mention)';
 }
 /* Heart a comment: instant on screen, then saved on the server. */
 function toggleCommentLike(id){
@@ -2563,6 +2700,7 @@ async function addComment(id){
       });
       const data=await res.json();
       if(res.status===401){x.value=t;toast('Please log out and log in again to comment');return}
+      if(res.status===403){x.value=t;setCommentPermission(false,data.error);toast(data.error||'You can\'t comment on this reel');return}
       if(!data.ok&&res.status===404&&parentId!=null){x.value=t;cancelReply();toast(data.error||'That comment was deleted');await loadComments(id);return}
       if(!data.ok)throw new Error(data.error||'failed');
       if(typeof data.comments==='number'){
@@ -2571,6 +2709,7 @@ async function addComment(id){
       }
       if(parentId!=null)commentState.expanded.add(String(parentId));
       cancelReply();
+      const mb=document.getElementById('mentionBox'); if(mb){mb.classList.add('hidden');mb.innerHTML=''}
       await loadComments(id);
       toast(parentId!=null?"Reply posted":"Comment posted");
       return;
@@ -2606,8 +2745,8 @@ var EDU_GROUPS=[
   {g:"Skills & Career",items:["Spoken English","Communication Skills","Soft Skills","Career Guidance","Interview Preparation","Study Tips & Techniques","Vocational & ITI","Crafts & DIY","Cooking Technique","Life Skills"]},
   {g:"Other",items:["Science Experiments","Documentary & Explainers","Other Education"]}
 ];
-function eduCategoryOptions(){
-  return EDU_GROUPS.map(gr=>`<optgroup label="${escapeAttr(gr.g)}">${gr.items.map(i=>`<option>${escapeHtml(i)}</option>`).join("")}</optgroup>`).join("");
+function eduCategoryOptions(selected){
+  return EDU_GROUPS.map(gr=>`<optgroup label="${escapeAttr(gr.g)}">${gr.items.map(i=>`<option${i===selected?' selected':''}>${escapeHtml(i)}</option>`).join("")}</optgroup>`).join("");
 }
 
 /* ---------------- Explore ---------------- */
@@ -2726,7 +2865,7 @@ function upload(){
     </div>
     <div id="preview"></div>
     <input class="field" id="upTitle" maxlength="150" placeholder="Video title (optional — AI can suggest one)">
-    <select class="field" id="upCat" aria-label="Education category">${eduCategoryOptions()}</select>
+    <select class="field" id="upCat" aria-label="Education category">${eduCategoryOptions(erGet('defaultUploadCategory',''))}</select>
     <input id="upFilePicker" type="file" accept="video/*" class="hidden" onchange="onUploadFileChosen()">
     <button type="button" class="primary" onclick="checkUpload()">Submit for Education Check</button>
     <div id="check"></div>
@@ -2920,6 +3059,7 @@ async function publishToServer(file,title){
       return;
     }
     invalidateReelCache();
+    if(erGet('autoSave',false)&&data.reel&&!saved.includes(data.reel.id)){saved=[...saved,data.reel.id];saveState()}
     toast('🎉 Published — everyone can see it now');
     addNotification('system','Reel published',`"${title}" is now live for all EduInsta users.`);
     await openReel(data.reel.id);
@@ -3106,6 +3246,7 @@ var thumbObserver=('IntersectionObserver' in window)?new IntersectionObserver(en
 function activateThumbs(root){
   (root||document).querySelectorAll('video[data-thumb-src]:not([data-thumb-watched])').forEach(v=>{
     v.setAttribute('data-thumb-watched','1');
+    if(erGet('dataSaver',false))return;    // Data saver: no video previews
     if(thumbObserver)thumbObserver.observe(v); else v.src=v.dataset.thumbSrc;
   });
 }
@@ -3389,8 +3530,9 @@ function personRow(p,tab){
   if(p.you)action='<span class="youBadge">You</span>';
   else if(following.includes(p.pid))action=`<button type="button" class="networkBtn following" onclick="networkFollow(${jsArg(p.pid)},false)">Following</button>`;
   else action=`<button type="button" class="networkBtn" onclick="networkFollow(${jsArg(p.pid)},true)">${tab==='followers'||p.followsYou?'Follow back':'Follow'}</button>`;
-  const sub=[p.handle,p.followsYou&&tab==='following'?'Follows you':''].filter(Boolean).join(' · ');
-  return `<div class="personRow" data-pid="${escapeAttr(p.pid)}"><div class="personAvatar">${escapeHtml(name.charAt(0).toUpperCase())}</div><div class="personInfo"><b>${escapeHtml(name)}</b>${sub?`<small>${escapeHtml(sub)}</small>`:''}</div>${action}</div>`;
+  const act=activeLabel(p.activeAt);
+  const sub=[act,p.handle,p.followsYou&&tab==='following'?'Follows you':''].filter(Boolean).join(' · ');
+  return `<div class="personRow" data-pid="${escapeAttr(p.pid)}"><div class="personAvatar">${escapeHtml(name.charAt(0).toUpperCase())}${act==='Active now'?'<span class="activeDot" aria-label="Active now"></span>':''}</div><div class="personInfo"><b>${escapeHtml(name)}</b>${sub?`<small>${escapeHtml(sub)}</small>`:''}</div>${action}</div>`;
 }
 async function networkFollow(pid,want){
   const row=document.querySelector(`.personRow[data-pid="${CSS.escape(pid)}"] .networkBtn`); if(row)row.disabled=true;
@@ -3533,13 +3675,13 @@ function settingsPage(){
     <input class="searchInput" id="settingsSearch" placeholder="Find a setting" oninput="filterSettings()">
     <div id="settingsList">
       <div class="settingSection"><h3>Membership</h3>${settingsRow('👑','EduInsta Premium',isPremium()?'Manage your active Premium subscription':'Ad-free, unlimited saves, quizzes & more','premium')}</div>
-      <div class="settingSection"><h3>Account & security</h3>${settingsRow('👤','Account details','Email, username and account type','accountDetails')}${settingsRow('🔒','Sign-in & security','Password, sessions and sign-in controls','security')}${settingsRow('📱','Active devices','Demo sessions stored on this device','devices')}</div>
+      <div class="settingSection"><h3>Account & security</h3>${settingsRow('👤','Account details','Email, username and account type','accountDetails')}${settingsRow('🔒','Sign-in & security','Password, sign-in alerts and staying signed in','security')}${settingsRow('📱','Active devices','This phone and sign-in alerts','devices')}</div>
       <div class="settingSection"><h3>Community</h3>${settingsRow('👥','Followers & following','People following you and accounts you follow','network')}</div>
-      <div class="settingSection"><h3>Your EduInsta activity</h3>${settingsRow('🔖','Saved learning','Manage saved educational reels','saved')}${settingsRow('📊','Your activity','Likes, comments and follows','activity')}${settingsRow('🔔','Notifications','Choose which EduInsta alerts you receive','notifications')}${settingsRow('⏱️','Learning time','Daily reminder and focus controls','time')}</div>
-      <div class="settingSection"><h3>Feed & learning</h3>${settingsRow('🎯','Interests','Subjects and topics used for recommendations','interests')}${settingsRow('🧠','Learning preferences','Education level, languages and feed topics','content')}${settingsRow('💬','Engagement display','Show or hide like/share counts','counts')}${settingsRow('🚫','Muted creators','Creators hidden from your feed','muted')}</div>
-      <div class="settingSection"><h3>App & media</h3>${settingsRow('⬇️','Downloads & media','Quality, storage and offline behavior','downloads')}${settingsRow('♿','Accessibility','Captions, motion and readable controls','accessibility')}${settingsRow('🌐','Language','Choose the app display language','language')}${settingsRow('📶','Data & playback','Data saver and autoplay behavior','data')}</div>
-      <div class="settingSection"><h3>Privacy & community</h3>${settingsRow('🛡️','Privacy','Control profile visibility and interactions','privacy')}${settingsRow('⭐','Study circle','A private list for sharing learning posts','circle')}${settingsRow('🗨️','Comment controls','Choose who can comment on your reels','comments')}${settingsRow('⚠️','Blocked accounts','Manage accounts you blocked','blocked')}</div>
-      <div class="settingSection"><h3>Creator tools</h3>${settingsRow('🎥','Creator settings','Upload defaults and education-check behavior','creator')}${settingsRow('✓','Creator trust','View your demo education-trust status','trust')}</div>
+      <div class="settingSection"><h3>Your EduInsta activity</h3>${settingsRow('🔖','Saved learning','Manage saved educational reels','saved')}${settingsRow('📊','Your activity','Likes, comments and follows','activity')}${settingsRow('🔔','Notifications','Choose which EduInsta alerts you receive','notifications')}</div>
+      <div class="settingSection"><h3>Feed & learning</h3>${settingsRow('🎯','Interests','Subjects and topics used for recommendations','interests')}${settingsRow('🧠','Learning preferences','How your For You feed is chosen','content')}${settingsRow('💬','Engagement display','Show or hide like/share counts','counts')}${settingsRow('🚫','Muted creators','Creators hidden from your feed','muted')}</div>
+      <div class="settingSection"><h3>App & media</h3>${settingsRow('⬇️','Downloads & media','Mobile data and saving your reels','downloads')}${settingsRow('♿','Accessibility','Text size, contrast and motion','accessibility')}${settingsRow('📶','Data & playback','Data saver and autoplay behavior','data')}</div>
+      <div class="settingSection"><h3>Privacy & community</h3>${settingsRow('🛡️','Privacy','Control profile visibility and interactions','privacy')}${settingsRow('🗨️','Comment controls','Choose who can comment on your reels','comments')}${settingsRow('⚠️','Blocked accounts','Manage accounts you blocked','blocked')}</div>
+      <div class="settingSection"><h3>Creator tools</h3>${settingsRow('🎥','Creator settings','Default upload category','creator')}${settingsRow('✓','Creator trust','Your education-creator status','trust')}</div>
       <div class="settingSection"><h3>Help & information</h3>${settingsRow('❓','Help centre','Common questions and quick guidance','help')}${settingsRow('🐞','Report a problem','Send us feedback or report a bug','problem')}${settingsRow('✅','Account status','See whether your account has restrictions','status')}${settingsRow('ℹ️','About EduInsta','Version and product information','about')}</div>
       ${isOwner()
         ?`<div class="settingSection"><h3>Owner tools 🔒</h3>${settingsRow('📊','Owner dashboard','Earnings, transactions and moderation','ownerDashboard')}${settingsRow('📢','Advertiser campaigns','Manage booked sponsored placements','ads')}${settingsRow('🛠️','App configuration','Ad frequency, advertiser rates and Premium pricing','adminConfig')}</div>`
@@ -3578,11 +3720,12 @@ function toggleSetting(key,btn){
   erSet(key,next);
   btn.classList.toggle('on',next);
   if(A11Y_KEYS.includes(key))applyAccessibilitySettings();
+  onSettingChanged(key);
   toast(next?'Enabled':'Disabled');
 }
 function selectLine(key,label,options,def){
   const v=erGet(key,def);
-  return `<label class="selectRow"><span><b>${escapeHtml(label)}</b></span><select onchange="erSet('${key}',this.value);toast('Preference saved')">${options.map(o=>`<option ${o===v?'selected':''}>${escapeHtml(o)}</option>`).join('')}</select></label>`;
+  return `<label class="selectRow"><span><b>${escapeHtml(label)}</b></span><select onchange="erSet('${key}',this.value);onSettingChanged('${key}');toast('Preference saved')">${options.map(o=>`<option ${o===v?'selected':''}>${escapeHtml(o)}</option>`).join('')}</select></label>`;
 }
 const btnHtml=(label,fn)=>`<button type="button" class="optionBtn" onclick="${fn}">${escapeHtml(label)}</button>`;
 
@@ -3606,27 +3749,29 @@ function settingDetail(key){
   const titleMap={accountDetails:'Account details',security:'Sign-in & security',devices:'Active devices',activity:'Your activity',notifications:'Notifications',time:'Learning time',content:'Learning preferences',counts:'Engagement display',muted:'Muted creators',downloads:'Downloads & media',accessibility:'Accessibility',language:'Language',data:'Data & playback',privacy:'Privacy',circle:'Study Circle',comments:'Comment controls',blocked:'Blocked accounts',creator:'Creator settings',trust:'Creator trust',help:'Help centre',problem:'Report a problem',status:'Account status',about:'About EduInsta'};
   let body='';
   if(key==='accountDetails') body=`<div class="card"><p><b>Name</b><br>${escapeHtml(profile.name)}</p><p><b>Username</b><br>${escapeHtml(profile.username)}</p><p><b>Role</b><br>${escapeHtml(profile.role)}</p><p><b>Login</b><br>${account.loggedIn?escapeHtml(account.email):'Not signed in'}</p><p><b>Phone number</b><br>${profile.phone?escapeHtml(maskPhone(profile.phone)):'Not added'}</p>${btnHtml(profile.phone?'Update phone number':'Add phone number',"updatePhonePage()")}${btnHtml('Edit profile',"editProfilePage()")}${btnHtml('Open account / sign-in',"authPage()")}</div>`;
-  if(key==='security') body=`<div class="card">${toggleLine('loginAlerts','New sign-in alerts','Save a preference for new-device alerts.',true)}${toggleLine('rememberDevice','Remember this device','Stay signed in on this device.',true)}${btnHtml('Change password',"securityAction('password')")}</div>`;
-  if(key==='devices') body=`<div class="card"><div class="deviceItem"><span>📱</span><div><b>This device</b><small>Current EduInsta session</small></div><em>Active</em></div>${btnHtml('Refresh device status',"toast('Device status refreshed')")}${btnHtml('Sign out this device',"logout()")}</div>`;
-  if(key==='activity') body=`<div class="statsLarge"><div><b>${likes.length}</b><span>Liked reels</span></div><div><b>${Object.values(comments).reduce((a,x)=>a+x.length,0)}</b><span>Comments</span></div><div><b>${following.length}</b><span>Following</span></div></div>${btnHtml('Open saved learning',"page('downloads')")}${btnHtml('View profile uploads',"profileTab='uploads';profilePage()")}${btnHtml('Clear local activity',"clearActivity()")}`;
-  if(key==='notifications') body=`<div class="card">${toggleLine('notifyFollowers','New followers','Alerts when someone follows your learning profile.',true)}${toggleLine('notifyComments','Comments & replies','Alerts about conversations on your reels.',true)}${toggleLine('notifyLearning','Learning reminders','Recommended learning reminders and new-topic alerts.',true)}${toggleLine('notifySystem','EduInsta updates','Important product and account notices.',true)}${btnHtml('View notifications',"openNotifications()")}</div>`;
-  if(key==='time') body=`<div class="card">${toggleLine('focusReminder','Learning reminder','Remind me to take a focused learning session.',false)}${selectLine('reminderTime','Reminder time',['08:00','12:00','18:00','21:00'],erGet('reminderTime','18:00'))}<div class="infoBox">${erGet('focusReminder',false)?'Reminder preference is ON.':'Reminder preference is OFF.'}</div></div>`;
-  if(key==='content') body=`<div class="card">${selectLine('educationLevel','Preferred level',['All levels','School','College / Engineering','Medical','Competitive exams','Professional'],erGet('educationLevel','All levels'))}${selectLine('contentLanguage','Content language',['English','Kannada','Hindi','Tamil','Telugu','Any language'],erGet('contentLanguage','English'))}${toggleLine('showExamContent','Prioritize exam preparation','Give exam-oriented reels more weight in your feed.',false)}${toggleLine('showPractical','Prioritize practical learning','Prefer demonstrations, examples and projects.',true)}${btnHtml('Manage interests',"interestsPage()")}</div>`;
+  if(key==='security') body=`<div class="card">${toggleLine('loginAlerts','New sign-in alerts','Get a notification when your account signs in on another phone.',true)}${toggleLine('rememberDevice','Remember this device','Stay signed in on this phone. Turn off to log in every time you open EduInsta.',true)}${btnHtml('Change password',"securityAction('password')")}</div>`;
+  if(key==='devices') body=`<div class="card"><div class="deviceItem"><span>📱</span><div><b>This phone</b><small>Signed in as ${escapeHtml(account.email||'')}</small></div><em>Active</em></div><div class="infoBox">Turn on "New sign-in alerts" in Sign-in &amp; security to be notified when your account signs in on another phone.</div>${btnHtml('Sign out this phone',"logout()")}</div>`;
+  if(key==='activity'){
+    /* Totals for this ACCOUNT from the server (comments posted on any phone
+       count too); the numbers on this phone are shown until they arrive. */
+    body=`<div class="statsLarge"><div><b id="actLikes">${fmtCount(likes.length)}</b><span>Liked reels</span></div><div><b id="actComments">…</b><span>Comments</span></div><div><b id="actFollowing">${fmtCount(followStats.following||following.length)}</b><span>Following</span></div></div>${btnHtml('Open saved learning',"page('downloads')")}${btnHtml('View profile uploads',"profileTab='uploads';profilePage()")}`;
+    setTimeout(loadActivityCounts,0);
+  }
+  if(key==='notifications') body=`<div class="card">${toggleLine('notifyFollowers','New followers','When someone starts following you.',true)}${toggleLine('notifyComments','Comments, replies & mentions','Comments on your reels, replies to your comments and @mentions.',true)}${toggleLine('notifySystem','EduInsta updates','Your published reels and important account notices.',true)}${btnHtml('View notifications',"openNotifications()")}</div>`;
+  if(key==='content') body=`<div class="card"><p>Your For You feed is built from your interests.</p>${btnHtml('Manage interests',"interestsPage()")}</div>`;
   if(key==='counts') body=`<div class="card">${toggleLine('showLikeCounts','Show like counts','Display engagement totals on reels.',true)}${toggleLine('showShareCounts','Show share counts','Display how often learning reels were shared.',true)}</div>`;
-  if(key==='muted') body=`<div class="card">${(erGet('mutedCreators',[]).length?erGet('mutedCreators',[]).map(x=>`<div class="deviceItem"><div><b>${escapeHtml(x)}</b><small>Hidden from your feed</small></div>${btnHtml('Unmute',`unmuteCreator('${escapeAttr(x)}')`)}</div>`).join(''):'<div class="empty">No muted creators.</div>')}${btnHtml('Mute a creator',"muteCreator()")}</div>`;
-  if(key==='downloads') body=`<div class="card">${toggleLine('wifiOnly','Wi-Fi only for media','Avoid background media downloads on mobile data.',true)}${selectLine('mediaQuality','Preferred media quality',['Auto','Data saver','Standard','High'],erGet('mediaQuality','Auto'))}${toggleLine('autoSave','Auto-save published reels','Keep a local copy of your own newly published reels.',false)}${btnHtml('Open saved reels',"page('downloads')")}</div>`;
-  if(key==='accessibility') body=`<div class="card">${toggleLine('largeText','Larger text','Increase text size across the whole app.',false)}${toggleLine('highContrast','Higher contrast','Stronger borders and darker text for easier reading.',false)}${toggleLine('reducedMotion','Reduce motion','Remove animations and smooth-scrolling effects.',false)}${toggleLine('captions','Prefer captions','Show captions automatically when a reel provides them.',true)}<div class="infoBox">These apply immediately across the app — try one and look at this screen.</div></div>`;
-  if(key==='language') body=`<div class="card">${selectLine('appLanguage','App language',['English','Kannada','Hindi','Tamil','Telugu'],erGet('appLanguage','English'))}<div class="infoBox">The selected language is stored and can drive full translations when language packs are added.</div></div>`;
-  if(key==='data') body=`<div class="card">${toggleLine('dataSaver','Data saver','Reduce video quality and background loading.',false)}${toggleLine('autoplay','Autoplay reels','Start the visible reel automatically.',true)}${toggleLine('preload','Preload next reel','Load the next reel early for smoother scrolling.',true)}<div class="infoBox">If autoplay with sound is blocked by the browser, tap the reel or use the sound button to start playback.</div></div>`;
-  if(key==='privacy') body=`<div class="card">${selectLine('privacyMode','Profile visibility',['Public','Followers only','Private'],erGet('privacyMode','Public'))}${selectLine('messageWho','Who can message you',['Anyone','People you follow','Nobody'],erGet('messageWho','People you follow'))}${toggleLine('activityStatus','Show active status','Let followers see when you are active.',false)}${toggleLine('allowMentions','Allow mentions','Allow other users to mention your profile.',true)}</div>`;
-  if(key==='circle') body=`<div class="card"><p>Use a private Study Circle to share selected educational posts with trusted learners.</p><div class="infoBox">${erGet('circleMembers',[]).length} members</div>${btnHtml('Add a learner',"addCircleMember()")}${btnHtml('View members',"viewCircleMembers()")}${btnHtml('Clear circle',"clearCircle()")}</div>`;
-  if(key==='comments') body=`<div class="card">${selectLine('commentPermission','Who can comment',['Everyone','Followers','People I follow','Nobody'],erGet('commentPermission','Everyone'))}${toggleLine('filterKeywords','Filter unwanted words','Hide comments matching your local keyword list.',true)}${toggleLine('approveComments','Approve comments first','Hold new comments for approval in a future server version.',false)}</div>`;
-  if(key==='blocked') body=`<div class="card">${(erGet('blockedAccounts',[]).length?erGet('blockedAccounts',[]).map(x=>`<div class="deviceItem"><div><b>${escapeHtml(x)}</b><small>Blocked account</small></div>${btnHtml('Unblock',`unblockAccount('${escapeAttr(x)}')`)}</div>`).join(''):'<div class="empty">No blocked accounts.</div>')}${btnHtml('Block an account',"blockAccount()")}</div>`;
-  if(key==='creator') body=`<div class="card">${selectLine('defaultUploadCategory','Default upload category',['School','Engineering','Medical','Competitive Exams','UPSC / IAS','Government Jobs'],erGet('defaultUploadCategory','Engineering'))}${toggleLine('educationCheck','Require Education Check','Keep the education check before publishing every reel.',true)}${toggleLine('allowCommentsOnOwn','Allow comments on my reels','Enable comments on newly published reels.',true)}${btnHtml('Open upload studio',"page('upload')")}</div>`;
-  if(key==='trust') body=`<div class="card"><div class="trustBadge">✓ Education creator</div><p>Your creator status is based on your profile and the Education Check results of your reels.</p>${btnHtml('Request trust review',"requestTrustReview()")}</div>`;
+  if(key==='muted') body=`<div class="card">${(erGet('mutedCreators',[]).length?erGet('mutedCreators',[]).map(x=>`<div class="deviceItem"><div><b>${escapeHtml(x)}</b><small>Their reels are hidden from your feeds</small></div>${btnHtml('Unmute',`unmuteCreator(${jsArg(x)})`)}</div>`).join(''):'<div class="empty">No muted creators.</div>')}${btnHtml('Mute a creator',"muteCreator()")}</div>`;
+  if(key==='downloads') body=`<div class="card">${toggleLine('wifiOnly','Wi-Fi only for media','On mobile data, reels don\'t play or load until you tap them.',false)}${toggleLine('autoSave','Auto-save published reels','Add your newly published reels to your Saved list automatically.',false)}${btnHtml('Open saved reels',"page('downloads')")}</div>`;
+  if(key==='accessibility') body=`<div class="card">${toggleLine('largeText','Larger text','Increase text size across the whole app.',false)}${toggleLine('highContrast','Higher contrast','Stronger borders and darker text for easier reading.',false)}${toggleLine('reducedMotion','Reduce motion','Remove animations and smooth-scrolling effects.',false)}<div class="infoBox">These apply immediately across the app — try one and look at this screen.</div></div>`;
+  if(key==='data') body=`<div class="card">${toggleLine('dataSaver','Data saver','Load only the reel on screen and skip video previews in Explore and Profile.',false)}${toggleLine('autoplay','Autoplay reels','Start the reel on screen automatically. Off: tap a reel to play it.',true)}${toggleLine('preload','Preload next reel','Load nearby reels early for smoother scrolling.',true)}<div class="infoBox">If autoplay with sound is blocked, tap the reel or use the sound button to start playback.</div></div>`;
+  if(key==='privacy') body=`<div class="card">${toggleLine('activityStatus','Show active status','Followers can see when you are active (Active now, 5m ago). Turn it off to hide yours - you then also stop seeing theirs.',false)}${toggleLine('allowMentions','Allow mentions','Let people @mention you in comments. You get a notification when they do.',true)}</div>`;
+  if(key==='comments') body=`<div class="card">${selectLine('commentPermission','Who can comment on your reels',['Everyone','Followers','People I follow','Nobody'],erGet('commentPermission','Everyone'))}${toggleLine('filterKeywords','Filter offensive words','Hide comments that contain offensive or abusive words.',true)}</div>`;
+  if(key==='blocked') body=`<div class="card">${(erGet('blockedAccounts',[]).length?erGet('blockedAccounts',[]).map(x=>`<div class="deviceItem"><div><b>${escapeHtml(x)}</b><small>You won't see their reels or comments</small></div>${btnHtml('Unblock',`unblockAccount(${jsArg(x)})`)}</div>`).join(''):'<div class="empty">No blocked accounts.</div>')}${btnHtml('Block an account',"blockAccount()")}</div>`;
+  if(key==='creator') body=`<div class="card">${selectLine('defaultUploadCategory','Default upload category',EDU_GROUPS.flatMap(g=>g.items),erGet('defaultUploadCategory','School'))}<div class="infoBox">Every reel goes through the Education Check before it is published. Choose who can comment on your reels in Comment controls.</div>${btnHtml('Open upload studio',"page('upload')")}</div>`;
+  if(key==='trust') body=`<div class="card"><div class="trustBadge">✓ Education creator</div><p>Your creator status is based on your profile and the Education Check results of your reels.</p></div>`;
   if(key==='help') body=`<div class="card"><h3>EduInsta Help</h3><p>Search educational reels, choose interests, save useful content, and publish only education-focused videos.</p>${btnHtml('Getting started',"helpArticle('start')")}${btnHtml('How upload works',"helpArticle('upload')")}${btnHtml('How to report content',"helpArticle('report')")}</div>`;
-  if(key==='problem') body=`<div class="card"><textarea class="field" id="problemText" rows="5" placeholder="Describe the issue or suggestion"></textarea><button type="button" class="primary" onclick="submitProblem()">Send feedback</button><div class="infoBox">Feedback is saved locally in this prototype.</div></div>`;
-  if(key==='status') body=`<div class="card"><div class="statusGood">✓ No current restrictions</div><p>Your account has no restrictions.</p>${btnHtml('Review status details',"toast('No restrictions found')")}</div>`;
+  if(key==='problem') body=`<div class="card"><textarea class="field" id="problemText" rows="5" maxlength="1000" placeholder="Describe the issue or suggestion"></textarea><button type="button" class="primary" onclick="submitProblem()">Send feedback</button><div class="infoBox">Your message goes straight to the EduInsta team.</div></div>`;
+  if(key==='status') body=`<div class="card"><div class="statusGood">✓ No current restrictions</div><p>Your account has no restrictions.</p></div>`;
   if(key==='about') body=`<div class="card"><h3>EduInsta</h3><p>Education-first short video learning platform.</p><p><b>Version:</b> ${escapeHtml(APP_VERSION_LABEL)}</p><p>Original EduInsta product concept and interface.</p></div>`;
   detail(titleMap[key]||'Setting',body||'<div class="empty">This setting is ready for expansion.</div>');
 }
@@ -3635,48 +3780,66 @@ function securityAction(type){
   if(type==='password'){toast('To change your password, log out and tap "Forgot password?" on the sign-in screen.',5000);return}
   if(type==='sessions')erSet('otherSessionsSignedOut',true);
 }
+async function loadActivityCounts(){
+  if(!serverMode()||!(account&&account.token)){
+    const c=document.getElementById('actComments'); if(c)c.textContent=fmtCount(Object.values(comments).reduce((a,x)=>a+x.length,0));
+    return;
+  }
+  try{
+    const res=await fetch(`${API_BASE}/api/me/activity`,{headers:authHeaders()});
+    const d=await res.json();
+    if(!res.ok||!d.ok)throw 0;
+    const set=(id,n)=>{const el=document.getElementById(id);if(el)el.textContent=fmtCount(n)};
+    set('actLikes',d.likes); set('actComments',d.comments); set('actFollowing',d.following);
+  }catch{
+    const c=document.getElementById('actComments'); if(c&&c.textContent==='…')c.textContent='–';
+  }
+}
 function clearActivity(){
   if(!confirm('Clear likes and comments saved on this device?'))return;
   likes=[]; comments={}; saveState();
   toast('Activity cleared'); settingDetail('activity');
 }
+/* Muted creators / blocked accounts are matched by @handle (any case). */
+function normHandle(h){h=String(h||'').trim().replace(/\s+/g,'');if(!h)return '';return (h.startsWith('@')?h:'@'+h).toLowerCase()}
+function isMutedOrBlocked(handle){
+  const h=normHandle(handle); if(!h)return false;
+  return erGet('mutedCreators',[]).some(x=>normHandle(x)===h)||erGet('blockedAccounts',[]).some(x=>normHandle(x)===h);
+}
+function isBlocked(handle){const h=normHandle(handle);return !!h&&erGet('blockedAccounts',[]).some(x=>normHandle(x)===h)}
 function muteCreator(){
-  const n=prompt('Enter creator username, e.g. @creator'); if(!n||!n.trim())return;
-  const a=erGet('mutedCreators',[]); if(!a.includes(n.trim()))a.push(n.trim());
-  erSet('mutedCreators',a); toast('Creator muted'); settingDetail('muted');
+  const raw=prompt('Enter creator username, e.g. @creator'); if(!raw||!raw.trim())return;
+  const n=normHandle(raw);
+  const a=erGet('mutedCreators',[]); if(!a.some(x=>normHandle(x)===n))a.push(n);
+  erSet('mutedCreators',a); invalidateReelCache(); toast('Creator muted — their reels are hidden'); settingDetail('muted');
 }
 function unmuteCreator(n){
   erSet('mutedCreators',erGet('mutedCreators',[]).filter(x=>x!==n));
-  toast('Creator unmuted'); settingDetail('muted');
+  invalidateReelCache(); toast('Creator unmuted'); settingDetail('muted');
 }
 function blockAccount(){
-  const n=prompt('Enter username to block'); if(!n||!n.trim())return;
-  const a=erGet('blockedAccounts',[]); if(!a.includes(n.trim()))a.push(n.trim());
-  erSet('blockedAccounts',a); toast('Account blocked'); settingDetail('blocked');
+  const raw=prompt('Enter username to block, e.g. @someone'); if(!raw||!raw.trim())return;
+  const n=normHandle(raw);
+  const a=erGet('blockedAccounts',[]); if(!a.some(x=>normHandle(x)===n))a.push(n);
+  erSet('blockedAccounts',a); invalidateReelCache(); toast("Blocked — you won't see their reels or comments"); settingDetail('blocked');
 }
 function unblockAccount(n){
   erSet('blockedAccounts',erGet('blockedAccounts',[]).filter(x=>x!==n));
-  toast('Account unblocked'); settingDetail('blocked');
+  invalidateReelCache(); toast('Account unblocked'); settingDetail('blocked');
 }
-function addCircleMember(){
-  const n=prompt('Enter learner username'); if(!n||!n.trim())return;
-  const a=erGet('circleMembers',[]); if(!a.includes(n.trim()))a.push(n.trim());
-  erSet('circleMembers',a); toast('Learner added'); settingDetail('circle');
-}
-function viewCircleMembers(){
-  const a=erGet('circleMembers',[]);
-  alert(a.length?a.join('\\n'):'No Study Circle members yet.');
-}
-function clearCircle(){erSet('circleMembers',[]);toast('Study Circle cleared');settingDetail('circle')}
-function requestTrustReview(){erSet('trustReviewRequested',true);toast('Trust review request saved');settingDetail('trust')}
 function helpArticle(type){
-  const text={start:'Start with Explore or Search. Select interests in Profile → Manage interests, then save useful reels.',upload:'Open Upload, select a video, enter title/category/topic, complete Education Check, then publish.',report:'Open a reel and use More to choose the reason for your report.'}[type]||'Help';
+  const text={start:'Start with Explore or Search. Select interests in Profile → Manage interests, then save useful reels.',upload:'Open Upload, add a video, pick a category and tap Submit for Education Check. The title is optional - the AI suggests one. If the check passes, tap Publish Reel.',report:'Open a reel and use More to choose the reason for your report.'}[type]||'Help';
   alert(text);
 }
 function submitProblem(){
   const x=document.getElementById('problemText')?.value.trim();
   if(!x){toast('Please describe the issue');return}
-  erSet('lastFeedback',x); toast('Feedback saved on this device'); settingsPage();
+  if(serverMode()){
+    /* Sent to the owner's Diagnostics page (type "report"), always - not
+       subject to the automatic error-report limit. */
+    try{__diagOrigFetch(`${API_BASE}/api/diagnostics`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'report',message:('User feedback: '+x).slice(0,500),userId:account&&account.email||undefined,appVersion:__appVersion,platform:(window.Capacitor&&window.Capacitor.getPlatform)?window.Capacitor.getPlatform():'web',context:{userAgent:navigator.userAgent}})}).catch(()=>{})}catch{}
+  }
+  erSet('lastFeedback',x); toast('Thanks — your feedback was sent'); settingsPage();
 }
 
 /* ================= Premium subscription logic ================= */
@@ -4472,7 +4635,7 @@ async function performSignup({name,identifier,password}){
     try{
       const res=await fetch(`${API_BASE}/api/signup`,{
         method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({name,email:identifier,password})
+        body:JSON.stringify({name,email:identifier,password,deviceId:deviceId()})
       });
       const data=await res.json();
       if(!data.ok)return{ok:false,exists:res.status===409||/already exists/i.test(data.error||''),error:data.error||'Could not create your account. Please try again.'};
@@ -4506,7 +4669,7 @@ async function performLogin({identifier,password}){
     try{
       const res=await fetch(`${API_BASE}/api/login`,{
         method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({email:identifier,password})
+        body:JSON.stringify({email:identifier,password,deviceId:deviceId()})
       });
       const data=await res.json();
       if(data.ok){
@@ -4519,7 +4682,6 @@ async function performLogin({identifier,password}){
         if(!profile.username||profile.username==='@student')profile.username="@"+String(profile.name).toLowerCase().replace(/[^a-z0-9]+/g,"").slice(0,20)||"@student";
         if(data.phone)profile.phone=data.phone;
         saveState();
-        addNotification('security','New sign-in','Your account was signed in on this device.');
         syncOwnAvatarFromServer();
         return{ok:true};
       }
@@ -4550,7 +4712,6 @@ async function performLogin({identifier,password}){
   lsSet('er_account',JSON.stringify(account));
   if(!profile.name||profile.name==='Your Name')profile.name=registeredAccount.name;
   saveState();
-  addNotification('security','New sign-in','Your account was signed in on this device.');
   syncOwnAvatarFromServer();
   if(serverMode()){
     fetch(`${API_BASE}/api/signup`,{
@@ -4619,7 +4780,7 @@ async function completeModalSignup(){
    by whoever signed in on the phone, so a second person saw the first
    person's saves, likes and even name. Each account now gets its own copy:
    stashed on logout / account switch, restored when that account signs in. */
-const USER_DATA_KEYS=['er_follow_stats','er_comments','er_following','er_saved','er_likes','er_profile','er_followers','er_history','er_interests','er_custom_interests','er_notifications','er_subscription','er_settings','er_reports'];
+const USER_DATA_KEYS=['er_notif_since','er_follow_stats','er_comments','er_following','er_saved','er_likes','er_profile','er_followers','er_history','er_interests','er_custom_interests','er_notifications','er_subscription','er_settings','er_reports'];
 function userBucketKey(email){return 'er_user_'+norm(email||'')}
 function stashUserData(email){
   if(!email)return;
@@ -4927,6 +5088,7 @@ function exitAuthGate(){
      re-check Premium, so ads/Premium always match THIS account. */
   refreshSubscriptionFromServer().then(()=>{syncAdMobWithSubscription();if(document.querySelector('.feed'))home(activeHomeTab)}).catch(()=>{});
   syncNameToServer();
+  startPresence();
   syncFollows().then(()=>{if(document.querySelector('.feed'))home(activeHomeTab)});
   updateNotificationBadge();
   // A deep-linked reel that arrived before the user finished logging in
@@ -5063,6 +5225,12 @@ function initDeepLinks(){
 /* ---------------- Boot ---------------- */
 var __bootStart=(typeof performance!=='undefined')?performance.now():0;
 function boot(){
+  /* "Remember this device" off: every launch starts at the sign-in screen. */
+  if(account&&account.loggedIn&&erGet('rememberDevice',true)===false){
+    try{const leaving=account.email;stashUserData(leaving);USER_DATA_KEYS.forEach(k=>{try{localStorage.removeItem(k)}catch{}});try{localStorage.removeItem('er_active_user')}catch{};reloadUserStateFromStorage()}catch{}
+    account={loggedIn:false,email:"",name:""};
+    lsSet('er_account',JSON.stringify(account));
+  }
   if(account&&account.loggedIn)page('home');
   else renderAuthGate('login');
   updateNotificationBadge();
@@ -5081,6 +5249,7 @@ function boot(){
   initBackButton();
   syncNameToServer();   // names edited before this update reach the server too
   syncFollows();
+  if(account&&account.loggedIn)startPresence();
 }
 /* Single place that decides whether native ads should be running at all.
    Called after boot and after any subscription change, so a user who just

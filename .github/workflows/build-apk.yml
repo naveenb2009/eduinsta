@@ -84,6 +84,24 @@ jobs:
           fi
           npx cap sync android
 
+      # Push notifications (optional). Store your Firebase google-services.json
+      # as the repository secret GOOGLE_SERVICES_JSON (Settings > Secrets and
+      # variables > Actions). Without the secret this step does nothing and
+      # the app is built exactly as before, with push switched off.
+      - name: Add Firebase config for push notifications
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -z "$GOOGLE_SERVICES_JSON" ]; then
+            echo "No GOOGLE_SERVICES_JSON secret - push notifications stay off."
+            exit 0
+          fi
+          printf '%s' "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
+          python3 -c "import json;d=json.load(open('android/app/google-services.json'));pkgs=[c['client_info']['android_client_info']['package_name'] for c in d['client']];print('Firebase project:',d['project_info']['project_id'],'apps:',pkgs);assert 'com.eduinsta.app' in pkgs,'google-services.json has no Android app com.eduinsta.app'"
+          echo '{"enabled":true}' > www/push-enabled.json
+          npx cap copy android
+          echo "Push notifications enabled for this build."
+
       # Capacitor's default launcher icon is a generic blue "cap" logo.
       # android/ is regenerated from scratch on every CI build (gitignored),
       # so the real EduInsta icon (pre-generated for every density, legacy +

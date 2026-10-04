@@ -256,6 +256,19 @@ textarea.field{resize:vertical}
 .personAvatar{position:relative}
 .activeDot{position:absolute;right:-1px;bottom:-1px;width:11px;height:11px;border-radius:50%;background:#22c55e;border:2px solid #fff}
 .avatarWrap .activeDot{border-color:#111}
+.personActions{display:flex;gap:10px;margin:10px 0 14px}.personActions .networkBtn{flex:1;padding:10px}
+.profileAvatar{position:relative}
+.searchSection{font-weight:800;font-size:13px;color:#555;margin:10px 2px 6px}
+.searchPerson{display:flex;align-items:center;gap:10px;width:100%;background:#fff;border:1px solid #eee;border-radius:12px;padding:8px 10px;margin-bottom:6px;text-align:left}
+.searchPerson .personAvatar{width:36px;height:36px}
+.searchPerson b{display:block;font-size:14px}.searchPerson small{display:block;color:#777;font-size:12px}
+.creatorName[role=button],.commentName{cursor:pointer}
+.reportCard{padding:12px}
+.reportHead{display:flex;justify-content:space-between;font-weight:700;text-transform:capitalize;margin-bottom:6px}
+.reportHead small{color:#777;font-weight:400;text-transform:none}
+.reportWhat b{display:block}.reportWhat small{color:#777}
+.reportWhy{margin:6px 0 10px;color:#a33;font-size:13px}
+.reportActions{display:flex;gap:8px;justify-content:flex-end}
 .commentClosed{margin-top:10px;padding:12px;border-radius:12px;background:#f4f4f6;color:#555;font-size:13px;text-align:center}
 .replyBar{display:flex;justify-content:space-between;align-items:center;gap:8px;background:#f2f2f5;border-radius:10px;padding:8px 12px;margin-top:8px;font-size:13px;color:#555}
 .replyBar button{background:none;border:0;font-size:18px;line-height:1;color:#777;padding:0 2px}
@@ -775,6 +788,7 @@ function lsSet(key,value){try{localStorage.setItem(key,value)}catch{}}
 function lsGetRaw(key){try{return localStorage.getItem(key)}catch{return null}}
 function readJSON(key,fallback){try{const v=lsGetRaw(key);return v===null?fallback:JSON.parse(v)}catch{return fallback}}
 function toast(t,ms){
+  document.querySelectorAll(".toast").forEach(o=>o.remove());   // newest message replaces the old one (no overlapping text)
   const x=document.createElement("div");
   x.className="toast";
   x.textContent=t;
@@ -851,13 +865,14 @@ function refreshNotificationPanel(){
    people's actions created. */
 /* Settings that also live on the server or change the feed right away. */
 function onSettingChanged(key){
-  if(['activityStatus','allowMentions','commentPermission'].includes(key))sendPresence();
+  if(['activityStatus','allowMentions','commentPermission','notifyFollowers','notifyComments','loginAlerts'].includes(key))sendPresence();
   if(['autoplay','preload','dataSaver','wifiOnly'].includes(key))applyVideoWindow();
 }
 function sendPresence(){
   if(!serverMode()||!(account&&account.loggedIn&&account.token))return;
   fetch(`${API_BASE}/api/me/presence`,{method:'POST',headers:{'Content-Type':'application/json',...authHeaders()},
-    body:JSON.stringify({showActive:!!erGet('activityStatus',false),allowMentions:!!erGet('allowMentions',true),commentPermission:erGet('commentPermission','Everyone')})}).catch(()=>{});
+    body:JSON.stringify({showActive:!!erGet('activityStatus',false),allowMentions:!!erGet('allowMentions',true),commentPermission:erGet('commentPermission','Everyone'),
+      notify:{follower:!!erGet('notifyFollowers',true),comment:!!erGet('notifyComments',true),security:!!erGet('loginAlerts',true)}})}).catch(()=>{});
 }
 const SERVER_NOTIF={login:{type:'security',title:'New sign-in'},follow:{type:'follower',title:'New follower'},mention:{type:'comment',title:'You were mentioned'},reply:{type:'comment',title:'New reply'},comment:{type:'comment',title:'New comment on your reel'}};
 async function pullServerNotifications(){
@@ -883,9 +898,51 @@ async function pullServerNotifications(){
     return added;
   }catch{return 0}
 }
+/* ================= Push notifications =================
+   Only in the Android app, and only when the build includes the Firebase
+   config (the CI workflow adds push-enabled.json next to this page when the
+   GOOGLE_SERVICES_JSON secret is set). Without it nothing here runs, so a
+   build without Firebase can never crash on push. */
+var __pushListeners=false;
+async function pushPlugin(){
+  const P=window.Capacitor?.Plugins?.PushNotifications;
+  if(!P||!window.Capacitor?.isNativePlatform?.())return null;
+  try{const r=await fetch('push-enabled.json',{cache:'no-store'});if(!r.ok)return null;const j=await r.json();return j&&j.enabled?P:null}catch{return null}
+}
+async function initPush(){
+  if(!serverMode()||!(account&&account.loggedIn&&account.token))return;
+  const P=await pushPlugin(); if(!P)return;
+  try{
+    if(!__pushListeners){
+      __pushListeners=true;
+      P.addListener('registration',t=>{
+        const token=t&&t.value; if(!token)return;
+        lsSet('er_push_token',token);
+        fetch(`${API_BASE}/api/push/register`,{method:'POST',headers:{'Content-Type':'application/json',...authHeaders()},body:JSON.stringify({token})}).catch(()=>{});
+      });
+      P.addListener('registrationError',e=>console.warn('Push registration failed:',e));
+      P.addListener('pushNotificationReceived',()=>pullServerNotifications());
+      P.addListener('pushNotificationActionPerformed',a=>{
+        const d=(a&&a.notification&&a.notification.data)||{};
+        pullServerNotifications();
+        if(d.reelId)openReel(Number(d.reelId)); else openNotifications();
+      });
+    }
+    try{await P.createChannel({id:'eduinsta',name:'EduInsta',description:'Followers, comments, mentions and sign-in alerts',importance:4})}catch{}
+    let perm=await P.checkPermissions();
+    if(perm.receive==='prompt'||perm.receive==='prompt-with-rationale')perm=await P.requestPermissions();
+    if(perm.receive!=='granted')return;
+    await P.register();
+  }catch(err){console.warn('Push setup failed:',err)}
+}
+/* On logout this phone stops receiving the account's notifications. */
+function unregisterPush(){
+  const token=lsGetRaw('er_push_token'); if(!token||!serverMode())return;
+  fetch(`${API_BASE}/api/push/unregister`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token})}).catch(()=>{});
+}
 var __presenceTimer=null;
 function startPresence(){
-  sendPresence(); pullServerNotifications();
+  sendPresence(); pullServerNotifications(); initPush();
   if(__presenceTimer)return;
   __presenceTimer=setInterval(()=>{if(document.visibilityState!=='hidden'){sendPresence();pullServerNotifications()}},120000);
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){sendPresence();pullServerNotifications()}});
@@ -1885,7 +1942,7 @@ function reelHTML(r){
         </div>
       </div>
       <div class="info">
-        <div class="creator">${activeLabel(r.creatorActiveAt)==='Active now'?'<span class="avatarWrap">'+avatarSpanHTML(r.creator)+'<span class="activeDot" aria-label="Active now"></span></span>':avatarSpanHTML(r.creator)}<span class="creatorName">${escapeHtml(r.creator)}</span>${followKey&&!isMine?`<button type="button" class="follow ${isFollowing?'on':''}" onclick="followCreator(${jsArg(followKey)},event)">${isFollowing?"Following":"Follow"}</button>`:''}</div>
+        <div class="creator">${activeLabel(r.creatorActiveAt)==='Active now'?'<span class="avatarWrap">'+avatarSpanHTML(r.creator)+'<span class="activeDot" aria-label="Active now"></span></span>':avatarSpanHTML(r.creator)}<span class="creatorName"${r.creatorId?` role="button" tabindex="0" onclick="event.stopPropagation();openProfile(${jsArg(r.creatorId)})"`:''}>${escapeHtml(r.creator)}</span>${followKey&&!isMine?`<button type="button" class="follow ${isFollowing?'on':''}" onclick="followCreator(${jsArg(followKey)},event)">${isFollowing?"Following":"Follow"}</button>`:''}</div>
         <div class="title">${escapeHtml(r.title)}</div>
         <div class="meta"><b>${catSub(r)}</b> · ${escapeHtml(r.desc||"Educational video on EduInsta.")}</div>
       </div>
@@ -2323,33 +2380,37 @@ const REPORT_REASONS=[
 ];
 var reports=readJSON('er_reports',[]);
 function saveReports(){lsSet('er_reports',JSON.stringify(reports))}
-function reportReel(id,e){
-  e?.stopPropagation();
+function reportReel(id,e){e?.stopPropagation();openReportSheet('reel',id)}
+/* One report sheet for reels, comments and accounts. Reports go to the
+   server, where the owner sees them in Owner dashboard > Reports. */
+function openReportSheet(kind,targetId){
+  const label={reel:'this reel',comment:'this comment',account:'this account'}[kind]||'this';
   overlay.innerHTML=`<div class="modal" onclick="closeOverlay()"><div class="sheet" onclick="event.stopPropagation()">
-    <div class="commentHeader"><div><b>Report this reel</b><div class="commentCount">Tell us what's wrong with this content</div></div><button type="button" class="close" onclick="closeOverlay()">×</button></div>
+    <div class="commentHeader"><div><b>Report ${label}</b><div class="commentCount">Tell us what's wrong. Reports are private.</div></div><button type="button" class="close" onclick="closeOverlay()">×</button></div>
     <label class="fieldLabel">Reason for reporting</label>
     <select class="field" id="reportReason">
       <option value="">Select a reason…</option>
       ${REPORT_REASONS.map(r=>`<option value="${escapeAttr(r)}">${escapeHtml(r)}</option>`).join('')}
     </select>
-    <textarea class="field" id="reportDetails" rows="3" placeholder="Add any details (optional)"></textarea>
+    <textarea class="field" id="reportDetails" rows="3" maxlength="1000" placeholder="Add any details (optional)"></textarea>
     <div class="fieldError" id="reportError"></div>
-    <button type="button" class="primary" style="width:100%" onclick="submitReport(${id})">Submit report</button>
+    <button type="button" class="primary" style="width:100%" onclick="submitReport(${jsArg(targetId)},${jsArg(kind)})">Submit report</button>
     <button type="button" class="btnSecondary" onclick="closeOverlay()">Cancel</button>
   </div></div>`;
 }
-function submitReport(id){
+function submitReport(id,kind){
+  kind=kind||'reel';
   const reason=document.getElementById('reportReason')?.value;
   const details=document.getElementById('reportDetails')?.value.trim()||'';
   const err=document.getElementById('reportError');
   if(!reason){if(err)err.textContent='Please select a reason for your report.';return}
-  reports=[{id:Date.now(),reelId:id,reason,details,at:Date.now(),status:'open'},...reports];
+  reports=[{id:Date.now(),kind,reelId:id,reason,details,at:Date.now(),status:'open'},...reports];
   saveReports();
   /* Send it to the server too — a report kept only on the reporter's phone
      never reaches the owner. Fire-and-forget so the sheet closes instantly. */
   if(serverMode()){
-    fetch(`${API_BASE}/api/reports`,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({reelId:id,reason,details,userId:currentUserId()})}).catch(()=>{});
+    fetch(`${API_BASE}/api/reports`,{method:'POST',headers:{'Content-Type':'application/json',...authHeaders()},
+      body:JSON.stringify({kind,targetId:id,reelId:kind==='reel'?id:undefined,reason,details,userId:currentUserId()})}).catch(()=>{});
   }
   closeOverlay();
   toast('Report submitted — thank you');
@@ -2456,9 +2517,9 @@ function ownerDashboardPage(){
       <div class="revenueRow totalRow"><span>Net payable to your bank</span><b>${cur}${e.net.toLocaleString('en-IN')}</b></div>
     </div>
     <div class="card"><h3>Transactions</h3>${e.transactions.length?e.transactions.slice(0,25).map(t=>`<div class="revenueRow"><span>${escapeHtml(t.type)}<br><small class="muted">${new Date(t.at).toLocaleString()} · ${escapeHtml(t.method)}</small></span><b>${cur}${t.amount.toLocaleString('en-IN')}</b></div>`).join(''):'<p class="muted">No transactions recorded yet.</p>'}</div>
-    <div class="card"><h3>Moderation queue</h3>
-      <p class="filterNote">${openReports} open report${openReports===1?'':'s'} made on this device. Reports from all users go to the server — open <b>/diagnostics?type=report&amp;key=…</b> on your backend (uses DIAGNOSTICS_ACCESS_KEY).</p>
-      ${reports.length?reports.slice(0,15).map(r=>`<div class="revenueRow"><span><b>${escapeHtml(r.reason)}</b><br><small class="muted">Reel #${r.reelId} · ${relativeTime(r.at)}${r.details?' · '+escapeHtml(r.details):''}</small></span>${r.status==='open'?`<button type="button" class="networkBtn" onclick="resolveReport(${r.id})">Resolve</button>`:'<small class="muted">Resolved</small>'}</div>`).join(''):'<p class="muted">No reports submitted.</p>'}
+    <div class="card"><h3>Moderation</h3>
+      <p class="filterNote">Reports of reels, comments and accounts from all users. Remove the content or dismiss the report.</p>
+      ${btnHtml('Open reports',"goTo(ownerReportsPage)")}
     </div>
     <div class="profileMenuCard"><h3>Owner controls</h3>
       ${settingsRow('🛠️','App configuration','Ad frequency, advertiser rates and Premium pricing','adminConfig')}
@@ -2565,8 +2626,8 @@ function commentRowHTML(c,isReply){
   const liked=!!c.likedByMe, n=Number(c.likes)||0, name=commenterName(c);
   return `<div class="commentRow${isReply?' reply':''}" data-comment-id="${c.id}">
     <div class="commentAvatar">${escapeHtml(name.replace("@","").charAt(0).toUpperCase()||"S")}</div>
-    <div class="commentBody"><b>${escapeHtml(name)}</b><div class="commentText">${highlightMentions(c.text,c.mentions)}</div>
-      <div class="commentMeta"><small>${c.createdAt?relativeTime(new Date(c.createdAt).getTime()):'Just now'}</small>${c.id!=null?`<button type="button" class="commentReplyBtn" onclick="startReply(${jsArg(c.id)})">Reply</button>`:''}</div>
+    <div class="commentBody"><b${c.pid?` class="commentName" role="button" tabindex="0" onclick="closeOverlay();openProfile(${jsArg(c.pid)})"`:''}>${escapeHtml(name)}</b><div class="commentText">${highlightMentions(c.text,c.mentions)}</div>
+      <div class="commentMeta"><small>${c.createdAt?relativeTime(new Date(c.createdAt).getTime()):'Just now'}</small>${c.id!=null?`<button type="button" class="commentReplyBtn" onclick="startReply(${jsArg(c.id)})">Reply</button>`:''}${c.id!=null&&(c.canDelete||c.local)?`<button type="button" class="commentReplyBtn" onclick="deleteComment(${jsArg(c.id)})">Delete</button>`:''}${c.id!=null&&!c.mine&&!c.local&&serverMode()?`<button type="button" class="commentReplyBtn" onclick="openReportSheet('comment',${jsArg(c.id)})">Report</button>`:''}</div>
     </div>
     ${c.id!=null?`<button type="button" class="commentLike${liked?' liked':''}" aria-label="Like comment" aria-pressed="${liked}" onclick="toggleCommentLike(${jsArg(c.id)})"><span>${liked?'♥':'♡'}</span><small>${n>0?fmtCount(n):''}</small></button>`:''}
   </div>`;
@@ -2670,6 +2731,21 @@ function cancelReply(){
   const x=document.getElementById('commentInput'); if(x)x.placeholder='Add a thoughtful comment… (type @ to mention)';
 }
 /* Heart a comment: instant on screen, then saved on the server. */
+/* Delete a comment: your own, or any comment on your reel (its replies go too). */
+async function deleteComment(id){
+  if(!window.confirm('Delete this comment? Replies to it are deleted too.'))return;
+  const rid=commentState.reelId;
+  const c=findComment(id);
+  if(c&&c.local){comments[rid]=(comments[rid]||[]).filter(x=>x.id!==id&&x.parentId!==id);saveState();commentState.list=comments[rid];renderCommentList(comments[rid]);return}
+  try{
+    const res=await fetch(`${API_BASE}/api/comments/${encodeURIComponent(id)}`,{method:'DELETE',headers:authHeaders()});
+    const d=await res.json().catch(()=>({}));
+    if(!res.ok||!d.ok){toast(d.error||'Could not delete the comment');return}
+    if(typeof d.comments==='number'){reelStats[rid]=reelStats[rid]||{likes:0,comments:0,shares:0};reelStats[rid].comments=d.comments;updateCountsUI(rid)}
+    toast('Comment deleted');
+    await loadComments(rid);
+  }catch{toast('Could not reach the server')}
+}
 function toggleCommentLike(id){
   const c=findComment(id); if(!c)return;
   const now=!c.likedByMe;
@@ -2701,6 +2777,7 @@ async function addComment(id){
       const data=await res.json();
       if(res.status===401){x.value=t;toast('Please log out and log in again to comment');return}
       if(res.status===403){x.value=t;setCommentPermission(false,data.error);toast(data.error||'You can\'t comment on this reel');return}
+      if(res.status===422){x.value=t;toast(data.error||'Please keep comments respectful',4000);return}
       if(!data.ok&&res.status===404&&parentId!=null){x.value=t;cancelReply();toast(data.error||'That comment was deleted');await loadComments(id);return}
       if(!data.ok)throw new Error(data.error||'failed');
       if(typeof data.comments==='number'){
@@ -2858,7 +2935,7 @@ function upload(){
   main.innerHTML=`<div class="panel">
     <h2>Upload Reel</h2>
     <p>Add a short educational video. Every reel gets a quick Education Check before it's published.</p>
-    <p class="filterNote">EduInsta reels are vertical (9:16), like Instagram Reels. Landscape videos will be cropped to fill the screen.</p>
+    <p class="filterNote">EduInsta reels are vertical (9:16), like Instagram Reels, and up to 3 minutes long. Landscape videos will be cropped to fill the screen.</p>
     <div class="uploadPicker">
       <button type="button" class="uploadCameraBtn" onclick="openUploadPicker()" aria-label="Add a video">📷</button>
       <div class="uploadPickHint" id="uploadPickHint"><b>Add a reel</b>Camera, gallery or files</div>
@@ -2900,6 +2977,15 @@ function onUploadFileChosen(){
     p.innerHTML=`<video src="${u}" controls playsinline style="width:100%;max-height:260px;border-radius:12px;background:#000"></video><div id="uploadOrientationNote"></div>`;
     const v=p.querySelector('video');
     v.addEventListener('loadedmetadata',()=>{
+      /* Reels can be at most 3 minutes: refuse longer videos right away. */
+      if(Number.isFinite(v.duration)&&v.duration>MAX_REEL_SECONDS+0.5){
+        const m=Math.floor(v.duration/60), sec=String(Math.round(v.duration%60)).padStart(2,'0');
+        discardRejectedUpload();
+        const box=document.getElementById('check');
+        if(box)box.innerHTML=`<div class="checkResult checkFail"><b>⏱️ Video too long (${m}:${sec})</b><p>Reels can be at most 3 minutes. Please trim the video and choose it again.</p></div>`;
+        toast('Reels can be at most 3 minutes',4000);
+        return;
+      }
       const note=document.getElementById('uploadOrientationNote'); if(!note)return;
       if(v.videoWidth>v.videoHeight)
         note.innerHTML='<p class="filterNote">⚠️ This looks like a landscape video — it will be cropped to fill the vertical screen. For the full frame, record or export it vertically (9:16).</p>';
@@ -2907,6 +2993,7 @@ function onUploadFileChosen(){
   }
   if(hint)hint.innerHTML=`<b>Selected</b>${escapeHtml(f.name)}`;
 }
+const MAX_REEL_SECONDS=180;   // 3 minutes
 var lastModerationVerdict=null;
 function checkUpload(){
   const fileInput=document.getElementById("upFilePicker"), f=fileInput?.files[0], t=document.getElementById("upTitle").value.trim();
@@ -3091,7 +3178,7 @@ async function downloads(){
 /* ---------------- Search ---------------- */
 function openSearch(){
   overlay.innerHTML=`<div class="modal" onclick="closeOverlay()"><div class="sheet" onclick="event.stopPropagation()">
-    <div class="commentHeader"><div><b>Search EduInsta</b><div class="commentCount">Subjects, creators, topics and titles</div></div><button type="button" class="close" onclick="closeOverlay()">×</button></div>
+    <div class="commentHeader"><div><b>Search EduInsta</b><div class="commentCount">People, subjects, topics and titles</div></div><button type="button" class="close" onclick="closeOverlay()">×</button></div>
     <input class="searchInput" id="searchInput" autocomplete="off" placeholder="Search e.g. aerospace, Python, NEET…" oninput="doSearch()" onkeydown="if(event.key==='Enter')doSearch()">
     <div id="searchResults" class="searchResults"><div class="empty">Start typing to search.</div></div>
   </div></div>`;
@@ -3137,14 +3224,20 @@ async function runSearch(){
   if(!q){searchStream=null;results.innerHTML='<div class="empty">Start typing to search.</div>';return}
   const st=makeStream({q},r=>rankSearch([r],q).length>0);
   st.q=q; searchStream=st;
-  try{await streamNext(st,STREAM_PAGE)}
+  /* People whose name or @handle matches, shown above the reels. */
+  const peopleP=(serverMode()&&account&&account.token)
+    ?fetch(`${API_BASE}/api/people/search?scope=all&q=${encodeURIComponent(q)}`,{headers:authHeaders()}).then(r=>r.json()).then(d=>d.people||[]).catch(()=>[])
+    :Promise.resolve([]);
+  let people=[];
+  try{[,people]=await Promise.all([streamNext(st,STREAM_PAGE),peopleP])}
   catch{if(searchStream===st)results.innerHTML='<div class="empty">Search is temporarily unavailable.</div>';return}
   if(searchStream!==st)return;      // a newer search replaced this one
+  const peopleHTML=people.length?`<div class="searchSection">People</div>${people.slice(0,5).map(p=>`<button type="button" class="searchPerson" onclick="closeOverlay();openProfile(${jsArg(p.pid)})"><span class="personAvatar">${escapeHtml(String(p.name||'E').charAt(0).toUpperCase())}</span><span><b>${escapeHtml(p.name)}</b><small>${escapeHtml(p.handle||'')}</small></span></button>`).join('')}${st.items.length?'<div class="searchSection">Reels</div>':''}`:'';
   if(!st.items.length){
-    results.innerHTML=`<div class="empty">No reels found for "${escapeHtml(q)}".<br><br>Try a subject, technology, exam, creator or topic.</div>`;
+    results.innerHTML=peopleHTML||`<div class="empty">No reels or people found for "${escapeHtml(q)}".<br><br>Try a subject, technology, exam, creator or topic.</div>`;
     return;
   }
-  results.innerHTML=rankSearch(st.items,q).map(searchReelHTML).join("")
+  results.innerHTML=peopleHTML+rankSearch(st.items,q).map(searchReelHTML).join("")
     +(st.exhausted?'':`<button type="button" class="loadMoreBtn" id="searchMore" onclick="loadMoreSearch()">Load more results</button>`);
   activateThumbs(results);
 }
@@ -3520,10 +3613,71 @@ function commitInterests(){
   home(activeHomeTab);
 }
 
+/* ================= Someone's profile =================
+   Tap a creator's name (reel, comment, follower list, search) to see their
+   profile: name, @handle, counts, Follow, Report and all their reels. */
+var personState={pid:null,stream:null,info:null};
+function openProfile(pid){
+  if(!pid)return;
+  closeOverlay();
+  if(followStats.pid&&pid===followStats.pid){profileTab='uploads';goTo(profilePage);return}
+  goTo(()=>personPage(pid));
+}
+async function personPage(pid){
+  markPage(()=>personPage(pid));
+  const head=`<div class="detailHead"><button type="button" onclick="navBack(()=>page('home'))">‹</button><h2>Profile</h2></div>`;
+  main.innerHTML=`<div class="panel personPanel">${head}<div class="empty">Loading…</div></div>`;
+  let info=null,err='';
+  try{
+    const res=await fetch(`${API_BASE}/api/people/${encodeURIComponent(pid)}`,{headers:authHeaders()});
+    const d=await res.json().catch(()=>({}));
+    if(res.ok&&d.ok)info=d; else err=d.error||'Could not load this profile.';
+  }catch{err='Could not reach the server. Check your connection and try again.'}
+  if(!document.querySelector('.personPanel'))return;
+  if(!info){document.querySelector('.personPanel').innerHTML=`${head}<div class="empty">${escapeHtml(err)}</div>`;return}
+  if(info.you){profileTab='uploads';profilePage();return}
+  personState={pid,info,stream:makeStream({ownerPid:pid})};
+  const act=activeLabel(info.activeAt);
+  const followBtn=info.youFollow
+    ?`<button type="button" class="networkBtn following" id="personFollow" onclick="personFollow(false)">Following</button>`
+    :`<button type="button" class="networkBtn" id="personFollow" onclick="personFollow(true)">${info.followsYou?'Follow back':'Follow'}</button>`;
+  document.querySelector('.personPanel').innerHTML=`${head}
+    <div class="profileHero"><div class="profileAvatar">${escapeHtml(String(info.name).charAt(0).toUpperCase())}${act==='Active now'?'<span class="activeDot"></span>':''}</div>
+      <div><h2>${escapeHtml(info.name)}</h2><div class="muted">${escapeHtml(info.handle||'')}${act?' · '+escapeHtml(act):''}${info.followsYou?' · Follows you':''}</div></div></div>
+    <div class="profileStats">
+      <button type="button"><b>${fmtCount(info.reels)}</b><small>Reels</small></button>
+      <button type="button" onclick="goTo(()=>networkPage('followers',personState.info))"><b id="personFollowers">${fmtCount(info.followers)}</b><small>Followers</small></button>
+      <button type="button" onclick="goTo(()=>networkPage('following',personState.info))"><b>${fmtCount(info.following)}</b><small>Following</small></button>
+    </div>
+    <div class="personActions">${followBtn}<button type="button" class="networkBtn following" onclick="openReportSheet('account',${jsArg(pid)})">Report</button></div>
+    <div id="personReels"><div class="empty">Loading reels…</div></div>`;
+  await loadPersonReels(true);
+}
+async function loadPersonReels(first){
+  const st=personState.stream, box=document.getElementById('personReels'); if(!st||!box)return;
+  const more=document.getElementById('personMore'); if(more){more.disabled=true;more.textContent='Loading…'}
+  let added=[]; try{added=await streamNext(st,STREAM_PAGE)}catch{}
+  if(personState.stream!==st||!document.getElementById('personReels'))return;
+  const card=r=>`<div class="profileCard"><div class="thumb">${thumbVideoHTML(r.src)}<span>▶</span></div><b>${escapeHtml(r.title)}</b><small>${catSub(r,' · ')}</small><button type="button" onclick="openReel(${r.id})">Watch Reel</button></div>`;
+  if(first)box.innerHTML=st.items.length?`<div class="profileGrid">${st.items.map(card).join('')}</div>`:'<div class="empty">No reels yet.</div>';
+  else box.querySelector('.profileGrid')?.insertAdjacentHTML('beforeend',added.map(card).join(''));
+  document.getElementById('personMore')?.remove();
+  if(!st.exhausted)box.insertAdjacentHTML('beforeend','<button type="button" class="loadMoreBtn" id="personMore" onclick="loadPersonReels(false)">Load more</button>');
+  activateThumbs(box);
+}
+async function personFollow(want){
+  const info=personState.info; if(!info)return;
+  const btn=document.getElementById('personFollow'); if(btn)btn.disabled=true;
+  const ok=await setFollow(info.pid,want);
+  if(ok){info.youFollow=want;info.followers=Math.max(0,info.followers+(want?1:-1))}
+  const f=document.getElementById('personFollowers'); if(f)f.textContent=fmtCount(info.followers);
+  if(btn){btn.disabled=false;btn.className='networkBtn'+(info.youFollow?' following':'');btn.textContent=info.youFollow?'Following':(info.followsYou?'Follow back':'Follow');btn.setAttribute('onclick',`personFollow(${!info.youFollow})`)}
+}
+
 /* ================= Followers / Following =================
    Lists come from the server, so they show who REALLY follows you (from
    any phone) and who you follow - by account, newest first, 50 at a time. */
-var networkState={tab:'followers',offset:null,people:[]};
+var networkState={tab:'followers',offset:null,people:[],who:null};
 function personRow(p,tab){
   const name=String(p.name||'EduInsta user');
   let action='';
@@ -3532,7 +3686,7 @@ function personRow(p,tab){
   else action=`<button type="button" class="networkBtn" onclick="networkFollow(${jsArg(p.pid)},true)">${tab==='followers'||p.followsYou?'Follow back':'Follow'}</button>`;
   const act=activeLabel(p.activeAt);
   const sub=[act,p.handle,p.followsYou&&tab==='following'?'Follows you':''].filter(Boolean).join(' · ');
-  return `<div class="personRow" data-pid="${escapeAttr(p.pid)}"><div class="personAvatar">${escapeHtml(name.charAt(0).toUpperCase())}${act==='Active now'?'<span class="activeDot" aria-label="Active now"></span>':''}</div><div class="personInfo"><b>${escapeHtml(name)}</b>${sub?`<small>${escapeHtml(sub)}</small>`:''}</div>${action}</div>`;
+  return `<div class="personRow" data-pid="${escapeAttr(p.pid)}"><div class="personAvatar">${escapeHtml(name.charAt(0).toUpperCase())}${act==='Active now'?'<span class="activeDot" aria-label="Active now"></span>':''}</div><div class="personInfo" role="button" tabindex="0" onclick="openProfile(${jsArg(p.pid)})"><b>${escapeHtml(name)}</b>${sub?`<small>${escapeHtml(sub)}</small>`:''}</div>${action}</div>`;
 }
 async function networkFollow(pid,want){
   const row=document.querySelector(`.personRow[data-pid="${CSS.escape(pid)}"] .networkBtn`); if(row)row.disabled=true;
@@ -3541,18 +3695,21 @@ async function networkFollow(pid,want){
   const p=networkState.people.find(x=>x.pid===pid);
   const el=document.querySelector(`.personRow[data-pid="${CSS.escape(pid)}"]`);
   if(p&&el)el.outerHTML=personRow(p,networkState.tab);
-  const tabs=document.querySelectorAll('.networkTabs b'); if(tabs[1])tabs[1].textContent=fmtCount(followStats.following||0);
+  const tabs=document.querySelectorAll('.networkTabs b'); if(tabs[1]&&!networkState.who)tabs[1].textContent=fmtCount(followStats.following||0);
 }
-async function networkPage(tab){
-  markPage(()=>networkPage(tab));
+/* who: another person's {pid,name,followers,following}; omitted = me. */
+async function networkPage(tab,who){
+  markPage(()=>networkPage(tab,who));
   tab=tab==='following'?'following':'followers';
-  networkState={tab,offset:null,people:[]};
-  const head=()=>`<div class="detailHead"><button type="button" onclick="navBack(profilePage)">‹</button><h2>People</h2></div>
+  networkState={tab,offset:null,people:[],who:who||null};
+  const fol=who?who.followers:followStats.followers, fing=who?who.following:followStats.following;
+  const name=who?escapeHtml(who.name):'';
+  const head=()=>`<div class="detailHead"><button type="button" onclick="navBack(profilePage)">‹</button><h2>${who?name:'People'}</h2></div>
     <div class="networkTabs">
-      <button type="button" class="${tab==='followers'?'active':''}" onclick="goTo(()=>networkPage('followers'))">Followers <b>${fmtCount(followStats.followers||0)}</b></button>
-      <button type="button" class="${tab==='following'?'active':''}" onclick="goTo(()=>networkPage('following'))">Following <b>${fmtCount(followStats.following||0)}</b></button>
+      <button type="button" class="${tab==='followers'?'active':''}" onclick="goTo(()=>networkPage('followers',networkState.who))">Followers <b>${fmtCount(fol||0)}</b></button>
+      <button type="button" class="${tab==='following'?'active':''}" onclick="goTo(()=>networkPage('following',networkState.who))">Following <b>${fmtCount(fing||0)}</b></button>
     </div>
-    <div class="networkHint">${tab==='followers'?'People who follow your EduInsta profile.':'Creators and learners you currently follow.'}</div>`;
+    <div class="networkHint">${who?(tab==='followers'?`People who follow ${name}.`:`People ${name} follows.`):(tab==='followers'?'People who follow your EduInsta profile.':'Creators and learners you currently follow.')}</div>`;
   main.innerHTML=`<div class="panel networkPanel">${head()}<div id="networkList"><div class="empty">Loading…</div></div></div>`;
   if(!serverMode()){document.getElementById('networkList').innerHTML='<div class="empty">Followers are shown when you are online.</div>';return}
   await syncFollows();
@@ -3565,7 +3722,8 @@ async function loadNetworkPage(first){
   const more=document.getElementById('networkMore'); if(more){more.disabled=true;more.textContent='Loading…'}
   try{
     const off=first?0:(networkState.offset||0);
-    const res=await fetch(`${API_BASE}/api/follows/list?kind=${tab}&limit=50&offset=${off}`,{headers:authHeaders()});
+    const whoQ=networkState.who?`&pid=${encodeURIComponent(networkState.who.pid)}`:'';
+    const res=await fetch(`${API_BASE}/api/follows/list?kind=${tab}&limit=50&offset=${off}${whoQ}`,{headers:authHeaders()});
     const d=await res.json().catch(()=>({}));
     if(networkState.tab!==tab||!document.getElementById('networkList'))return;
     if(!res.ok||!d.ok){box.innerHTML=`<div class="empty">${escapeHtml(res.status===401?'Please log out and log in again to see your followers.':(d.error||'Could not load the list.'))}</div>`;return}
@@ -3776,8 +3934,43 @@ function settingDetail(key){
   detail(titleMap[key]||'Setting',body||'<div class="empty">This setting is ready for expansion.</div>');
 }
 
+/* Settings > Sign-in & security > Change password. */
+function changePasswordPage(){
+  markPage(changePasswordPage);
+  main.innerHTML=`<div class="panel"><div class="detailHead"><button type="button" onclick="navBack(()=>settingDetail('security'))">‹</button><h2>Change password</h2></div>
+    <div class="card">
+      <input class="field" id="pwCurrent" type="password" autocomplete="current-password" placeholder="Current password">
+      <input class="field" id="pwNew" type="password" autocomplete="new-password" maxlength="32" placeholder="New password">
+      <input class="field" id="pwNew2" type="password" autocomplete="new-password" maxlength="32" placeholder="Confirm new password">
+      <small class="muted">${escapeHtml(PASSWORD_HINT)}</small>
+      <div class="fieldError" id="pwError"></div>
+      <button type="button" class="primary" style="width:100%;margin-top:10px" id="pwSave" onclick="submitPasswordChange()">Change password</button>
+      <button type="button" class="btnSecondary" onclick="toast('Log out, then tap “Forgot password?” on the sign-in screen to reset it by email.',5000)">Forgot your current password?</button>
+    </div></div>`;
+}
+async function submitPasswordChange(){
+  const cur=document.getElementById('pwCurrent')?.value||'', nw=document.getElementById('pwNew')?.value||'', nw2=document.getElementById('pwNew2')?.value||'';
+  const err=document.getElementById('pwError'), btn=document.getElementById('pwSave');
+  const fail=m=>{if(err)err.textContent=m};
+  if(!cur||!nw)return fail('Enter your current and new password.');
+  if(!isValidPassword(nw))return fail('New password: '+PASSWORD_HINT);
+  if(nw!==nw2)return fail('The new passwords do not match.');
+  if(nw===cur)return fail('The new password must be different from the current one.');
+  if(!serverMode())return fail('You need to be online to change your password.');
+  if(btn){btn.disabled=true;btn.textContent='Saving…'}
+  try{
+    const res=await fetch(`${API_BASE}/api/change-password`,{method:'POST',headers:{'Content-Type':'application/json',...authHeaders()},body:JSON.stringify({currentPassword:cur,newPassword:nw})});
+    const d=await res.json().catch(()=>({}));
+    if(!res.ok||!d.ok){fail(d.error||'Could not change your password.');return}
+    if(registeredAccount&&registeredAccount.email===account.email){registeredAccount.password=nw;lsSet('er_registered_account',JSON.stringify(registeredAccount))}
+    addNotification('security','Password changed','Your password was changed successfully.');
+    toast('Password changed');
+    navBack(()=>settingDetail('security'));
+  }catch{fail('Could not reach the server. Check your connection and try again.')}
+  finally{if(btn&&document.body.contains(btn)){btn.disabled=false;btn.textContent='Change password'}}
+}
 function securityAction(type){
-  if(type==='password'){toast('To change your password, log out and tap "Forgot password?" on the sign-in screen.',5000);return}
+  if(type==='password'){goTo(changePasswordPage);return}
   if(type==='sessions')erSet('otherSessionsSignedOut',true);
 }
 async function loadActivityCounts(){
@@ -4244,7 +4437,53 @@ async function serverCampaignsPage(){
     <button type="button" class="btnSecondary" onclick="lsSet('er_owner_key','');serverCampaignsPage()">Change owner key</button>
   </div>`;
 }
-async function saveOwnerKey(){
+/* Owner > Reports: everything users reported, grouped per item. */
+async function ownerReportsPage(){
+  markPage(ownerReportsPage);
+  const head=`<div class="detailHead"><button type="button" onclick="navBack(ownerDashboardPage)">‹</button><h2>Reports</h2></div>`;
+  if(!ownerKey()){
+    main.innerHTML=`<div class="panel">${head}
+      <p class="filterNote">Enter your server owner key once on this phone. It is the <b>OWNER_TOKEN</b> value in Render → eduinsta-api → Environment.</p>
+      <input class="field" id="ownerKeyInput" type="password" placeholder="Owner key (OWNER_TOKEN)" autocomplete="off">
+      <div class="fieldError" id="ownerKeyError"></div>
+      <button type="button" class="primary" style="width:100%" onclick="saveOwnerKey(ownerReportsPage)">Connect</button></div>`;
+    return;
+  }
+  main.innerHTML=`<div class="panel">${head}<p class="filterNote">Loading reports…</p></div>`;
+  let list=null;
+  try{
+    const res=await ownerFetch('/api/owner/reports');
+    if(res.status===403){lsSet('er_owner_key','');toast('Owner key was rejected — please enter it again',5000);return ownerReportsPage()}
+    list=(await res.json()).reports||[];
+  }catch{}
+  if(currentPageFn!==ownerReportsPage)return;
+  const icon={reel:'🎬',comment:'💬',account:'👤'};
+  const row=r=>{
+    const p=r.preview||{};
+    const what=r.kind==='reel'?`<b>${escapeHtml(p.title||'Reel')}</b><small>by ${escapeHtml(p.by||'')}</small>`
+      :r.kind==='comment'?`<b>“${escapeHtml(p.text||'')}”</b><small>by ${escapeHtml(p.by||'')}</small>`
+      :`<b>${escapeHtml(p.name||'Account')}</b><small>${escapeHtml(p.handle||'')}</small>`;
+    const view=r.kind==='reel'?`<button type="button" class="networkBtn following" onclick="openReel(${Number(r.targetId)})">View</button>`
+      :r.kind==='comment'&&p.reelId?`<button type="button" class="networkBtn following" onclick="openReel(${Number(p.reelId)}).then(()=>commentsPanel(${Number(p.reelId)}))">View</button>`:'';
+    return `<div class="card reportCard"><div class="reportHead"><span>${icon[r.kind]||'⚠️'} ${escapeHtml(r.kind)}</span><small>${r.count} report${r.count===1?'':'s'} · ${relativeTime(r.latest)}</small></div>
+      <div class="reportWhat">${what}</div>
+      <div class="reportWhy">${escapeHtml(r.reasons.join(' · '))}${r.details.length?`<br><small>${escapeHtml(r.details.slice(0,3).join(' | '))}</small>`:''}</div>
+      <div class="reportActions">${view}<button type="button" class="networkBtn" onclick="ownerResolve(${jsArg(r.kind)},${jsArg(r.targetId)},'remove')">${r.kind==='account'?'Delete account':'Remove'}</button><button type="button" class="networkBtn following" onclick="ownerResolve(${jsArg(r.kind)},${jsArg(r.targetId)},'dismiss')">Dismiss</button></div></div>`;
+  };
+  main.innerHTML=`<div class="panel">${head}${list==null?'<p class="filterNote">Could not reach the server. Check your connection and try again.</p>':list.length?list.map(row).join(''):'<div class="empty">✓ No open reports.</div>'}</div>`;
+}
+async function ownerResolve(kind,targetId,action){
+  if(action==='remove'&&!window.confirm(kind==='account'?'Delete this account and everything it posted? This cannot be undone.':'Remove this for everyone? This cannot be undone.'))return;
+  try{
+    const res=await ownerFetch(`/api/owner/reports/${action==='remove'?'remove':'dismiss'}`,{method:'POST',body:JSON.stringify({kind,targetId})});
+    const d=await res.json().catch(()=>({}));
+    if(!res.ok||!d.ok){toast(d.error||'Could not update the report');return}
+    invalidateReelCache();
+    toast(action==='remove'?'Removed':'Report dismissed');
+    ownerReportsPage();
+  }catch{toast('Could not reach the server')}
+}
+async function saveOwnerKey(next){
   const k=(document.getElementById('ownerKeyInput')?.value||'').trim();
   const err=document.getElementById('ownerKeyError');
   if(!k){if(err)err.textContent='Enter the owner key.';return}
@@ -4252,7 +4491,7 @@ async function saveOwnerKey(){
     const res=await fetch(`${API_BASE}/api/owner/verify`,{headers:{Authorization:'Bearer '+k}});
     if(!res.ok){if(err)err.textContent='That key was not accepted by the server.';return}
   }catch{if(err)err.textContent='Could not reach the server.';return}
-  lsSet('er_owner_key',k); toast('Connected'); serverCampaignsPage();
+  lsSet('er_owner_key',k); toast('Connected'); (typeof next==='function'?next:serverCampaignsPage)();
 }
 function newServerCampaignPage(){
   markPage(newServerCampaignPage);
@@ -4827,6 +5066,7 @@ function switchUserData(newEmail){
   reloadUserStateFromStorage();
 }
 function logout(){
+  unregisterPush();
   const leaving=account&&account.email;
   if(leaving){
     stashUserData(leaving);
@@ -5227,6 +5467,7 @@ var __bootStart=(typeof performance!=='undefined')?performance.now():0;
 function boot(){
   /* "Remember this device" off: every launch starts at the sign-in screen. */
   if(account&&account.loggedIn&&erGet('rememberDevice',true)===false){
+    unregisterPush();
     try{const leaving=account.email;stashUserData(leaving);USER_DATA_KEYS.forEach(k=>{try{localStorage.removeItem(k)}catch{}});try{localStorage.removeItem('er_active_user')}catch{};reloadUserStateFromStorage()}catch{}
     account={loggedIn:false,email:"",name:""};
     lsSet('er_account',JSON.stringify(account));

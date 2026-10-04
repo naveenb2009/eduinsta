@@ -741,24 +741,6 @@ const ER_INTEREST_LIBRARY=[
   'Projects','Science Experiments','Engineering Projects','Coding Projects','DIY Electronics','DIY Science','Laboratory Skills','Technical Tutorials','How Things Work','Problem Solving','Case Studies','Practical Demonstrations','Career Skills','Professional Skills','Workplace Skills'
 ];
 
-const PEOPLE=[
-  {u:'@mathminute',name:'Math Minute',role:'Mathematics Educator'},
-  {u:'@engineeringbytes',name:'Engineering Bytes',role:'Engineering Educator'},
-  {u:'@medstudy',name:'Med Study',role:'Medical & Biology Educator'},
-  {u:'@upscquick',name:'UPSC Quick',role:'UPSC Educator'},
-  {u:'@aerospacelab',name:'Aerospace Lab',role:'Aerospace Creator'},
-  {u:'@pythonpath',name:'Python Path',role:'Programming Educator'},
-  {u:'@roboticsdaily',name:'Robotics Daily',role:'Robotics Educator'},
-  {u:'@manufacturing101',name:'Manufacturing 101',role:'Manufacturing Educator'},
-  {u:'@physicsworld',name:'Physics World',role:'Physics Educator'},
-  {u:'@jeeacademy',name:'JEE Academy',role:'Competitive Exam Educator'},
-  {u:'@neetscience',name:'NEET Science',role:'NEET Educator'},
-  {u:'@techmentor',name:'Tech Mentor',role:'Technology Educator'},
-  {u:'@civilinsights',name:'Civil Insights',role:'Civil Engineering Educator'},
-  {u:'@eceexplained',name:'ECE Explained',role:'Electronics Educator'},
-  {u:'@datasciencehub',name:'Data Science Hub',role:'Data Science Educator'},
-  {u:'@spaceclassroom',name:'Space Classroom',role:'Space Science Educator'}
-];
 const FOLLOWERS_DEFAULT=['@aerospacelab','@physicsworld','@jeeacademy','@techmentor','@spaceclassroom'];
 
 /* ---------------- Small utilities ---------------- */
@@ -799,7 +781,10 @@ var profile=readJSON('er_profile',{name:"Your Name",username:"@student",role:"St
 var interests=readJSON('er_interests',[]);
 var customInterests=readJSON('er_custom_interests',[]);
 var account=readJSON('er_account',{loggedIn:false,email:"",name:""});
-var followers=uniq(readJSON('er_followers',[]));
+var followers=uniq(readJSON('er_followers',[]));   // legacy (unused): followers now come from the server
+/* Server-side follow counts for this account + its public id. `following`
+   holds the public ids of the accounts I follow (from the server). */
+var followStats=readJSON('er_follow_stats',{followers:0,following:0,pid:null});
 var erSettings=readJSON('er_settings',{});
 /* NOTE: named watchHistory, not "history" - `window.history` is the browser's
    built-in navigation API and a var/global named `history` cannot shadow it,
@@ -1241,6 +1226,7 @@ var interestTab='library';
 function saveState(){
   lsSet('er_comments',JSON.stringify(comments));
   lsSet('er_following',JSON.stringify(following));
+  lsSet('er_follow_stats',JSON.stringify(followStats));
   lsSet('er_saved',JSON.stringify(saved));
   lsSet('er_likes',JSON.stringify(likes));
   lsSet('er_profile',JSON.stringify(profile));
@@ -1548,8 +1534,8 @@ function reelTimestamp(r){
    tab so a followed creator's new upload is never buried. */
 function sortFeedByPriority(arr){
   return arr.slice().sort((a,b)=>{
-    const af=following.includes(a.creator)?1:0;
-    const bf=following.includes(b.creator)?1:0;
+    const af=a.creatorId&&following.includes(a.creatorId)?1:0;
+    const bf=b.creatorId&&following.includes(b.creatorId)?1:0;
     if(af!==bf)return bf-af;
     return reelTimestamp(b)-reelTimestamp(a);
   });
@@ -1589,7 +1575,8 @@ async function allReelsCached(){
 function homeStreamFor(tab){
   if(tab==='Following'){
     const key='Following:'+following.join(',');
-    if(!homeStreams[key])homeStreams[key]=following.length?makeStream({creators:following.join(',')}):Object.assign(makeStream(),{exhausted:true});
+    // Reels from the accounts I follow - the server knows who that is.
+    if(!homeStreams[key])homeStreams[key]=following.length?makeStream(serverMode()?{following:'1'}:{creators:following.join(',')}):Object.assign(makeStream(),{exhausted:true});
     return homeStreams[key];
   }
   if(tab==='For You'){
@@ -1797,13 +1784,13 @@ function applyAvatarsToDom(creators){
 }
 
 function reelHTML(r){
-  const liked=likes.includes(r.id), isSaved=saved.includes(r.id), isFollowing=following.includes(r.creator);
+  const liked=likes.includes(r.id), isSaved=saved.includes(r.id), followKey=followKeyOf(r), isFollowing=!!followKey&&following.includes(followKey), isMine=!!r.creatorId&&r.creatorId===followStats.pid;
   /* Every video fills the whole reel edge to edge (object-fit:cover) - the
      app is vertical-video only, so there is no letterboxing to manage. */
   /* Instagram-style card: the video fills the whole reel and a floating
      strip (.reelPanel) with a dark fade holds the actions and caption over
      its bottom edge, so any video shape gets shown as large as possible. */
-  return `<section class="reel" data-id="${r.id}" data-creator="${escapeAttr(r.creator)}">
+  return `<section class="reel" data-id="${r.id}" data-creator="${escapeAttr(r.creator)}" data-creator-id="${escapeAttr(followKey||'')}">
     <div class="reelMedia">
       <video class="reelMain" src="${escapeAttr(r.src)}" playsinline loop preload="metadata" muted></video>
       <div class="shade"></div>
@@ -1825,7 +1812,7 @@ function reelHTML(r){
         </div>
       </div>
       <div class="info">
-        <div class="creator">${avatarSpanHTML(r.creator)}<span class="creatorName">${escapeHtml(r.creator)}</span><button type="button" class="follow ${isFollowing?'on':''}" onclick="followCreator(${jsArg(r.creator)},event)">${isFollowing?"Following":"Follow"}</button></div>
+        <div class="creator">${avatarSpanHTML(r.creator)}<span class="creatorName">${escapeHtml(r.creator)}</span>${followKey&&!isMine?`<button type="button" class="follow ${isFollowing?'on':''}" onclick="followCreator(${jsArg(followKey)},event)">${isFollowing?"Following":"Follow"}</button>`:''}</div>
         <div class="title">${escapeHtml(r.title)}</div>
         <div class="meta"><b>${catSub(r)}</b> · ${escapeHtml(r.desc||"Educational video on EduInsta.")}</div>
       </div>
@@ -2060,10 +2047,10 @@ function updateSaveUI(id){
     b.querySelector('small').textContent=isSaved?'Saved':'Save';
   });
 }
-function updateFollowUI(creator){
-  const isFollowing=following.includes(creator);
+function updateFollowUI(key){
+  const isFollowing=following.includes(key);
   document.querySelectorAll('.reel').forEach(sec=>{
-    if(sec.dataset.creator!==creator)return;
+    if(sec.dataset.creatorId!==key)return;
     const b=sec.querySelector('.follow'); if(!b)return;
     b.classList.toggle('on',isFollowing);
     b.textContent=isFollowing?'Following':'Follow';
@@ -2105,12 +2092,52 @@ function toggleSave(id,e){
   saveState(); updateSaveUI(id);
   toast(nowSaved?"Saved to Downloads":"Removed from Downloads");
 }
-function followCreator(creator,e){
+/* Who a Follow button follows: the uploader's ACCOUNT (public id from the
+   server), not the editable @handle. Very old reels without an account id
+   can't be followed. In offline/prototype mode the handle is used. */
+function followKeyOf(r){return r&&(r.creatorId||(serverMode()?null:r.creator))||null}
+function followCreator(key,e){
   e?.stopPropagation();
-  const nowFollowing=!following.includes(creator);
-  following=nowFollowing?[...following,creator]:following.filter(x=>x!==creator);
-  saveState(); updateFollowUI(creator);
-  if(activeHomeTab==='Following')home('Following');
+  setFollow(key,!following.includes(key)).then(()=>{if(activeHomeTab==='Following'&&document.querySelector('.homeTabs'))home('Following')});
+}
+/* Follow / unfollow on the server; the screen updates instantly and is put
+   back if the server says no. */
+async function setFollow(key,want){
+  if(!key)return false;
+  const before=following.slice();
+  following=want?[...new Set([...following,key])]:following.filter(x=>x!==key);
+  followStats.following=Math.max(0,(followStats.following||0)+(want?1:-1));
+  saveState(); updateFollowUI(key);
+  for(const k of Object.keys(homeStreams))if(k.startsWith('Following'))delete homeStreams[k];
+  if(!serverMode())return true;
+  try{
+    const res=await fetch(`${API_BASE}/api/follows`,{method:'POST',headers:{'Content-Type':'application/json',...authHeaders()},body:JSON.stringify({pid:key,follow:want})});
+    const data=await res.json().catch(()=>({}));
+    if(!res.ok||!data.ok)throw new Error(data.error||'Could not update follow');
+    return true;
+  }catch(err){
+    following=before; followStats.following=Math.max(0,(followStats.following||0)+(want?-1:1));
+    saveState(); updateFollowUI(key);
+    toast(String(err&&err.message||'Could not update follow'));
+    return false;
+  }
+}
+/* Pull my followers/following counts and who I follow from the server.
+   The first time, follows that were saved only on this phone (by @handle,
+   before follows moved to the server) are moved onto the account. */
+async function syncFollows(){
+  if(!serverMode()||!(account&&account.loggedIn&&account.token))return;
+  try{
+    const old=following.filter(x=>typeof x==='string'&&x.startsWith('@'));
+    if(old.length)await fetch(`${API_BASE}/api/follows/migrate`,{method:'POST',headers:{'Content-Type':'application/json',...authHeaders()},body:JSON.stringify({handles:old})}).catch(()=>{});
+    const res=await fetch(`${API_BASE}/api/follows/me`,{headers:authHeaders()});
+    if(!res.ok)return;
+    const d=await res.json();
+    if(!d.ok)return;
+    following=d.followingIds||[];
+    followStats={followers:d.followers||0,following:d.following||0,pid:d.pid||null};
+    saveState();
+  }catch{}
 }
 /* ================= Sharing =================
    navigator.share is often unavailable inside an Android WebView, which is why
@@ -3017,7 +3044,7 @@ function avatarMarkup(size){
 }
 async function profilePage(){
   markPage(profilePage);
-  const [uploads,downloadsList]=await Promise.all([fetchMyUploads(),fetchReelsByIds(saved)]);
+  const [uploads,downloadsList]=await Promise.all([fetchMyUploads(),fetchReelsByIds(saved),syncFollows()]);
   const premium=isPremium();
   main.innerHTML=`<div class="panel profilePanel">
     <div class="profileTopBar"><button type="button" class="profileBack" onclick="page('home')">‹</button><h2>Profile</h2><button type="button" class="profileGear" onclick="goTo(settingsPage)">⚙</button></div>
@@ -3028,8 +3055,8 @@ async function profilePage(){
     <div class="profileStats">
       <button type="button" onclick="profileTab='uploads';profilePage()"><b>${uploads.total!=null?uploads.total:uploads.length}</b><small>Uploads</small></button>
       <button type="button" onclick="profileTab='downloads';profilePage()"><b>${downloadsList.length}</b><small>Saved</small></button>
-      <button type="button" onclick="goTo(()=>networkPage('followers'))"><b>${followers.length}</b><small>Followers</small></button>
-      <button type="button" onclick="goTo(()=>networkPage('following'))"><b>${following.length}</b><small>Following</small></button>
+      <button type="button" onclick="goTo(()=>networkPage('followers'))"><b>${fmtCount(followStats.followers||0)}</b><small>Followers</small></button>
+      <button type="button" onclick="goTo(()=>networkPage('following'))"><b>${fmtCount(followStats.following||0)}</b><small>Following</small></button>
     </div>
     <div class="profileActions"><button type="button" onclick="goTo(editProfilePage)">Edit profile</button><button type="button" onclick="shareProfile()">Share profile</button></div>
     <p class="filterNote">🎯 Interests: ${interests.length?escapeHtml(interests.join(' • ')):'None selected — your For You feed shows all educational reels.'}</p>
@@ -3186,9 +3213,10 @@ function syncNameToServer(){
   if(!serverMode()||!(account&&account.loggedIn&&account.token))return;
   const name=String(profile.name||'').trim();
   if(!name||name==='Your Name')return;
-  const mark=account.email+'|'+name;
+  const handle=String(profile.username||'').trim();
+  const mark=account.email+'|'+name+'|'+handle;
   if(lsGetRaw('er_name_synced')===mark)return;
-  fetch(`${API_BASE}/api/profile/name`,{method:'POST',headers:{'Content-Type':'application/json',...authHeaders()},body:JSON.stringify({name})})
+  fetch(`${API_BASE}/api/profile/name`,{method:'POST',headers:{'Content-Type':'application/json',...authHeaders()},body:JSON.stringify({name,handle})})
     .then(r=>{if(r.ok)lsSet('er_name_synced',mark)}).catch(()=>{});
 }
 function editProfilePage(){
@@ -3351,37 +3379,64 @@ function commitInterests(){
   home(activeHomeTab);
 }
 
-/* ================= Followers / Following ================= */
-function personMap(){return Object.fromEntries(PEOPLE.map(p=>[p.u,p]))}
-function personRow(u,mode){
-  const p=personMap()[u]||{u,name:u.replace(/^@/,''),role:'EduInsta learner'};
-  const isFollowing=following.some(x=>norm(x)===norm(u));
-  const isSelf=norm(u)===norm(profile.username);
-  const action=mode==='followers'
-    ? (isFollowing?`<button type="button" class="networkBtn following" onclick="unfollowUser(${jsArg(u)})">Following</button>`:`<button type="button" class="networkBtn" onclick="followUser(${jsArg(u)})">Follow back</button>`)
-    : `<button type="button" class="networkBtn following" onclick="unfollowUser(${jsArg(u)})">Following</button>`;
-  return `<div class="personRow"><div class="personAvatar">${escapeHtml((p.name||p.u).charAt(0).toUpperCase())}</div><div class="personInfo"><b>${escapeHtml(p.name)}</b><small>${escapeHtml(p.u)} · ${escapeHtml(p.role)}</small></div>${!isSelf?action:'<span class="youBadge">You</span>'}</div>`;
+/* ================= Followers / Following =================
+   Lists come from the server, so they show who REALLY follows you (from
+   any phone) and who you follow - by account, newest first, 50 at a time. */
+var networkState={tab:'followers',offset:null,people:[]};
+function personRow(p,tab){
+  const name=String(p.name||'EduInsta user');
+  let action='';
+  if(p.you)action='<span class="youBadge">You</span>';
+  else if(following.includes(p.pid))action=`<button type="button" class="networkBtn following" onclick="networkFollow(${jsArg(p.pid)},false)">Following</button>`;
+  else action=`<button type="button" class="networkBtn" onclick="networkFollow(${jsArg(p.pid)},true)">${tab==='followers'||p.followsYou?'Follow back':'Follow'}</button>`;
+  const sub=[p.handle,p.followsYou&&tab==='following'?'Follows you':''].filter(Boolean).join(' · ');
+  return `<div class="personRow" data-pid="${escapeAttr(p.pid)}"><div class="personAvatar">${escapeHtml(name.charAt(0).toUpperCase())}</div><div class="personInfo"><b>${escapeHtml(name)}</b>${sub?`<small>${escapeHtml(sub)}</small>`:''}</div>${action}</div>`;
 }
-function followUser(u){
-  if(!following.includes(u))following.push(u);
-  saveState(); toast('Following '+u); networkPage('following');
+async function networkFollow(pid,want){
+  const row=document.querySelector(`.personRow[data-pid="${CSS.escape(pid)}"] .networkBtn`); if(row)row.disabled=true;
+  const ok=await setFollow(pid,want);
+  if(ok)toast(want?'Following':'Unfollowed');
+  const p=networkState.people.find(x=>x.pid===pid);
+  const el=document.querySelector(`.personRow[data-pid="${CSS.escape(pid)}"]`);
+  if(p&&el)el.outerHTML=personRow(p,networkState.tab);
+  const tabs=document.querySelectorAll('.networkTabs b'); if(tabs[1])tabs[1].textContent=fmtCount(followStats.following||0);
 }
-function unfollowUser(u){
-  following=following.filter(x=>norm(x)!==norm(u));
-  saveState(); toast('Unfollowed '+u); networkPage(document.querySelector('.networkTabs .active')?.textContent.startsWith('Followers')?'followers':'following');
-}
-function networkPage(tab){
+async function networkPage(tab){
   markPage(()=>networkPage(tab));
-  tab=tab==='followers'?'followers':'following';
-  const list=tab==='followers'?followers:following;
-  main.innerHTML=`<div class="panel networkPanel"><div class="detailHead"><button type="button" onclick="navBack(profilePage)">‹</button><h2>People</h2></div>
+  tab=tab==='following'?'following':'followers';
+  networkState={tab,offset:null,people:[]};
+  const head=()=>`<div class="detailHead"><button type="button" onclick="navBack(profilePage)">‹</button><h2>People</h2></div>
     <div class="networkTabs">
-      <button type="button" class="${tab==='followers'?'active':''}" onclick="goTo(()=>networkPage('followers'))">Followers <b>${followers.length}</b></button>
-      <button type="button" class="${tab==='following'?'active':''}" onclick="goTo(()=>networkPage('following'))">Following <b>${following.length}</b></button>
+      <button type="button" class="${tab==='followers'?'active':''}" onclick="goTo(()=>networkPage('followers'))">Followers <b>${fmtCount(followStats.followers||0)}</b></button>
+      <button type="button" class="${tab==='following'?'active':''}" onclick="goTo(()=>networkPage('following'))">Following <b>${fmtCount(followStats.following||0)}</b></button>
     </div>
-    <div class="networkHint">${tab==='followers'?'People who follow your EduInsta profile.':'Creators and learners you currently follow.'}</div>
-    <div>${list.length?list.map(u=>personRow(u,tab)).join(''):`<div class="empty">${tab==='followers'?'No followers yet.':'You are not following anyone yet.'}</div>`}</div>
-  </div>`;
+    <div class="networkHint">${tab==='followers'?'People who follow your EduInsta profile.':'Creators and learners you currently follow.'}</div>`;
+  main.innerHTML=`<div class="panel networkPanel">${head()}<div id="networkList"><div class="empty">Loading…</div></div></div>`;
+  if(!serverMode()){document.getElementById('networkList').innerHTML='<div class="empty">Followers are shown when you are online.</div>';return}
+  await syncFollows();
+  const panel=document.querySelector('.networkPanel'); if(!panel)return;
+  panel.innerHTML=`${head()}<div id="networkList"><div class="empty">Loading…</div></div>`;
+  await loadNetworkPage(true);
+}
+async function loadNetworkPage(first){
+  const tab=networkState.tab, box=document.getElementById('networkList'); if(!box)return;
+  const more=document.getElementById('networkMore'); if(more){more.disabled=true;more.textContent='Loading…'}
+  try{
+    const off=first?0:(networkState.offset||0);
+    const res=await fetch(`${API_BASE}/api/follows/list?kind=${tab}&limit=50&offset=${off}`,{headers:authHeaders()});
+    const d=await res.json().catch(()=>({}));
+    if(networkState.tab!==tab||!document.getElementById('networkList'))return;
+    if(!res.ok||!d.ok){box.innerHTML=`<div class="empty">${escapeHtml(res.status===401?'Please log out and log in again to see your followers.':(d.error||'Could not load the list.'))}</div>`;return}
+    networkState.people=networkState.people.concat(d.people||[]);
+    networkState.offset=d.nextOffset;
+    const rows=(d.people||[]).map(p=>personRow(p,tab)).join('');
+    if(first)box.innerHTML=rows||`<div class="empty">${tab==='followers'?'No followers yet.':'You are not following anyone yet.'}</div>`;
+    else document.getElementById('networkMore')?.insertAdjacentHTML('beforebegin',rows);
+    document.getElementById('networkMore')?.remove();
+    if(d.nextOffset!=null)box.insertAdjacentHTML('beforeend','<button type="button" class="loadMoreBtn" id="networkMore" onclick="loadNetworkPage(false)">Load more</button>');
+  }catch{
+    if(first)box.innerHTML='<div class="empty">Could not reach the server. Check your connection and try again.</div>';
+  }
 }
 
 /* ================= Settings ================= */
@@ -3581,8 +3636,8 @@ function securityAction(type){
   if(type==='sessions')erSet('otherSessionsSignedOut',true);
 }
 function clearActivity(){
-  if(!confirm('Clear likes, comments and follows on this device?'))return;
-  likes=[]; comments={}; following=[]; saveState();
+  if(!confirm('Clear likes and comments saved on this device?'))return;
+  likes=[]; comments={}; saveState();
   toast('Activity cleared'); settingDetail('activity');
 }
 function muteCreator(){
@@ -4564,7 +4619,7 @@ async function completeModalSignup(){
    by whoever signed in on the phone, so a second person saw the first
    person's saves, likes and even name. Each account now gets its own copy:
    stashed on logout / account switch, restored when that account signs in. */
-const USER_DATA_KEYS=['er_comments','er_following','er_saved','er_likes','er_profile','er_followers','er_history','er_interests','er_custom_interests','er_notifications','er_subscription','er_settings','er_reports'];
+const USER_DATA_KEYS=['er_follow_stats','er_comments','er_following','er_saved','er_likes','er_profile','er_followers','er_history','er_interests','er_custom_interests','er_notifications','er_subscription','er_settings','er_reports'];
 function userBucketKey(email){return 'er_user_'+norm(email||'')}
 function stashUserData(email){
   if(!email)return;
@@ -4580,6 +4635,7 @@ function reloadUserStateFromStorage(){
   likes=readJSON('er_likes',[]);
   profile=readJSON('er_profile',{name:"Your Name",username:"@student",role:"Student / Creator"});
   followers=uniq(readJSON('er_followers',[]));
+  followStats=readJSON('er_follow_stats',{followers:0,following:0,pid:null});
   watchHistory=readJSON('er_history',[]);
   interests=readJSON('er_interests',[]);
   customInterests=readJSON('er_custom_interests',[]);
@@ -4870,6 +4926,8 @@ function exitAuthGate(){
   /* A different account may have just signed in: point RevenueCat at it and
      re-check Premium, so ads/Premium always match THIS account. */
   refreshSubscriptionFromServer().then(()=>{syncAdMobWithSubscription();if(document.querySelector('.feed'))home(activeHomeTab)}).catch(()=>{});
+  syncNameToServer();
+  syncFollows().then(()=>{if(document.querySelector('.feed'))home(activeHomeTab)});
   updateNotificationBadge();
   // A deep-linked reel that arrived before the user finished logging in
   // (e.g. tapped a shared WhatsApp link while signed out) - open it now.
@@ -5022,6 +5080,7 @@ function boot(){
   initDeepLinks();
   initBackButton();
   syncNameToServer();   // names edited before this update reach the server too
+  syncFollows();
 }
 /* Single place that decides whether native ads should be running at all.
    Called after boot and after any subscription change, so a user who just

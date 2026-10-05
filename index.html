@@ -456,6 +456,9 @@ a.uploadOption{text-decoration:none;color:#111;display:flex;align-items:center}
        laptops (wide) both show the whole video instead of a cropped strip */
     max-width:clamp(340px, calc((100vh - 170px) * 9 / 16), 600px);
     max-width:clamp(340px, calc((100dvh - 170px) * 9 / 16), 600px);
+    /* hide the previous reel where it scrolls up under the transparent header */
+    -webkit-mask-image:linear-gradient(to bottom,transparent 0,transparent 62px,#000 72px);
+    mask-image:linear-gradient(to bottom,transparent 0,transparent 62px,#000 72px);
     margin:0 auto;
     padding:72px 0 86px;
     scroll-padding-top:72px;

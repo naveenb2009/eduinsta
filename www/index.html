@@ -313,6 +313,7 @@ a.playManageBtn{display:block;text-align:center;text-decoration:none;margin:8px 
 .profileCard b{display:block;font-size:13px;margin:7px 2px 3px}
 .profileCard small{display:block;color:#777;font-size:11px;margin:0 2px 7px}
 .profileCard button{width:100%;border:0;background:#111;color:#fff;border-radius:8px;padding:8px;font-size:12px}
+.thumb+b{display:block;margin-top:8px}
 .thumb{height:120px;background:linear-gradient(135deg,#1a2030,#241b38);border-radius:9px;overflow:hidden;position:relative}
 .thumb video,.searchReel video{opacity:0;transition:opacity .25s}
 .thumb video.thumbReady,.searchReel video.thumbReady{opacity:1}
@@ -451,14 +452,20 @@ a.uploadOption{text-decoration:none;color:#111;display:flex;align-items:center}
 
 @media (min-width:700px){
   .feed{
-    max-width:430px;
+    /* the reel card keeps the video's 9:16 shape, so tablets (tall) and
+       laptops (wide) both show the whole video instead of a cropped strip */
+    max-width:clamp(340px, calc((100vh - 170px) * 9 / 16), 600px);
+    max-width:clamp(340px, calc((100dvh - 170px) * 9 / 16), 600px);
     margin:0 auto;
     padding:72px 0 86px;
     scroll-padding-top:72px;
   }
   .feed{height:100vh;height:100dvh}
   .reel{
-    height:calc(100vh - 170px);
+    height:auto;
+    aspect-ratio:9/16;
+    max-height:calc(100vh - 170px);
+    max-height:calc(100dvh - 170px);
     min-height:0;
     margin:0 0 24px;
     border-radius:20px;

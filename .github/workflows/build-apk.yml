@@ -1,4 +1,4 @@
-name: Build EduInsta APK
+name: Build Gyanora APK
 
 on:
   push:
@@ -104,10 +104,10 @@ jobs:
 
       # Capacitor's default launcher icon is a generic blue "cap" logo.
       # android/ is regenerated from scratch on every CI build (gitignored),
-      # so the real EduInsta icon (pre-generated for every density, legacy +
+      # so the real Gyanora icon (pre-generated for every density, legacy +
       # adaptive) is committed under android-icon/ and copied in here each
       # time, same pattern as the App Links / AdMob injections below.
-      - name: Apply EduInsta app icon
+      - name: Apply Gyanora app icon
         run: python3 scripts/apply-app-icon.py
 
       # Play Console rejects bundles with minSdkVersion below 24 ("Play
@@ -172,15 +172,15 @@ jobs:
           APK=android/app/build/outputs/apk/debug/app-debug.apk
           [ -f "$APK" ] || { echo "::error::Gradle finished but no APK was produced"; exit 1; }
           mkdir -p dist
-          cp "$APK" dist/EduInsta-debug.apk
+          cp "$APK" dist/Gyanora-debug.apk
           ls -la dist
 
       # 1) Zip under the run's "Artifacts" section (GitHub always zips these).
       - name: Upload APK (Actions artifact)
         uses: actions/upload-artifact@v4
         with:
-          name: EduInsta-debug-apk
-          path: dist/EduInsta-debug.apk
+          name: Gyanora-debug-apk
+          path: dist/Gyanora-debug.apk
           if-no-files-found: error
           retention-days: 30
 
@@ -205,8 +205,8 @@ jobs:
         run: |
           TAG=latest-apk
           gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
-          gh release create "$TAG" dist/EduInsta-debug.apk \
-            --title "EduInsta latest APK" \
+          gh release create "$TAG" dist/Gyanora-debug.apk \
+            --title "Gyanora latest APK" \
             --notes "Built from commit ${GITHUB_SHA::7} on $(date -u '+%Y-%m-%d %H:%M UTC'). Debug build for testing." \
             --prerelease --target "$GITHUB_SHA"
 
@@ -250,15 +250,15 @@ jobs:
           [ -f "$AAB" ] || { echo "::error::Gradle finished but no .aab was produced"; exit 1; }
           [ -f "$APK" ] || { echo "::error::Gradle finished but no signed release .apk was produced"; exit 1; }
           mkdir -p dist-release
-          cp "$AAB" dist-release/EduInsta-release.aab
-          cp "$APK" dist-release/EduInsta-release-signed.apk
+          cp "$AAB" dist-release/Gyanora-release.aab
+          cp "$APK" dist-release/Gyanora-release-signed.apk
           ls -la dist-release
 
       - name: Upload signed release build (Actions artifact)
         if: steps.signing.outputs.have_keystore == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: EduInsta-signed-release
+          name: Gyanora-signed-release
           path: dist-release/
           if-no-files-found: error
           retention-days: 90
@@ -279,8 +279,8 @@ jobs:
         run: |
           TAG=latest-release-signed
           gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
-          gh release create "$TAG" dist-release/EduInsta-release.aab dist-release/EduInsta-release-signed.apk \
-            --title "EduInsta signed release build" \
+          gh release create "$TAG" dist-release/Gyanora-release.aab dist-release/Gyanora-release-signed.apk \
+            --title "Gyanora signed release build" \
             --notes "Built from commit ${GITHUB_SHA::7} on $(date -u '+%Y-%m-%d %H:%M UTC'). The .aab is for Play Console upload; the .apk is for sideload testing." \
             --prerelease --target "$GITHUB_SHA"
 

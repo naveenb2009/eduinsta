@@ -325,13 +325,36 @@ a.playManageBtn{display:block;text-align:center;text-decoration:none;margin:8px 
 .historyClearBar button{border:1px solid #ddd;background:#fff;border-radius:9px;padding:7px 11px;font-size:12px;color:#a33}
 
 /* ---------- Upload picker / camera ---------- */
-.uploadPicker{display:flex;flex-direction:column;align-items:center;gap:10px;background:#fff;border:1px dashed #ccc;border-radius:16px;padding:26px 16px;margin:8px 0 16px;text-align:center}
-.uploadCameraBtn{width:64px;height:64px;border-radius:50%;border:0;background:#111;color:#5eead4;font-size:26px;display:flex;align-items:center;justify-content:center}
-.uploadPickHint{font-size:13px;color:#555}
-.uploadPickHint b{display:block;color:#111;margin-bottom:2px}
+.upHead h2{margin:0 0 4px;font-size:22px;letter-spacing:-.2px}
+.upHead p{margin:0;font-size:13px;color:#555;line-height:1.45}
+.upChips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 14px}
+.upChips span{font-size:11px;font-weight:700;color:#3f3a73;background:rgba(124,108,246,.10);border:1px solid rgba(124,108,246,.22);border-radius:999px;padding:4px 9px}
+.upDrop{position:relative;border-radius:20px;padding:2px;background:linear-gradient(135deg,var(--brand-teal),var(--brand-purple));box-shadow:0 10px 28px rgba(124,108,246,.18);margin:4px 0 16px}
+.upDropInner{background:#fff;border-radius:18px;padding:22px 16px 16px;text-align:center}
+.upDropMain{display:flex;flex-direction:column;align-items:center;gap:6px;width:100%;border:0;background:transparent;color:#111;padding:0;cursor:pointer}
+.upIcon{width:60px;height:60px;border-radius:18px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--brand-teal),var(--brand-purple));color:#fff;box-shadow:0 8px 18px rgba(124,108,246,.28);margin-bottom:4px}
+.upIcon svg{width:28px;height:28px}
+.upDropMain b{font-size:16px}
+.upDropMain small{font-size:12px;color:#666}
+.upSources{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px}
+.upSource{display:flex;flex-direction:column;align-items:center;gap:5px;border:1px solid #e6e3f5;background:#faf9ff;border-radius:14px;padding:11px 4px;font-size:12px;font-weight:700;color:#2b2650;cursor:pointer}
+.upSource svg{width:22px;height:22px;color:var(--brand-purple)}
+.upSource:active,.upDropMain:active{transform:scale(.97)}
+.upPreview{position:relative;border-radius:18px;overflow:hidden;background:#000;margin:4px 0 14px;box-shadow:0 10px 26px rgba(0,0,0,.18)}
+.upPreview video{display:block;width:100%;max-height:340px;background:#000}
+.upPreviewBar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 12px;background:#111;color:#ddd;font-size:12px}
+.upPreviewBar .upDur{font-weight:700;color:#5eead4}
+.upChange{border:1px solid #444;background:#1c1c22;color:#fff;border-radius:999px;padding:6px 12px;font-size:12px;font-weight:700}
+.upProgress{height:6px;border-radius:999px;background:#c7ddf2;overflow:hidden;margin-top:9px}
+.upProgress i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--brand-teal),var(--brand-purple));border-radius:999px;transition:width .25s}
+.upProgress.indet i{width:35%;animation:upIndet 1.2s ease-in-out infinite}
+@keyframes upIndet{0%{transform:translateX(-100%)}100%{transform:translateX(290%)}}
+.checkPending .upElapsed{float:right;font-weight:700;opacity:.7}
+.primary:disabled{opacity:.55}
 .checkResult{border-radius:12px;padding:13px;margin:12px 0;font-size:13px;line-height:1.5}
 .checkResult b{display:block;margin-bottom:5px;font-size:14px}
 .checkResult p{margin:4px 0}
+.checkResult p b{display:inline;font-size:inherit;margin:0}
 .checkPass{background:#eaf7ee;border:1px solid #b6e0c4;color:#14532d}
 .checkFail{background:#fdeaea;border:1px solid #f0bcbc;color:#7f1d1d}
 .checkPending{background:#eef4fb;border:1px solid #c7ddf2;color:#1e3a5f}
@@ -340,7 +363,8 @@ a.playManageBtn{display:block;text-align:center;text-decoration:none;margin:8px 
 .safetyFlags{font-weight:700}
 .suggestTitle button{border:0;background:#14532d;color:#fff;border-radius:7px;padding:4px 9px;font-size:11px;margin-left:5px}
 .uploadOption{display:flex;align-items:center;gap:12px;width:100%;border:1px solid #ddd;background:#fff;border-radius:11px;padding:13px;text-align:left;margin:6px 0;font-weight:700}
-.uploadOption span{font-size:22px}
+.uploadOption span{display:flex;width:36px;height:36px;border-radius:10px;align-items:center;justify-content:center;background:rgba(124,108,246,.10);color:var(--brand-purple)}
+.uploadOption span svg{width:20px;height:20px}
 a.uploadOption{text-decoration:none;color:#111;display:flex;align-items:center}
 .fieldLabel{display:block;font-weight:700;font-size:13px;margin:14px 2px 2px}
 .profileMenuCard,.settingSection{background:#fff;border:1px solid #ddd;border-radius:14px;margin:14px 0;overflow:hidden}
@@ -2941,22 +2965,43 @@ async function openReel(id,srcHint){
 }
 
 /* ---------------- Upload ---------------- */
+const UP_ICONS={
+  upload:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="m6 10 6-6 6 6"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>',
+  record:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="3"/><path d="m16 10 6-3v10l-6-3"/></svg>',
+  gallery:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="9" cy="9" r="2"/><path d="m21 15-4-4-9 9"/></svg>',
+  files:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>'
+};
 function upload(){
+  warmUpApi();
+  resetUploadCheckState();
   main.innerHTML=`<div class="panel">
-    <h2>Upload Reel</h2>
-    <p>Add a short educational video. Every reel gets a quick Education Check before it's published.</p>
-    <p class="filterNote">Gyanora reels are vertical (9:16) and up to 3 minutes long. Landscape videos will be cropped to fill the screen.</p>
-    <div class="uploadPicker">
-      <button type="button" class="uploadCameraBtn" onclick="openUploadPicker()" aria-label="Add a video">📷</button>
-      <div class="uploadPickHint" id="uploadPickHint"><b>Add a reel</b>Camera, gallery or files</div>
+    <div class="upHead">
+      <h2>Upload Reel</h2>
+      <p>Share a short educational video. Every reel gets a quick Education Check before it's published.</p>
     </div>
+    <div class="upChips"><span>Vertical 9:16</span><span>Up to 3 min</span><span>Education only</span></div>
+    <div id="uploadPicker">${uploadPickerHtml()}</div>
     <div id="preview"></div>
     <input class="field" id="upTitle" maxlength="150" placeholder="Video title (optional — AI can suggest one)">
     <select class="field" id="upCat" aria-label="Education category">${eduCategoryOptions(erGet('defaultUploadCategory',''))}</select>
     <input id="upFilePicker" type="file" accept="video/*" class="hidden" onchange="onUploadFileChosen()">
-    <button type="button" class="primary" onclick="checkUpload()">Submit for Education Check</button>
     <div id="check"></div>
+    <div id="uploadAction"><button type="button" class="primary" onclick="checkUpload()">Submit for Education Check</button></div>
   </div>`;
+}
+function uploadPickerHtml(){
+  return `<div class="upDrop"><div class="upDropInner">
+    <button type="button" class="upDropMain" onclick="openUploadPicker()" aria-label="Add a video">
+      <span class="upIcon">${UP_ICONS.upload}</span>
+      <b>Add your reel</b>
+      <small>MP4 or any video · landscape videos get cropped</small>
+    </button>
+    <div class="upSources">
+      <button type="button" class="upSource" onclick="pickUploadSource('camera')">${UP_ICONS.record}Record</button>
+      <button type="button" class="upSource" onclick="pickUploadSource('gallery')">${UP_ICONS.gallery}Gallery</button>
+      <button type="button" class="upSource" onclick="pickUploadSource('files')">${UP_ICONS.files}Files</button>
+    </div>
+  </div></div>`;
 }
 /* Camera / gallery / other-location chooser, mirroring the picker pattern used
    by native reel apps. The browser can't truly distinguish "gallery" from
@@ -2965,9 +3010,9 @@ function upload(){
 function openUploadPicker(){
   overlay.innerHTML=`<div class="modal" onclick="closeOverlay()"><div class="sheet" onclick="event.stopPropagation()">
     <h3>Add a reel</h3>
-    <button type="button" class="uploadOption" onclick="pickUploadSource('camera')"><span>📷</span>Record with camera</button>
-    <button type="button" class="uploadOption" onclick="pickUploadSource('gallery')"><span>🖼️</span>Choose from gallery</button>
-    <button type="button" class="uploadOption" onclick="pickUploadSource('files')"><span>📁</span>Choose other location</button>
+    <button type="button" class="uploadOption" onclick="pickUploadSource('camera')"><span>${UP_ICONS.record}</span>Record with camera</button>
+    <button type="button" class="uploadOption" onclick="pickUploadSource('gallery')"><span>${UP_ICONS.gallery}</span>Choose from gallery</button>
+    <button type="button" class="uploadOption" onclick="pickUploadSource('files')"><span>${UP_ICONS.files}</span>Choose other location</button>
     <button type="button" class="btnSecondary" onclick="closeOverlay()">Cancel</button>
   </div></div>`;
 }
@@ -2978,21 +3023,37 @@ function pickUploadSource(source){
   closeOverlay();
   input.click();
 }
+/* Render (free tier) sleeps when idle and takes a while to wake up. Poking it
+   as soon as the Upload tab opens means the server is usually awake by the
+   time the user has picked a video, instead of the Education Check paying
+   for the cold start. */
+var apiWarmedAt=0;
+function warmUpApi(){
+  if(!serverMode())return;
+  const now=Date.now(); if(now-apiWarmedAt<4*60*1000)return;
+  apiWarmedAt=now;
+  try{fetch(`${API_BASE}/`,{method:'GET',mode:'no-cors',cache:'no-store'}).catch(()=>{})}catch(e){}
+}
+function fmtDuration(s){if(!Number.isFinite(s))return '';const m=Math.floor(s/60);return `${m}:${String(Math.round(s%60)).padStart(2,'0')}`}
 function onUploadFileChosen(){
-  const f=document.getElementById("upFilePicker")?.files[0], p=document.getElementById("preview"), hint=document.getElementById("uploadPickHint");
-  if(!f){if(p)p.innerHTML="";return}
-  if(!f.type.startsWith("video/")){if(p)p.innerHTML="<p>❌ Please choose a video file.</p>";return}
+  const f=document.getElementById("upFilePicker")?.files[0], p=document.getElementById("preview");
+  if(!f){return}
+  if(!f.type.startsWith("video/")){if(p)p.innerHTML="";const b=document.getElementById('check');if(b)b.innerHTML='<div class="checkResult checkFail"><b>❌ Please choose a video file.</b></div>';return}
+  resetUploadCheckState();
+  const picker=document.getElementById('uploadPicker'); if(picker)picker.innerHTML='';
   const u=URL.createObjectURL(f);
   if(p){
-    p.innerHTML=`<video src="${u}" controls playsinline style="width:100%;max-height:260px;border-radius:12px;background:#000"></video><div id="uploadOrientationNote"></div>`;
+    p.innerHTML=`<div class="upPreview"><video src="${u}" controls playsinline preload="metadata"></video>
+      <div class="upPreviewBar"><span class="upDur" id="upDur"></span><button type="button" class="upChange" onclick="openUploadPicker()">Change video</button></div></div>
+      <div id="uploadOrientationNote"></div>`;
     const v=p.querySelector('video');
     v.addEventListener('loadedmetadata',()=>{
+      const d=document.getElementById('upDur'); if(d)d.textContent=fmtDuration(v.duration);
       /* Reels can be at most 3 minutes: refuse longer videos right away. */
       if(Number.isFinite(v.duration)&&v.duration>MAX_REEL_SECONDS+0.5){
-        const m=Math.floor(v.duration/60), sec=String(Math.round(v.duration%60)).padStart(2,'0');
         discardRejectedUpload();
         const box=document.getElementById('check');
-        if(box)box.innerHTML=`<div class="checkResult checkFail"><b>⏱️ Video too long (${m}:${sec})</b><p>Reels can be at most 3 minutes. Please trim the video and choose it again.</p></div>`;
+        if(box)box.innerHTML=`<div class="checkResult checkFail"><b>⏱️ Video too long (${fmtDuration(v.duration)})</b><p>Reels can be at most 3 minutes. Please trim the video and choose it again.</p></div>`;
         toast('Reels can be at most 3 minutes',4000);
         return;
       }
@@ -3001,62 +3062,115 @@ function onUploadFileChosen(){
         note.innerHTML='<p class="filterNote">⚠️ This looks like a landscape video — it will be cropped to fill the vertical screen. For the full frame, record or export it vertically (9:16).</p>';
     });
   }
-  if(hint)hint.innerHTML=`<b>Selected</b>${escapeHtml(f.name)}`;
+  /* Start the Education Check straight away, in the background, while the
+     user types a title and picks a category. Most of the wait is hidden. */
+  checkUpload();
 }
 const MAX_REEL_SECONDS=180;   // 3 minutes
 var lastModerationVerdict=null;
+/* One check per chosen file. `seq` lets a stale result (user changed the
+   video mid-check) be ignored; `xhr` lets it be cancelled. */
+var uploadCheck={seq:0,xhr:null,timer:null,file:null,running:false};
+function resetUploadCheckState(){
+  uploadCheck.seq++;
+  if(uploadCheck.xhr){try{uploadCheck.xhr.abort()}catch(e){}}
+  clearInterval(uploadCheck.timer);
+  uploadCheck.xhr=null;uploadCheck.timer=null;uploadCheck.file=null;uploadCheck.running=false;
+  lastModerationVerdict=null;
+}
+function setUploadAction(html){const a=document.getElementById('uploadAction');if(a)a.innerHTML=html}
 function checkUpload(){
-  const fileInput=document.getElementById("upFilePicker"), f=fileInput?.files[0], t=document.getElementById("upTitle").value.trim();
+  const fileInput=document.getElementById("upFilePicker"), f=fileInput?.files[0], t=(document.getElementById("upTitle")?.value||'').trim();
   if(!f){toast("Add a video first (camera, gallery or files)");return}
   /* No title needed for the check: the AI watches the video and suggests one. */
   if(!f.type.startsWith("video/")){toast("Please select a video file");return}
-  lastModerationVerdict=null;
+  if(uploadCheck.running&&uploadCheck.file===f)return;   // already checking this video
+  if(lastModerationVerdict&&uploadCheck.file===f){renderModerationVerdict(lastModerationVerdict);return}
+  resetUploadCheckState();
+  uploadCheck.file=f;
   if(serverMode())return runRealEducationCheck(f,t);
   return runSimulatedEducationCheck();
 }
 /* PROTOTYPE MODE: no backend, so nothing is actually analysed. Say so plainly
    rather than implying a real check happened. */
 function runSimulatedEducationCheck(){
-  document.getElementById("check").innerHTML='<p>🔎 Education Check running…</p>';
+  document.getElementById("check").innerHTML='<div class="checkResult checkPending"><b>🔎 Education Check running…</b><div class="upProgress indet"><i></i></div></div>';
+  setUploadAction('');
   setTimeout(()=>{
     lastModerationVerdict={status:'approved',simulated:true};
     document.getElementById("check").innerHTML=`<div class="checkResult checkPass"><b>✅ Education Check passed</b>
       <p>Simulated only — no backend is connected, so the video was not actually analysed.</p></div>
-      <button type="button" class="primary" onclick="publishUpload()">Publish Reel</button>
       <p class="filterNote">Connect a backend (set API_BASE) to run the real AI check that watches the video and rejects non-educational content.</p>`;
+    setUploadAction('<button type="button" class="primary" onclick="publishUpload()">Publish Reel</button>');
   },700);
 }
 /* SERVER MODE: the video is sent to the backend, where Gemini watches it and
    decides whether it is genuinely educational and safe. Publishing is gated
    on the verdict, and the verdict is issued server-side so it can't be
-   skipped from the browser. */
-async function runRealEducationCheck(file,title){
+   skipped from the browser. Uses XHR (not fetch) to show real upload
+   progress, and a live timer so a long check never looks frozen. */
+const EDU_CHECK_TIMEOUT_MS=90000;
+function runRealEducationCheck(file,title){
   const box=document.getElementById("check");
-  box.innerHTML=`<div class="checkResult checkPending"><b>🔎 Analysing your video…</b><p>Our AI is watching the video to confirm it's educational. This usually takes 10–30 seconds.</p><div class="checkSpinner"></div></div>`;
-  try{
-    const form=new FormData();
-    form.append('video',file);
-    form.append('title',title);
-    form.append('userId',currentUserId());
-    const res=await fetch(`${API_BASE}/api/education-check`,{method:'POST',body:form,headers:authHeaders()});
-    const verdict=await res.json();
+  const seq=uploadCheck.seq, started=Date.now();
+  let phase='upload', pct=0;
+  uploadCheck.running=true;
+  setUploadAction('<button type="button" class="primary" disabled>Checking… you can add a title meanwhile</button>');
+  const paint=()=>{
+    if(seq!==uploadCheck.seq||!box.isConnected)return;
+    const secs=Math.floor((Date.now()-started)/1000);
+    let head,msg;
+    if(phase==='upload'){head='⬆️ Sending video';msg=`Uploading… ${pct}%`}
+    else{
+      head='🔎 AI is watching your video';
+      msg=secs<20?'Confirming it\'s educational. Usually takes a few seconds.'
+         :secs<45?'Almost there — longer videos take a little more time.'
+         :'Still working — the server may be busy. Hang tight.';
+    }
+    box.innerHTML=`<div class="checkResult checkPending"><b>${head}<span class="upElapsed">${secs}s</span></b><p>${msg}</p>
+      <div class="upProgress${phase==='upload'?'':' indet'}"><i style="${phase==='upload'?`width:${pct}%`:''}"></i></div></div>`;
+  };
+  paint();
+  uploadCheck.timer=setInterval(paint,1000);
+  const done=()=>{if(seq!==uploadCheck.seq)return false;clearInterval(uploadCheck.timer);uploadCheck.running=false;uploadCheck.xhr=null;return true};
+  const failOpen=(why)=>{
+    /* Fail OPEN, matching the server: a connectivity problem on our side
+       shouldn't stop someone publishing. With no receipt, the server runs
+       the check itself while publishing. */
+    if(!done())return;
+    lastModerationVerdict={status:'approved',approved:true,unreviewed:true};
+    box.innerHTML=`<div class="checkResult checkPass"><b>✅ Ready to publish</b>
+      <p>${why}</p></div>`;
+    setUploadAction('<button type="button" class="primary" onclick="publishUpload()">Publish Reel</button>');
+  };
+  const form=new FormData();
+  form.append('video',file);
+  form.append('title',title);
+  form.append('userId',currentUserId());
+  const xhr=new XMLHttpRequest();
+  uploadCheck.xhr=xhr;
+  xhr.open('POST',`${API_BASE}/api/education-check`);
+  const h=authHeaders(); Object.keys(h).forEach(k=>xhr.setRequestHeader(k,h[k]));
+  xhr.timeout=EDU_CHECK_TIMEOUT_MS;
+  xhr.upload.onprogress=e=>{if(e.lengthComputable){pct=Math.min(100,Math.round(e.loaded/e.total*100));paint()}};
+  xhr.upload.onload=()=>{phase='analyse';paint()};
+  xhr.onload=()=>{
+    let verdict=null; try{verdict=JSON.parse(xhr.responseText)}catch(e){}
+    if(!verdict){failOpen("We couldn't reach the review service, so this was approved by default.");return}
+    if(!done())return;
     /* A request problem (signed out, wrong file type) is not a content
        verdict: explain it and keep the chosen video, don't discard it. */
-    if(!res.ok&&verdict&&verdict.status==='error'){
+    if((xhr.status<200||xhr.status>=300)&&verdict.status==='error'){
       box.innerHTML=`<div class="checkResult checkFail"><b>⚠️ Couldn't check this video</b><p>${escapeHtml(verdict.reason||'Please try again.')}</p></div>`;
+      setUploadAction('<button type="button" class="primary" onclick="checkUpload()">Try again</button>');
       return;
     }
     lastModerationVerdict=verdict;
     renderModerationVerdict(verdict);
-  }catch(err){
-    /* Fail OPEN, matching the server: a connectivity problem on our side
-       shouldn't stop someone publishing. */
-    console.error(err);
-    lastModerationVerdict={status:'approved',approved:true,unreviewed:true};
-    box.innerHTML=`<div class="checkResult checkPass"><b>✅ Ready to publish</b>
-      <p>We couldn't reach the review service, so this was approved by default.</p></div>
-      <button type="button" class="primary" onclick="publishUpload()">Publish Reel</button>`;
-  }
+  };
+  xhr.onerror=()=>failOpen("We couldn't reach the review service, so this was approved by default.");
+  xhr.ontimeout=()=>failOpen("The quick check took too long, so it will finish on our side while your reel publishes.");
+  xhr.send(form);
 }
 function renderModerationVerdict(v){
   const box=document.getElementById("check");
@@ -3068,8 +3182,8 @@ function renderModerationVerdict(v){
     box.innerHTML=`<div class="checkResult checkPass"><b>✅ Education Check passed</b>
       <p>${v.unreviewed?'Automatic review was unavailable, so this was approved by default.':`Identified as <b>${escapeHtml(v.subject||v.category||'educational content')}</b>${v.confidence?` · ${Math.round(v.confidence*100)}% confidence`:''}`}</p>
       ${v.suggested_title?`<p class="suggestTitle">Suggested title: “${escapeHtml(v.suggested_title)}” <button type="button" onclick="useSuggestedTitle()">Use this</button></p>`:''}
-      </div>
-      <button type="button" class="primary" onclick="publishUpload()">Publish Reel</button>`;
+      </div>`;
+    setUploadAction('<button type="button" class="primary" onclick="publishUpload()">Publish Reel</button>');
     return;
   }
   renderRejection(v);
@@ -3077,10 +3191,11 @@ function renderModerationVerdict(v){
 /* A rejected reel is DISCARDED: the selected file, preview and Publish path
    are cleared so it can't be published, and the uploader is told plainly why. */
 function discardRejectedUpload(){
-  lastModerationVerdict=null;
+  resetUploadCheckState();
   const inp=document.getElementById('upFilePicker'); if(inp)inp.value='';
   const p=document.getElementById('preview'); if(p)p.innerHTML='';
-  const hint=document.getElementById('uploadPickHint'); if(hint)hint.innerHTML='<b>Add a reel</b>Camera, gallery or files';
+  const picker=document.getElementById('uploadPicker'); if(picker)picker.innerHTML=uploadPickerHtml();
+  setUploadAction('<button type="button" class="primary" onclick="checkUpload()">Submit for Education Check</button>');
 }
 function renderRejection(v){
   const box=document.getElementById('check'); if(!box)return;
@@ -3092,8 +3207,8 @@ function renderRejection(v){
     <p>${escapeHtml((v&&v.reason)||'This video does not appear to be educational content.')}</p>
     ${unsafe?`<p class="safetyFlags">Flagged: ${escapeHtml(v.safety_flags.join(', '))}</p>`:''}
     </div>
-    <p class="filterNote">Gyanora only accepts educational content — school and college subjects, exam preparation, technology, skills, languages, health and more. Please choose a different video.</p>
-    <button type="button" class="primary" onclick="openUploadPicker()">Choose another video</button>`;
+    <p class="filterNote">Gyanora only accepts educational content — school and college subjects, exam preparation, technology, skills, languages, health and more. Please choose a different video.</p>`;
+  setUploadAction('<button type="button" class="primary" onclick="openUploadPicker()">Choose another video</button>');
 }
 /* Titles are plain text, one line, at most 150 characters. */
 function cleanTitle(t){return String(t||'').replace(/\s+/g,' ').trim().slice(0,150)}
@@ -3138,6 +3253,7 @@ async function publishToServer(file,title){
      AI check of the same video. Without one (AI was unavailable, or an
      older check) the server checks it while publishing. */
   const receipt=lastModerationVerdict&&lastModerationVerdict.checkReceipt;
+  setUploadAction('');
   if(box)box.innerHTML=`<div class="checkResult checkPending"><b>⬆️ Publishing…</b><p>${receipt?'Uploading your reel…':'Uploading your reel and running the Education Check.'}</p><div class="checkSpinner"></div></div>`;
   try{
     const form=new FormData();
@@ -3153,6 +3269,7 @@ async function publishToServer(file,title){
     if(!res.ok||!data.ok){
       if(data&&data.error==='rejected'&&data.verdict){renderRejection(data.verdict);return}
       if(box)box.innerHTML=`<div class="checkResult checkFail"><b>❌ Not published</b><p>${escapeHtml(data?.verdict?.reason||data?.error||'The reel could not be published.')}</p></div>`;
+      setUploadAction('<button type="button" class="primary" onclick="publishUpload()">Try again</button>');
       return;
     }
     invalidateReelCache();

@@ -340,17 +340,18 @@ a.playManageBtn{display:block;text-align:center;text-decoration:none;margin:8px 
 .upSource{display:flex;flex-direction:column;align-items:center;gap:5px;border:1px solid #e6e3f5;background:#faf9ff;border-radius:14px;padding:11px 4px;font-size:12px;font-weight:700;color:#2b2650;cursor:pointer}
 .upSource svg{width:22px;height:22px;color:var(--brand-purple)}
 .upSource:active,.upDropMain:active{transform:scale(.97)}
-.upPreview{display:flex;gap:14px;align-items:stretch;background:#121218;border-radius:18px;padding:10px;margin:4px 0 14px;box-shadow:0 10px 26px rgba(0,0,0,.18)}
-.upPrevVid{position:relative;flex:none;width:112px;aspect-ratio:9/16;border-radius:12px;overflow:hidden;background:#000}
-.upPrevVid video{display:block;width:100%;height:100%;object-fit:cover;background:#000}
+.upPreview{display:flex;gap:12px;align-items:stretch;background:#121218;border-radius:18px;padding:10px;margin:4px 0 14px;box-shadow:0 10px 26px rgba(0,0,0,.18)}
+.upPrevVid{position:relative;flex:1 1 0;min-width:0;aspect-ratio:9/16;border-radius:12px;overflow:hidden;background:linear-gradient(135deg,#1a2030,#241b38)}
+.upPrevVid video{display:block;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .25s}
+.upPrevVid.ready video{opacity:1}
 .upPrevPlay{position:absolute;inset:0;margin:auto;width:42px;height:42px;border-radius:50%;border:0;background:rgba(255,255,255,.88);color:#111;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,.35)}
 .upPrevPlay svg{width:18px;height:18px}
 .upPrevVid.playing .upPrevPlay{opacity:0}
-.upPrevInfo{flex:1;display:flex;flex-direction:column;justify-content:center;gap:6px;color:#ddd;font-size:12px;min-width:0}
-.upPrevInfo b{color:#fff;font-size:15px}
+.upPrevInfo{flex:1 1 0;display:flex;flex-direction:column;justify-content:center;gap:5px;color:#ccc;font-size:12px;line-height:1.35;min-width:0}
+.upPrevInfo b{color:#fff;font-size:14px}
 .upPrevInfo .upDur{font-weight:700;color:#5eead4}
 .upPrevBtns{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
-.upPrevBtns button{border:1px solid #444;background:#1c1c22;color:#fff;border-radius:999px;padding:7px 12px;font-size:12px;font-weight:700}
+.upPrevBtns button{border:1px solid #444;background:#1c1c22;color:#fff;border-radius:999px;padding:7px 11px;font-size:12px;font-weight:700;white-space:nowrap}
 .upTags{background:#fff;border:1px solid #e3e1ef;border-radius:14px;padding:12px;margin:10px 0}
 .upTagsHead{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
 .upTagsHead b{font-size:14px}
@@ -3061,45 +3062,40 @@ function warmUpApi(){
   try{fetch(`${API_BASE}/`,{method:'GET',mode:'no-cors',cache:'no-store'}).catch(()=>{})}catch(e){}
 }
 function fmtDuration(s){if(!Number.isFinite(s))return '';const m=Math.floor(s/60);return `${m}:${String(Math.round(s%60)).padStart(2,'0')}`}
-/* A <video> on Android WebView shows a grey "play" placeholder until it has
-   painted a frame, and frame 0 is often black anyway. So, like the Saved /
-   History thumbnails, we seek a little into the clip - but on a separate
-   hidden "probe" video, grab that frame onto a canvas and use it as the
-   visible player's poster. The visible player keeps preload="none", so it
-   still starts from 0:00 when the user taps play. The probe also gives us
-   the duration and orientation, then releases its decoder. */
-const BLANK_POSTER='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-function captureUploadPoster(url,onMeta){
-  const probe=document.createElement('video');
-  probe.muted=true; probe.playsInline=true; probe.preload='auto';
-  probe.setAttribute('playsinline','');
-  let done=false;
-  const release=()=>{if(done)return;done=true;try{probe.removeAttribute('src');probe.load()}catch(e){}};
-  probe.addEventListener('loadedmetadata',()=>{
-    onMeta&&onMeta(probe);
-    try{probe.currentTime=Math.min(0.5,(probe.duration||1)/2)}catch(e){release()}
-  });
-  probe.addEventListener('seeked',()=>{
-    try{
-      const w=probe.videoWidth,h=probe.videoHeight;
-      if(w&&h){
-        const scale=Math.min(1,480/Math.max(w,h));
-        const c=document.createElement('canvas'); c.width=Math.round(w*scale); c.height=Math.round(h*scale);
-        c.getContext('2d').drawImage(probe,0,0,c.width,c.height);
-        const shot=c.toDataURL('image/jpeg',0.8);
-        const v=document.querySelector('#preview video');
-        if(v&&v.dataset.src===url)v.poster=shot;
-      }
-    }catch(e){}
-    release();
-  });
-  probe.addEventListener('error',release);
-  setTimeout(release,15000);
-  probe.src=url;
+/* Same approach as the Saved / History thumbnails, which show real frames
+   on Android: the visible <video> stays in the page, muted, with
+   preload="metadata"; it is hidden (gradient shows instead of WebView's grey
+   placeholder) until it has seeked a little into the clip, where frame 0 is
+   less likely to be black. Some WebViews still don't paint a frame from a
+   seek alone, so if nothing has shown after a moment we play it muted for
+   an instant and pause - that always forces a real frame. */
+function primeUploadPreview(v,onMeta){
+  if(!v)return;
+  const box=v.parentNode, target=()=>Math.min(0.5,(v.duration||1)/2);
+  const show=()=>box.classList.add('ready');
+  v.addEventListener('seeked',show);
+  v.addEventListener('loadedmetadata',()=>{
+    onMeta&&onMeta(v);
+    try{v.currentTime=target()}catch(e){}
+    setTimeout(()=>{
+      if(!v.isConnected||v.dataset.started)return;
+      if(box.classList.contains('ready')&&v.readyState>=2)return;
+      v.dataset.priming='1';
+      const a=v.play();
+      const stop=()=>{v.pause();try{v.currentTime=target()}catch(e){};delete v.dataset.priming;show()};
+      if(a&&a.then)a.then(()=>setTimeout(stop,150)).catch(()=>{delete v.dataset.priming;show()}); else setTimeout(stop,150);
+    },1200);
+  },{once:true});
+  v.addEventListener('loadeddata',()=>{ if(v.currentTime>0)show() });
 }
 function toggleUploadPreview(){
   const v=document.querySelector('#preview video'); if(!v)return;
-  if(v.paused){const a=v.play(); if(a&&a.catch)a.catch(()=>{})} else v.pause();
+  if(v.paused){
+    delete v.dataset.priming;
+    if(!v.dataset.started){v.dataset.started='1';try{v.currentTime=0}catch(e){}}   // play from the start
+    v.muted=false; v.parentNode.classList.add('ready');
+    const a=v.play(); if(a&&a.catch)a.catch(()=>{});
+  } else v.pause();
 }
 function onUploadFileChosen(){
   const f=document.getElementById("upFilePicker")?.files[0], p=document.getElementById("preview");
@@ -3111,13 +3107,13 @@ function onUploadFileChosen(){
   const u=URL.createObjectURL(f);
   if(p){
     p.innerHTML=`<div class="upPreview">
-        <div class="upPrevVid" onclick="toggleUploadPreview()"><video src="${u}" data-src="${u}" playsinline preload="none" poster="${BLANK_POSTER}" onended="this.parentNode.classList.remove('playing')" onpause="this.parentNode.classList.remove('playing')" onplay="this.parentNode.classList.add('playing')"></video>
+        <div class="upPrevVid" onclick="toggleUploadPreview()"><video src="${u}" muted playsinline preload="metadata" onended="this.parentNode.classList.remove('playing')" onpause="this.parentNode.classList.remove('playing')" onplay="if(!this.dataset.priming)this.parentNode.classList.add('playing')"></video>
           <button type="button" class="upPrevPlay" aria-label="Play preview">${UP_ICONS.play}</button></div>
-        <div class="upPrevInfo"><b>Your reel</b><span>Length <span class="upDur" id="upDur">…</span></span><span>Shown as it will look in the feed</span>
+        <div class="upPrevInfo"><b>Your reel</b><span>Length <span class="upDur" id="upDur">…</span></span><span>As it will look in the feed</span>
           <div class="upPrevBtns"><button type="button" onclick="openUploadPicker()">Change video</button></div></div>
       </div>
       <div id="uploadOrientationNote"></div>`;
-    captureUploadPoster(u,probe=>{
+    primeUploadPreview(p.querySelector('video'),probe=>{
       if(document.getElementById('upFilePicker')?.files[0]!==f)return;   // video changed meanwhile
       const d=document.getElementById('upDur'); if(d)d.textContent=fmtDuration(probe.duration);
       /* Reels can be at most 5 minutes: refuse longer videos right away. */

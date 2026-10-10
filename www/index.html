@@ -340,11 +340,34 @@ a.playManageBtn{display:block;text-align:center;text-decoration:none;margin:8px 
 .upSource{display:flex;flex-direction:column;align-items:center;gap:5px;border:1px solid #e6e3f5;background:#faf9ff;border-radius:14px;padding:11px 4px;font-size:12px;font-weight:700;color:#2b2650;cursor:pointer}
 .upSource svg{width:22px;height:22px;color:var(--brand-purple)}
 .upSource:active,.upDropMain:active{transform:scale(.97)}
-.upPreview{position:relative;border-radius:18px;overflow:hidden;background:#000;margin:4px 0 14px;box-shadow:0 10px 26px rgba(0,0,0,.18)}
-.upPreview video{display:block;width:100%;max-height:340px;background:#000}
-.upPreviewBar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 12px;background:#111;color:#ddd;font-size:12px}
-.upPreviewBar .upDur{font-weight:700;color:#5eead4}
-.upChange{border:1px solid #444;background:#1c1c22;color:#fff;border-radius:999px;padding:6px 12px;font-size:12px;font-weight:700}
+.upPreview{display:flex;gap:14px;align-items:stretch;background:#121218;border-radius:18px;padding:10px;margin:4px 0 14px;box-shadow:0 10px 26px rgba(0,0,0,.18)}
+.upPrevVid{position:relative;flex:none;width:112px;aspect-ratio:9/16;border-radius:12px;overflow:hidden;background:#000}
+.upPrevVid video{display:block;width:100%;height:100%;object-fit:cover;background:#000}
+.upPrevPlay{position:absolute;inset:0;margin:auto;width:42px;height:42px;border-radius:50%;border:0;background:rgba(255,255,255,.88);color:#111;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,.35)}
+.upPrevPlay svg{width:18px;height:18px}
+.upPrevVid.playing .upPrevPlay{opacity:0}
+.upPrevInfo{flex:1;display:flex;flex-direction:column;justify-content:center;gap:6px;color:#ddd;font-size:12px;min-width:0}
+.upPrevInfo b{color:#fff;font-size:15px}
+.upPrevInfo .upDur{font-weight:700;color:#5eead4}
+.upPrevBtns{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.upPrevBtns button{border:1px solid #444;background:#1c1c22;color:#fff;border-radius:999px;padding:7px 12px;font-size:12px;font-weight:700}
+.upTags{background:#fff;border:1px solid #e3e1ef;border-radius:14px;padding:12px;margin:10px 0}
+.upTagsHead{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.upTagsHead b{font-size:14px}
+.upTagsHead small{font-size:11px;color:#777}
+.upTagsSub{font-size:11px;font-weight:700;color:#6b6790;text-transform:uppercase;letter-spacing:.4px;margin:11px 0 6px}
+.upTagList{display:flex;flex-wrap:wrap;gap:7px}
+.upTag{border:1px solid #d9d5f3;background:#faf9ff;color:#2b2650;border-radius:999px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer;line-height:1.1}
+.upTag.on{background:linear-gradient(90deg,var(--brand-teal),var(--brand-purple));border-color:transparent;color:#04101a}
+.upTag.ai::before{content:'✨ ';}
+.upTagsNote{font-size:12px;color:#777;margin:2px 0}
+.upTagMore{border:0;background:transparent;color:var(--brand-purple);font-weight:800;font-size:12px;padding:8px 0 0;cursor:pointer}
+.tagSheet{max-height:78vh;display:flex;flex-direction:column}
+.tagSheetBody{overflow:auto;margin-top:8px}
+.tagSheetBody h4{font-size:12px;color:#6b6790;margin:12px 0 6px;text-transform:uppercase;letter-spacing:.4px}
+.tagAddRow{display:flex;gap:8px;margin-top:6px}
+.tagAddRow .field{margin:0}
+.tagAddRow button{width:auto;white-space:nowrap}
 .upProgress{height:6px;border-radius:999px;background:#c7ddf2;overflow:hidden;margin-top:9px}
 .upProgress i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--brand-teal),var(--brand-purple));border-radius:999px;transition:width .25s}
 .upProgress.indet i{width:35%;animation:upIndet 1.2s ease-in-out infinite}
@@ -1630,6 +1653,7 @@ function page(p){
   resetNav();
   document.querySelectorAll(".nav").forEach(x=>x.classList.toggle("active",x.dataset.page===p));
   closeOverlay();
+  if(p!=="upload"&&typeof resetUploadCheckState==="function")resetUploadCheckState();   // stop an in-flight Education Check
   if(p==="home")home();
   else if(p==="explore")explore();
   else if(p==="upload")upload();
@@ -2969,6 +2993,7 @@ const UP_ICONS={
   upload:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="m6 10 6-6 6 6"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>',
   record:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="3"/><path d="m16 10 6-3v10l-6-3"/></svg>',
   gallery:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="9" cy="9" r="2"/><path d="m21 15-4-4-9 9"/></svg>',
+  play:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>',
   files:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>'
 };
 function upload(){
@@ -2979,15 +3004,16 @@ function upload(){
       <h2>Upload Reel</h2>
       <p>Share a short educational video. Every reel gets a quick Education Check before it's published.</p>
     </div>
-    <div class="upChips"><span>Vertical 9:16</span><span>Up to 3 min</span><span>Education only</span></div>
+    <div class="upChips"><span>Vertical 9:16</span><span>Up to 5 min</span><span>Education only</span></div>
     <div id="uploadPicker">${uploadPickerHtml()}</div>
     <div id="preview"></div>
     <input class="field" id="upTitle" maxlength="150" placeholder="Video title (optional — AI can suggest one)">
-    <select class="field" id="upCat" aria-label="Education category">${eduCategoryOptions(erGet('defaultUploadCategory',''))}</select>
+    <div class="upTags" id="upTags"></div>
     <input id="upFilePicker" type="file" accept="video/*" class="hidden" onchange="onUploadFileChosen()">
     <div id="check"></div>
     <div id="uploadAction"><button type="button" class="primary" onclick="checkUpload()">Submit for Education Check</button></div>
   </div>`;
+  resetUploadTags();
 }
 function uploadPickerHtml(){
   return `<div class="upDrop"><div class="upDropInner">
@@ -3035,38 +3061,204 @@ function warmUpApi(){
   try{fetch(`${API_BASE}/`,{method:'GET',mode:'no-cors',cache:'no-store'}).catch(()=>{})}catch(e){}
 }
 function fmtDuration(s){if(!Number.isFinite(s))return '';const m=Math.floor(s/60);return `${m}:${String(Math.round(s%60)).padStart(2,'0')}`}
+/* A <video> on Android WebView shows a grey "play" placeholder until it has
+   painted a frame, and frame 0 is often black anyway. So, like the Saved /
+   History thumbnails, we seek a little into the clip - but on a separate
+   hidden "probe" video, grab that frame onto a canvas and use it as the
+   visible player's poster. The visible player keeps preload="none", so it
+   still starts from 0:00 when the user taps play. The probe also gives us
+   the duration and orientation, then releases its decoder. */
+const BLANK_POSTER='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+function captureUploadPoster(url,onMeta){
+  const probe=document.createElement('video');
+  probe.muted=true; probe.playsInline=true; probe.preload='auto';
+  probe.setAttribute('playsinline','');
+  let done=false;
+  const release=()=>{if(done)return;done=true;try{probe.removeAttribute('src');probe.load()}catch(e){}};
+  probe.addEventListener('loadedmetadata',()=>{
+    onMeta&&onMeta(probe);
+    try{probe.currentTime=Math.min(0.5,(probe.duration||1)/2)}catch(e){release()}
+  });
+  probe.addEventListener('seeked',()=>{
+    try{
+      const w=probe.videoWidth,h=probe.videoHeight;
+      if(w&&h){
+        const scale=Math.min(1,480/Math.max(w,h));
+        const c=document.createElement('canvas'); c.width=Math.round(w*scale); c.height=Math.round(h*scale);
+        c.getContext('2d').drawImage(probe,0,0,c.width,c.height);
+        const shot=c.toDataURL('image/jpeg',0.8);
+        const v=document.querySelector('#preview video');
+        if(v&&v.dataset.src===url)v.poster=shot;
+      }
+    }catch(e){}
+    release();
+  });
+  probe.addEventListener('error',release);
+  setTimeout(release,15000);
+  probe.src=url;
+}
+function toggleUploadPreview(){
+  const v=document.querySelector('#preview video'); if(!v)return;
+  if(v.paused){const a=v.play(); if(a&&a.catch)a.catch(()=>{})} else v.pause();
+}
 function onUploadFileChosen(){
   const f=document.getElementById("upFilePicker")?.files[0], p=document.getElementById("preview");
   if(!f){return}
   if(!f.type.startsWith("video/")){if(p)p.innerHTML="";const b=document.getElementById('check');if(b)b.innerHTML='<div class="checkResult checkFail"><b>❌ Please choose a video file.</b></div>';return}
   resetUploadCheckState();
+  resetUploadTags(true);
   const picker=document.getElementById('uploadPicker'); if(picker)picker.innerHTML='';
   const u=URL.createObjectURL(f);
   if(p){
-    p.innerHTML=`<div class="upPreview"><video src="${u}" controls playsinline preload="metadata"></video>
-      <div class="upPreviewBar"><span class="upDur" id="upDur"></span><button type="button" class="upChange" onclick="openUploadPicker()">Change video</button></div></div>
+    p.innerHTML=`<div class="upPreview">
+        <div class="upPrevVid" onclick="toggleUploadPreview()"><video src="${u}" data-src="${u}" playsinline preload="none" poster="${BLANK_POSTER}" onended="this.parentNode.classList.remove('playing')" onpause="this.parentNode.classList.remove('playing')" onplay="this.parentNode.classList.add('playing')"></video>
+          <button type="button" class="upPrevPlay" aria-label="Play preview">${UP_ICONS.play}</button></div>
+        <div class="upPrevInfo"><b>Your reel</b><span>Length <span class="upDur" id="upDur">…</span></span><span>Shown as it will look in the feed</span>
+          <div class="upPrevBtns"><button type="button" onclick="openUploadPicker()">Change video</button></div></div>
+      </div>
       <div id="uploadOrientationNote"></div>`;
-    const v=p.querySelector('video');
-    v.addEventListener('loadedmetadata',()=>{
-      const d=document.getElementById('upDur'); if(d)d.textContent=fmtDuration(v.duration);
-      /* Reels can be at most 3 minutes: refuse longer videos right away. */
-      if(Number.isFinite(v.duration)&&v.duration>MAX_REEL_SECONDS+0.5){
+    captureUploadPoster(u,probe=>{
+      if(document.getElementById('upFilePicker')?.files[0]!==f)return;   // video changed meanwhile
+      const d=document.getElementById('upDur'); if(d)d.textContent=fmtDuration(probe.duration);
+      /* Reels can be at most 5 minutes: refuse longer videos right away. */
+      if(Number.isFinite(probe.duration)&&probe.duration>MAX_REEL_SECONDS+0.5){
+        const dur=probe.duration;
         discardRejectedUpload();
         const box=document.getElementById('check');
-        if(box)box.innerHTML=`<div class="checkResult checkFail"><b>⏱️ Video too long (${fmtDuration(v.duration)})</b><p>Reels can be at most 3 minutes. Please trim the video and choose it again.</p></div>`;
-        toast('Reels can be at most 3 minutes',4000);
+        if(box)box.innerHTML=`<div class="checkResult checkFail"><b>⏱️ Video too long (${fmtDuration(dur)})</b><p>Reels can be at most 5 minutes. Please trim the video and choose it again.</p></div>`;
+        toast('Reels can be at most 5 minutes',4000);
         return;
       }
       const note=document.getElementById('uploadOrientationNote'); if(!note)return;
-      if(v.videoWidth>v.videoHeight)
+      if(probe.videoWidth>probe.videoHeight)
         note.innerHTML='<p class="filterNote">⚠️ This looks like a landscape video — it will be cropped to fill the vertical screen. For the full frame, record or export it vertically (9:16).</p>';
     });
   }
   /* Start the Education Check straight away, in the background, while the
-     user types a title and picks a category. Most of the wait is hidden. */
+     user types a title and picks tags. Most of the wait is hidden. */
   checkUpload();
 }
-const MAX_REEL_SECONDS=180;   // 3 minutes
+
+/* ---------- Upload tags ----------
+   Instead of one category dropdown, the uploader gets tag chips. When the
+   Education Check finishes, tags are suggested from what the AI detected
+   (subject, category, suggested title) matched against Gyanora's category
+   list, and the best few are pre-selected. The user can deselect them, pick
+   others from the suggestions, or browse/search every tag and add their own.
+   On publish the first listed-category tag becomes the reel's category, the
+   next tag its subject, and all tags are sent as `tags`. */
+const MAX_UPLOAD_TAGS=5;
+var upTagState={selected:[],suggested:[],ai:[],touched:false};
+function allEduTags(){return EDU_GROUPS.flatMap(g=>g.items)}
+function resetUploadTags(keepRender){
+  upTagState={selected:[],suggested:[],ai:[],touched:false};
+  renderUploadTags();
+}
+function tagChip(t,on,ai){
+  return `<button type="button" class="upTag${on?' on':''}${ai&&!on?' ai':''}" data-tag="${escapeAttr(t)}" onclick="toggleUploadTag(this.dataset.tag)">${escapeHtml(t)}${on?' ×':''}</button>`;
+}
+function renderUploadTags(){
+  const box=document.getElementById('upTags'); if(!box)return;
+  const st=upTagState, hasFile=!!document.getElementById('upFilePicker')?.files[0];
+  const sugg=st.suggested.filter(t=>!st.selected.includes(t));
+  let body='';
+  if(st.selected.length)body+=`<div class="upTagsSub">Selected</div><div class="upTagList">${st.selected.map(t=>tagChip(t,true)).join('')}</div>`;
+  if(sugg.length)body+=`<div class="upTagsSub">Suggested for this video</div><div class="upTagList">${sugg.map(t=>tagChip(t,false,st.ai.includes(t))).join('')}</div>`;
+  else if(!st.selected.length){
+    body+=`<p class="upTagsNote">${!hasFile?'Add a video and AI will suggest tags for it.':uploadCheck.running?'✨ Suggesting tags from your video…':'Pick tags that describe your video.'}</p>`;
+  }
+  box.innerHTML=`<div class="upTagsHead"><b>Tags</b><small>${st.selected.length}/${MAX_UPLOAD_TAGS} selected</small></div>${body}
+    <button type="button" class="upTagMore" onclick="openTagBrowser()">+ Browse all tags</button>`;
+}
+function toggleUploadTag(t){
+  const st=upTagState; t=String(t||'').trim(); if(!t)return;
+  st.touched=true;
+  if(st.selected.includes(t))st.selected=st.selected.filter(x=>x!==t);
+  else{
+    if(st.selected.length>=MAX_UPLOAD_TAGS){toast(`You can pick up to ${MAX_UPLOAD_TAGS} tags`);return}
+    st.selected=[...st.selected,t];
+  }
+  renderUploadTags(); renderTagBrowser();
+}
+function tagTokens(x){
+  const stop=new Set(['and','the','for','with','how','what','why','are','from','into','your','this','that','class','basics','explained','introduction','about','part','video','reel','learn','learning','tips']);
+  return String(x||'').toLowerCase().split(/[^a-z0-9+]+/).filter(w=>w.length>=3&&!stop.has(w));
+}
+function titleCase(x){return String(x||'').replace(/\s+/g,' ').trim().replace(/\b\w/g,c=>c.toUpperCase())}
+/* Ranks listed categories against everything known about the video. */
+function suggestUploadTags(v,typedTitle){
+  v=v||{};
+  const all=allEduTags(), byNorm=new Map(all.map(t=>[norm(t),t]));
+  const out=[], push=t=>{t=String(t||'').trim(); if(t&&t.length<=40&&!out.some(x=>norm(x)===norm(t)))out.push(t)};
+  const direct=[v.category,v.subject,...(Array.isArray(v.tags)?v.tags:[]),...(Array.isArray(v.keywords)?v.keywords:[]),...(Array.isArray(v.topics)?v.topics:[])];
+  direct.forEach(d=>{ if(byNorm.has(norm(d)))push(byNorm.get(norm(d))) });
+  const text=[v.subject,v.category,v.topic,v.suggested_title,typedTitle,...direct].filter(Boolean).join(' ');
+  const words=new Set(tagTokens(text));
+  const scored=all.map(t=>{const tw=tagTokens(t);const hit=tw.filter(w=>words.has(w)||[...words].some(x=>x.length>=5&&(x.startsWith(w)||w.startsWith(x)))).length;return {t,score:tw.length?hit/tw.length+hit*0.25:0}})
+    .filter(x=>x.score>0).sort((a,b)=>b.score-a.score);
+  scored.slice(0,5).forEach(x=>push(x.t));
+  /* The detected subject itself is a useful tag even when it isn't a listed
+     category (e.g. "Cyclones", "Photosynthesis"). */
+  if(v.subject&&!byNorm.has(norm(v.subject)))push(titleCase(v.subject));
+  /* Closely related topics, so there are real choices to pick from. */
+  const RELATED={'Environmental Studies':['Geography','General Science','Biology'],'Physics':['General Science','Science Experiments','IIT-JEE / JEE Advanced'],
+    'Chemistry':['General Science','Science Experiments','NEET'],'Biology':['General Science','NEET','MBBS / Medicine'],'Mathematics':['Aptitude & Reasoning','IIT-JEE / JEE Advanced'],
+    'Geography':['Environmental Studies','General Knowledge','UPSC / IAS'],'History':['Social Science','General Knowledge','UPSC / IAS'],'Civics & Polity':['Political Science','UPSC / IAS'],
+    'Economics':['Commerce','Personal Finance','UPSC / IAS'],'Computer Science':['Programming','Computer Science (CSE / IT)'],'Programming':['Web Development','App Development','Computer Science (CSE / IT)'],
+    'AI & Machine Learning':['Data Science & Analytics','Programming'],'English':['Spoken English','Communication Skills'],'Current Affairs':['General Knowledge','UPSC / IAS'],
+    'General Science':['Physics','Chemistry','Biology'],'Social Science':['History','Geography','Civics & Polity']};
+  out.filter(t=>RELATED[t]).slice(0,2).forEach(t=>RELATED[t].forEach(push));
+  push('Documentary & Explainers');
+  if(Array.isArray(v.tags))v.tags.forEach(t=>push(titleCase(t)));
+  /* Add the broader group heading of the best match (e.g. Engineering). */
+  const first=out.find(t=>byNorm.has(norm(t)));
+  const GENERIC_LEAD={'School & Boards':'School','Engineering':'Engineering','Medical & Health':'Medical','Competitive Exams':'Competitive Exams','Commerce & Business':'Commerce'};
+  if(first){const g=EDU_GROUPS.find(gr=>gr.items.includes(first)); const lead=g&&GENERIC_LEAD[g.g]; if(lead&&lead!==first)push(lead);}
+  if(!out.length)push(erGet('defaultUploadCategory','')||'Other Education');
+  return out.slice(0,8);
+}
+function applyTagSuggestions(v){
+  const st=upTagState;
+  const typed=document.getElementById('upTitle')?.value||'';
+  const s=suggestUploadTags(v,typed);
+  st.suggested=s; st.ai=v&&!v.unreviewed&&!v.simulated?s.slice():[];
+  if(!st.touched||!st.selected.length)st.selected=s.slice(0,3);
+  renderUploadTags();
+}
+/* What the server stores: category must be a listed category. */
+function uploadTagFields(){
+  const all=allEduTags(), sel=upTagState.selected.slice(), v=lastModerationVerdict||{};
+  const category=sel.find(t=>all.includes(t))||(all.includes(v.category)?v.category:'')||erGet('defaultUploadCategory','')||'Other Education';
+  const subject=sel.find(t=>t!==category)||'';
+  return {category,subject,tags:sel};
+}
+function openTagBrowser(){
+  overlay.innerHTML=`<div class="modal" onclick="closeOverlay()"><div class="sheet tagSheet" onclick="event.stopPropagation()">
+    <h3>Choose tags</h3>
+    <input class="field" id="tagSearch" placeholder="Search tags, e.g. Physics, NEET" oninput="renderTagBrowser()" autocomplete="off">
+    <div class="tagAddRow"><input class="field" id="tagCustom" maxlength="40" placeholder="Add your own tag"><button type="button" class="primary" onclick="addCustomTag()">Add</button></div>
+    <div class="tagSheetBody" id="tagSheetBody"></div>
+    <button type="button" class="primary" onclick="closeOverlay()" style="margin-top:10px">Done</button>
+  </div></div>`;
+  renderTagBrowser();
+}
+function renderTagBrowser(){
+  const body=document.getElementById('tagSheetBody'); if(!body)return;
+  const q=norm(document.getElementById('tagSearch')?.value||'');
+  const sel=upTagState.selected;
+  const custom=sel.filter(t=>!allEduTags().includes(t));
+  const groups=EDU_GROUPS.map(g=>({g:g.g,items:g.items.filter(t=>!q||norm(t).includes(q)||norm(g.g).includes(q))})).filter(g=>g.items.length);
+  body.innerHTML=(custom.length?`<h4>Your tags</h4><div class="upTagList">${custom.map(t=>tagChip(t,true)).join('')}</div>`:'')+
+    (groups.length?groups.map(g=>`<h4>${escapeHtml(g.g)}</h4><div class="upTagList">${g.items.map(t=>tagChip(t,sel.includes(t))).join('')}</div>`).join(''):`<p class="upTagsNote">No tag matches. Add it as your own tag above.</p>`);
+}
+function addCustomTag(){
+  const el=document.getElementById('tagCustom'); if(!el)return;
+  const t=titleCase(el.value).slice(0,40); if(!t)return;
+  const existing=allEduTags().find(x=>norm(x)===norm(t))||upTagState.selected.find(x=>norm(x)===norm(t));
+  if(existing&&upTagState.selected.includes(existing)){el.value='';return}
+  toggleUploadTag(existing||t); el.value='';
+}
+const MAX_REEL_SECONDS=300;   // 5 minutes
 var lastModerationVerdict=null;
 /* One check per chosen file. `seq` lets a stale result (user changed the
    video mid-check) be ignored; `xhr` lets it be cancelled. */
@@ -3098,6 +3290,7 @@ function runSimulatedEducationCheck(){
   setUploadAction('');
   setTimeout(()=>{
     lastModerationVerdict={status:'approved',simulated:true};
+    applyTagSuggestions(lastModerationVerdict);
     document.getElementById("check").innerHTML=`<div class="checkResult checkPass"><b>✅ Education Check passed</b>
       <p>Simulated only — no backend is connected, so the video was not actually analysed.</p></div>
       <p class="filterNote">Connect a backend (set API_BASE) to run the real AI check that watches the video and rejects non-educational content.</p>`;
@@ -3115,7 +3308,8 @@ function runRealEducationCheck(file,title){
   const seq=uploadCheck.seq, started=Date.now();
   let phase='upload', pct=0;
   uploadCheck.running=true;
-  setUploadAction('<button type="button" class="primary" disabled>Checking… you can add a title meanwhile</button>');
+  renderUploadTags();
+  setUploadAction('<button type="button" class="primary" disabled>Checking video…</button>');
   const paint=()=>{
     if(seq!==uploadCheck.seq||!box.isConnected)return;
     const secs=Math.floor((Date.now()-started)/1000);
@@ -3139,6 +3333,7 @@ function runRealEducationCheck(file,title){
        the check itself while publishing. */
     if(!done())return;
     lastModerationVerdict={status:'approved',approved:true,unreviewed:true};
+    applyTagSuggestions(lastModerationVerdict);
     box.innerHTML=`<div class="checkResult checkPass"><b>✅ Ready to publish</b>
       <p>${why}</p></div>`;
     setUploadAction('<button type="button" class="primary" onclick="publishUpload()">Publish Reel</button>');
@@ -3163,6 +3358,7 @@ function runRealEducationCheck(file,title){
     if((xhr.status<200||xhr.status>=300)&&verdict.status==='error'){
       box.innerHTML=`<div class="checkResult checkFail"><b>⚠️ Couldn't check this video</b><p>${escapeHtml(verdict.reason||'Please try again.')}</p></div>`;
       setUploadAction('<button type="button" class="primary" onclick="checkUpload()">Try again</button>');
+      renderUploadTags();
       return;
     }
     lastModerationVerdict=verdict;
@@ -3174,11 +3370,13 @@ function runRealEducationCheck(file,title){
 }
 function renderModerationVerdict(v){
   const box=document.getElementById("check");
+  if(!box)return;   // user left the Upload screen
   if(v.status==='approved'){
     /* Empty title? Fill in the AI's suggestion so the user can publish
        straight away (they can still edit it). */
     const titleEl=document.getElementById('upTitle');
     if(titleEl&&!titleEl.value.trim()&&v.suggested_title)titleEl.value=cleanTitle(v.suggested_title);
+    applyTagSuggestions(v);
     box.innerHTML=`<div class="checkResult checkPass"><b>✅ Education Check passed</b>
       <p>${v.unreviewed?'Automatic review was unavailable, so this was approved by default.':`Identified as <b>${escapeHtml(v.subject||v.category||'educational content')}</b>${v.confidence?` · ${Math.round(v.confidence*100)}% confidence`:''}`}</p>
       ${v.suggested_title?`<p class="suggestTitle">Suggested title: “${escapeHtml(v.suggested_title)}” <button type="button" onclick="useSuggestedTitle()">Use this</button></p>`:''}
@@ -3195,6 +3393,7 @@ function discardRejectedUpload(){
   const inp=document.getElementById('upFilePicker'); if(inp)inp.value='';
   const p=document.getElementById('preview'); if(p)p.innerHTML='';
   const picker=document.getElementById('uploadPicker'); if(picker)picker.innerHTML=uploadPickerHtml();
+  resetUploadTags();
   setUploadAction('<button type="button" class="primary" onclick="checkUpload()">Submit for Education Check</button>');
 }
 function renderRejection(v){
@@ -3236,8 +3435,8 @@ async function publishUpload(){
     toast('Please complete the Education Check first');return;
   }
   const id=Date.now();
-  const cat=document.getElementById("upCat").value;
-  const sub=(lastModerationVerdict&&lastModerationVerdict.subject)||cat;
+  const tf=uploadTagFields(), cat=tf.category;
+  const sub=tf.subject||(lastModerationVerdict&&lastModerationVerdict.subject)||cat;
   await dbPut({id,cat,sub,creator:profile.username,title,desc:"Uploaded by "+profile.name,blob:f});
   invalidateReelCache();
   toast("🎉 Reel published successfully");
@@ -3260,9 +3459,13 @@ async function publishToServer(file,title){
     form.append('video',file);
     form.append('title',title);
     form.append('creator',profile.username);
-    form.append('description','Uploaded by '+profile.name);
-    form.append('category',document.getElementById('upCat')?.value||'');
-    form.append('subject','');   // the server uses the subject the AI detected
+    const tf=uploadTagFields();
+    /* Tags go in the description too, so search finds them even before the
+       server stores the separate `tags` field. */
+    form.append('description','Uploaded by '+profile.name+(tf.tags.length?' · '+tf.tags.join(', '):''));
+    form.append('category',tf.category);
+    form.append('subject',tf.subject);   // empty: the server uses the subject the AI detected
+    form.append('tags',tf.tags.join(','));
     if(receipt)form.append('checkReceipt',receipt);
     const res=await fetch(`${API_BASE}/api/reels`,{method:'POST',body:form,headers:authHeaders()});
     const data=await res.json();
@@ -4148,7 +4351,7 @@ function unblockAccount(n){
   invalidateReelCache(); toast('Account unblocked'); settingDetail('blocked');
 }
 function helpArticle(type){
-  const text={start:'Start with Explore or Search. Select interests in Profile → Manage interests, then save useful reels.',upload:'Open Upload, add a video, pick a category and tap Submit for Education Check. The title is optional - the AI suggests one. If the check passes, tap Publish Reel.',report:'Open a reel and use More to choose the reason for your report.'}[type]||'Help';
+  const text={start:'Start with Explore or Search. Select interests in Profile → Manage interests, then save useful reels.',upload:'Open Upload and add a video - the Education Check starts by itself. The title is optional and the AI suggests one along with tags; keep the tags that fit or browse for more. If the check passes, tap Publish Reel.',report:'Open a reel and use More to choose the reason for your report.'}[type]||'Help';
   alert(text);
 }
 function submitProblem(){

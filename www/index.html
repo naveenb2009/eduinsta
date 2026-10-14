@@ -15,6 +15,37 @@
 <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22Gyanora%22%2C%22short_name%22%3A%22Gyanora%22%2C%22description%22%3A%22Educational%20short-video%20learning%20app%22%2C%22start_url%22%3A%22.%22%2C%22scope%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22orientation%22%3A%22portrait%22%2C%22background_color%22%3A%22%2305060F%22%2C%22theme_color%22%3A%22%2305060F%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage/svg%2Bxml%2C%253Csvg%2520xmlns%253D%2522http%253A//www.w3.org/2000/svg%2522%2520viewBox%253D%25220%25200%2520512%2520512%2522%253E%253Cdefs%253E%253ClinearGradient%2520id%253D%2522g%2522%2520x1%253D%25220%2522%2520y1%253D%25220%2522%2520x2%253D%25221%2522%2520y2%253D%25221%2522%253E%253Cstop%2520offset%253D%25220%2522%2520stop-color%253D%2522%25235eead4%2522/%253E%253Cstop%2520offset%253D%25221%2522%2520stop-color%253D%2522%25237c6cf6%2522/%253E%253C/linearGradient%253E%253C/defs%253E%253Crect%2520width%253D%2522512%2522%2520height%253D%2522512%2522%2520rx%253D%2522112%2522%2520fill%253D%2522url%2528%2523g%2529%2522/%253E%253Cpath%2520d%253D%2522M208%2520160%2520L368%2520256%2520L208%2520352%2520Z%2522%2520fill%253D%2522%2523fff%2522/%253E%253Cpath%2520d%253D%2522M128%2520120%2520L240%252072%2520L352%2520120%2520L240%2520168%2520Z%2522%2520fill%253D%2522%25230b0f1e%2522%2520opacity%253D%2522.85%2522/%253E%253Ccircle%2520cx%253D%2522352%2522%2520cy%253D%2522136%2522%2520r%253D%252221%2522%2520fill%253D%2522%2523facc15%2522/%253E%253C/svg%253E%22%2C%22sizes%22%3A%22any%22%2C%22type%22%3A%22image/svg%2Bxml%22%2C%22purpose%22%3A%22any%20maskable%22%7D%5D%7D">
 <style>
 *{box-sizing:border-box}
+
+/* ---------- Theme tokens ----------
+   The app ships two themes, chosen in Settings > Appearance:
+   White (default) and Black. Everything below the reel player reads these
+   tokens, so switching a theme only swaps the values here. The reel player
+   itself stays black in both themes - full-screen video reads best that way,
+   as it does in other reel apps. */
+:root{
+  --surface:#fff;           /* cards, sheets, fields, chips           */
+  --surface-2:#f1f1f4;      /* quieter fills: close button, reply bar */
+  --panel-bg:#fff;          /* the page behind the cards              */
+  --text:#111;
+  --text-2:#555;
+  --text-3:#777;
+  --border:#d8d8d8;         /* ordinary card and field edges          */
+  --line:#111;              /* deliberate black partition lines       */
+  --primary-bg:#111;
+  --primary-fg:#fff;
+}
+body.themeDark{
+  --surface:#15171e;
+  --surface-2:#1e212a;
+  --panel-bg:#0a0b11;
+  --text:#f1f2f5;
+  --text-2:#c2c6ce;
+  --text-3:#99a0ac;
+  --border:#2e3341;
+  --line:#3b4252;
+  --primary-bg:linear-gradient(90deg,var(--brand-teal),var(--brand-purple));
+  --primary-fg:#04101a;
+}
 :root{--brand-teal:#5eead4;--brand-purple:#7c6cf6;--brand-gold:#facc15;--brand-dark:#05060f}
 html,body{margin:0;height:100%;font-family:Arial,sans-serif;background:var(--brand-dark);color:#fff;overflow:hidden}
 button,input,select,textarea{font:inherit}
@@ -40,16 +71,16 @@ header>*{pointer-events:auto}
 .iconBtn{position:relative;background:transparent;border:0;color:#fff;width:38px;height:38px;font-size:19px;display:flex;align-items:center;justify-content:center;flex:none;filter:drop-shadow(0 1px 3px rgba(0,0,0,.85))}
 .notifBadge{position:absolute;top:-3px;right:-3px;background:#ff4d4f;color:#fff;font-size:9px;min-width:16px;height:16px;border-radius:9px;display:none;align-items:center;justify-content:center;padding:0 3px;font-weight:800;border:1.5px solid #05060f}
 .notifActions{display:flex;gap:8px;margin:2px 0 10px}
-.notifActions button{flex:1;border:1px solid #ddd;background:#fff;border-radius:9px;padding:8px;font-size:12px}
+.notifActions button{flex:1;border:1px solid var(--border);background:var(--surface);border-radius:9px;padding:8px;font-size:12px}
 .notifList{max-height:55dvh;overflow:auto}
-.notifItem{display:flex;align-items:flex-start;gap:10px;width:100%;border:0;border-top:1px solid #f0f0f0;background:#fff;padding:12px 4px;text-align:left;position:relative}
+.notifItem{display:flex;align-items:flex-start;gap:10px;width:100%;border:0;border-top:1px solid var(--border);background:var(--surface);padding:12px 4px;text-align:left;position:relative}
 .notifItem:first-child{border-top:0}
-.notifItem.unread{background:#f4fbfa}
+.notifItem.unread{background:var(--surface-2)}
 .notifIcon{font-size:19px;flex:none;margin-top:1px}
 .notifBody{flex:1;min-width:0}
 .notifBody b{display:block;font-size:13px}
-.notifBody div{font-size:12px;color:#555;margin-top:2px;line-height:1.4}
-.notifBody small{display:block;color:#999;margin-top:5px;font-size:11px}
+.notifBody div{font-size:12px;color:var(--text-2);margin-top:2px;line-height:1.4}
+.notifBody small{display:block;color:var(--text-3);margin-top:5px;font-size:11px}
 .notifDot{width:8px;height:8px;border-radius:50%;background:#5eead4;flex:none;margin-top:6px}
 .bottom{background:#05070c;border-top:1px solid rgba(255,255,255,.08)}
 
@@ -81,7 +112,7 @@ header>*{pointer-events:auto}
 .passwordField .field{padding-right:44px}
 .passwordToggle{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:transparent;border:0;color:inherit;font-size:16px;width:34px;height:34px;opacity:.85}
 .fieldError{color:#ff6b6b;font-size:12px;margin:-3px 0 8px 2px}
-.pwHint{display:block;font-size:11px;color:#888;margin:-4px 0 8px 2px;line-height:1.4}
+.pwHint{display:block;font-size:11px;color:var(--text-3);margin:-4px 0 8px 2px;line-height:1.4}
 .authGateLinks{display:flex;justify-content:space-between;align-items:center;margin-top:6px}
 .authGateLinks button{background:transparent;border:0;color:#5eead4;font-size:12px}
 .termsRow{display:flex;align-items:flex-start;gap:8px;font-size:12px;color:#bbb;margin:10px 0}
@@ -166,44 +197,44 @@ header>*{pointer-events:auto}
 .act.soundOn{color:#5eead4}
 
 /* ---------- Panels / generic UI ---------- */
-.panel{position:fixed;z-index:15;inset:calc(58px + env(safe-area-inset-top,0px)) 0 calc(70px + env(safe-area-inset-bottom,0px));background:linear-gradient(165deg,#f2fbf9 0%,#f6f4fd 45%,#fdf6ef 100%);color:#111;overflow:auto;padding:18px}
+.panel{position:fixed;z-index:15;inset:calc(58px + env(safe-area-inset-top,0px)) 0 calc(70px + env(safe-area-inset-bottom,0px));background:var(--panel-bg);color:var(--text);overflow:auto;padding:18px}
 .panel h2{margin-top:0}
 .chips{display:flex;gap:8px;overflow:auto;padding:5px 0 12px}
-.chip{white-space:nowrap;border:1px solid #ccc;background:#fff;color:#111;border-radius:18px;padding:8px 12px}
-.chip.on{background:#111;color:#fff}
+.chip{white-space:nowrap;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:18px;padding:8px 12px}
+.chip.on{background:var(--primary-bg);color:var(--primary-fg);border-color:transparent}
 .cards{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-.card{background:#fff;border:1px solid #ddd;border-radius:12px;padding:12px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px}
 .modal.exitModal{align-items:center;justify-content:center;padding:16px}
 .sheet.exitSheet{width:100%;max-width:340px;margin:0;text-align:center;border-radius:18px;padding:22px 18px 18px}
 .exitSheet h3{margin:0 0 6px;font-size:19px}
-.exitSheet p{margin:0 0 18px;color:#555}
+.exitSheet p{margin:0 0 18px;color:var(--text-2)}
 .exitBtns{display:flex;gap:10px}
 .exitBtns button{flex:1;width:auto;margin:0;padding:12px;border-radius:12px;font-weight:700}
-.loadMoreBtn{display:block;width:100%;margin:14px 0 6px;border:1px solid #ccc;background:#fff;color:#111;border-radius:12px;padding:12px;font-weight:600}
+.loadMoreBtn{display:block;width:100%;margin:14px 0 6px;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:12px;padding:12px;font-weight:600}
 .loadMoreBtn:disabled{opacity:.6}
 /* Scoped so it only styles plain action buttons. Without :not(), this rule
    overrode .switch/.chip/.networkBtn (higher specificity) and stretched them
    into full-width black bars inside settings cards. */
 .card button:not(.switch):not(.chip):not(.networkBtn):not(.passwordToggle):not(.close):not(.optionBtn):not(.btnSecondary):not(.btnDanger){margin-top:8px;border:0;border-radius:9px;padding:8px 10px;background:#111;color:#fff;width:100%}
-.field{width:100%;padding:12px;margin:7px 0;border:1px solid #ccc;border-radius:10px;background:#fff;color:#111}
+.field{width:100%;padding:12px;margin:7px 0;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text)}
 textarea.field{resize:vertical}
-.btnSecondary{width:100%;border:1px solid #d8d8d8;background:#fff;color:#333;border-radius:11px;padding:12px;font-weight:700;margin-top:8px}
+.btnSecondary{width:100%;border:1px solid var(--border);background:var(--surface);color:var(--text-2);border-radius:11px;padding:12px;font-weight:700;margin-top:8px}
 .btnSecondary:active{background:#f2f2f2}
-.btnDanger{width:100%;border:1px solid #f0bcbc;background:#fff;color:#b3261e;border-radius:11px;padding:12px;font-weight:700;margin-top:8px}
+.btnDanger{width:100%;border:1px solid #f0bcbc;background:var(--surface);color:#b3261e;border-radius:11px;padding:12px;font-weight:700;margin-top:8px}
 /* Safety net: any button in a sheet or panel that has no class of its own
    still gets a proper look instead of the raw browser default. */
 .sheet > button:not([class]),
 .detailBody > button:not([class]),
-.panel > button:not([class]){width:100%;border:1px solid #d8d8d8;background:#fff;color:#333;border-radius:11px;padding:12px;font-weight:700;margin-top:8px}
-.primary{background:#111;color:#fff;border:0;padding:12px 16px;border-radius:10px}
+.panel > button:not([class]){width:100%;border:1px solid var(--border);background:var(--surface);color:var(--text-2);border-radius:11px;padding:12px;font-weight:700;margin-top:8px}
+.primary{background:var(--primary-bg);color:var(--primary-fg);border:0;padding:12px 16px;border-radius:10px}
 .primary.danger{background:#b3261e}
 .primary:disabled{opacity:.6}
-.empty{padding:30px;text-align:center;color:#666}
+.empty{padding:30px;text-align:center;color:var(--text-3)}
 .modal{position:fixed;z-index:100;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:flex-end}
-.sheet{background:#fff;color:#111;width:100%;border-radius:20px 20px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom,0px));max-height:82dvh;overflow:auto}
+.sheet{background:var(--surface);color:var(--text);width:100%;border-radius:20px 20px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom,0px));max-height:82dvh;overflow:auto}
 .sheet h3{margin-top:0}
-.close{border:0;background:#f0f0f0;border-radius:50%;width:34px;height:34px;font-size:20px}
-.optionList button,.optionBtn{display:block;width:100%;border:1px solid #ddd;background:#fff;color:#111;border-radius:10px;padding:11px;text-align:left;margin:6px 0}
+.close{border:0;background:var(--surface-2);border-radius:50%;width:34px;height:34px;font-size:20px}
+.optionList button,.optionBtn{display:block;width:100%;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:10px;padding:11px;text-align:left;margin:6px 0}
 .searchBox{display:flex;gap:8px}
 .hidden{display:none!important}
 .otpBanner{position:fixed;z-index:300;left:50%;bottom:92px;transform:translateX(-50%);width:min(92vw,360px);background:#0f1729;color:#fff;border:1px solid #5eead4;border-radius:16px;padding:14px 16px;box-shadow:0 12px 40px rgba(0,0,0,.6);text-align:center}
@@ -215,72 +246,72 @@ textarea.field{resize:vertical}
 .otpWhy{font-size:10px;color:#7e8aa0;margin-top:9px;line-height:1.45}
 .toast{position:fixed;z-index:200;bottom:calc(88px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:11px 16px;border-radius:20px;border:1px solid #444;max-width:86vw;text-align:center;font-size:13px}
 
-.searchInput{width:100%;padding:13px 15px;border:1px solid #ccc;border-radius:12px;background:#fff;color:#111;caret-color:#111;outline:none;font-size:16px;margin-bottom:8px}
-.searchInput::placeholder{color:#888}
+.searchInput{width:100%;padding:13px 15px;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--text);caret-color:var(--text);outline:none;font-size:16px;margin-bottom:8px}
+.searchInput::placeholder{color:var(--text-3)}
 .searchResults{margin-top:6px}
-.searchReel{display:flex;gap:12px;background:#fff;border:1px solid #ddd;border-radius:14px;padding:9px;margin:9px 0;overflow:hidden;cursor:pointer}
+.searchReel{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:9px;margin:9px 0;overflow:hidden;cursor:pointer}
 .searchReel video{width:105px;height:145px;object-fit:cover;border-radius:10px;background:#111;flex:none}
 .searchReelInfo{padding:5px 3px;min-width:0}
 .searchReelInfo b{font-size:14px;line-height:1.25;display:block}
-.searchMeta{font-size:11px;color:#666;margin:6px 0}
-.searchDesc{font-size:12px;color:#444;line-height:1.3;margin-bottom:8px}
+.searchMeta{font-size:11px;color:var(--text-3);margin:6px 0}
+.searchDesc{font-size:12px;color:var(--text-2);line-height:1.3;margin-bottom:8px}
 .searchReelInfo .primary{font-size:12px;padding:8px 10px;width:auto}
 
 .commentHeader{padding:0 0 13px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
 .commentHeader h3,.commentHeader b{margin:0 0 3px;display:block}
-.commentHeader small{color:#777;display:block;max-width:280px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.commentHeader small{color:var(--text-3);display:block;max-width:280px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .commentList{max-height:45dvh;overflow:auto;padding:2px 0;min-height:120px}
 .commentRow{display:flex;gap:10px;padding:12px 0;border-bottom:1px solid #f0f0f0}
-.commentAvatar{width:38px;height:38px;flex:none;border-radius:50%;background:#e7e7e7;display:flex;align-items:center;justify-content:center;font-weight:700;color:#333}
+.commentAvatar{width:38px;height:38px;flex:none;border-radius:50%;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--text-2)}
 .commentBody{font-size:14px;line-height:1.4;flex:1;min-width:0;overflow-wrap:anywhere}
 .commentBody b{font-size:13px}
-.commentBody small{display:block;color:#999;margin-top:4px}
+.commentBody small{display:block;color:var(--text-3);margin-top:4px}
 /* Instagram-style comment actions: time · Reply on the left, heart on the right */
 .commentMeta{display:flex;align-items:center;gap:14px;margin-top:4px}
 .commentMeta small{margin:0}
-.commentReplyBtn{background:none;border:0;padding:0;color:#777;font-weight:700;font-size:12px;cursor:pointer}
-.commentLike{flex:none;align-self:flex-start;background:none;border:0;padding:6px 2px 0;min-width:34px;display:flex;flex-direction:column;align-items:center;gap:2px;color:#8a8a8a;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.commentReplyBtn{background:none;border:0;padding:0;color:var(--text-3);font-weight:700;font-size:12px;cursor:pointer}
+.commentLike{flex:none;align-self:flex-start;background:none;border:0;padding:6px 2px 0;min-width:34px;display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--text-3);cursor:pointer;-webkit-tap-highlight-color:transparent}
 .commentLike span{font-size:16px;line-height:1}
-.commentLike small{font-size:11px;color:#8a8a8a;min-height:12px}
+.commentLike small{font-size:11px;color:var(--text-3);min-height:12px}
 .commentLike.liked span{color:#ed4956}
 .commentRow.reply{margin-left:48px;padding:8px 0;border-bottom:0}
 .commentRow.reply .commentAvatar{width:28px;height:28px;font-size:12px}
-.viewReplies{display:flex;align-items:center;gap:8px;margin:0 0 8px 48px;background:none;border:0;padding:4px 0;color:#777;font-weight:700;font-size:12px;cursor:pointer}
+.viewReplies{display:flex;align-items:center;gap:8px;margin:0 0 8px 48px;background:none;border:0;padding:4px 0;color:var(--text-3);font-weight:700;font-size:12px;cursor:pointer}
 .viewReplies::before{content:"";width:22px;border-top:1px solid #bbb}
 .mention{color:#0a66c2;font-weight:600}
-.mentionBox{border:1px solid #e6e6e6;border-radius:12px;margin-top:8px;max-height:200px;overflow:auto;background:#fff}
-.mentionItem{display:flex;align-items:center;gap:10px;width:100%;background:none;border:0;border-bottom:1px solid #f2f2f2;padding:8px 10px;text-align:left;cursor:pointer}
+.mentionBox{border:1px solid var(--border);border-radius:12px;margin-top:8px;max-height:200px;overflow:auto;background:var(--surface)}
+.mentionItem{display:flex;align-items:center;gap:10px;width:100%;background:none;border:0;border-bottom:1px solid var(--border);padding:8px 10px;text-align:left;cursor:pointer}
 .mentionItem .commentAvatar{width:30px;height:30px;font-size:13px}
-.mentionItem b{display:block;font-size:13px}.mentionItem small{display:block;color:#777;font-size:12px}
+.mentionItem b{display:block;font-size:13px}.mentionItem small{display:block;color:var(--text-3);font-size:12px}
 .avatarWrap{position:relative;display:inline-flex}
 .personAvatar{position:relative}
 .activeDot{position:absolute;right:-1px;bottom:-1px;width:11px;height:11px;border-radius:50%;background:#22c55e;border:2px solid #fff}
 .avatarWrap .activeDot{border-color:#111}
 .personActions{display:flex;gap:10px;margin:10px 0 14px}.personActions .networkBtn{flex:1;padding:10px}
 .profileAvatar{position:relative}
-.searchSection{font-weight:800;font-size:13px;color:#555;margin:10px 2px 6px}
-.searchPerson{display:flex;align-items:center;gap:10px;width:100%;background:#fff;border:1px solid #eee;border-radius:12px;padding:8px 10px;margin-bottom:6px;text-align:left}
+.searchSection{font-weight:800;font-size:13px;color:var(--text-2);margin:10px 2px 6px}
+.searchPerson{display:flex;align-items:center;gap:10px;width:100%;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px 10px;margin-bottom:6px;text-align:left}
 .searchPerson .personAvatar{width:36px;height:36px}
-.searchPerson b{display:block;font-size:14px}.searchPerson small{display:block;color:#777;font-size:12px}
+.searchPerson b{display:block;font-size:14px}.searchPerson small{display:block;color:var(--text-3);font-size:12px}
 .creatorName[role=button],.commentName{cursor:pointer}
 .reportCard{padding:12px}
 .reportHead{display:flex;justify-content:space-between;font-weight:700;text-transform:capitalize;margin-bottom:6px}
-.reportHead small{color:#777;font-weight:400;text-transform:none}
-.reportWhat b{display:block}.reportWhat small{color:#777}
+.reportHead small{color:var(--text-3);font-weight:400;text-transform:none}
+.reportWhat b{display:block}.reportWhat small{color:var(--text-3)}
 .reportWhy{margin:6px 0 10px;color:#a33;font-size:13px}
 .reportActions{display:flex;gap:8px;justify-content:flex-end}
-.commentClosed{margin-top:10px;padding:12px;border-radius:12px;background:#f4f4f6;color:#555;font-size:13px;text-align:center}
-.replyBar{display:flex;justify-content:space-between;align-items:center;gap:8px;background:#f2f2f5;border-radius:10px;padding:8px 12px;margin-top:8px;font-size:13px;color:#555}
-.replyBar button{background:none;border:0;font-size:18px;line-height:1;color:#777;padding:0 2px}
+.commentClosed{margin-top:10px;padding:12px;border-radius:12px;background:var(--surface-2);color:var(--text-2);font-size:13px;text-align:center}
+.replyBar{display:flex;justify-content:space-between;align-items:center;gap:8px;background:var(--surface-2);border-radius:10px;padding:8px 12px;margin-top:8px;font-size:13px;color:var(--text-2)}
+.replyBar button{background:none;border:0;font-size:18px;line-height:1;color:var(--text-3);padding:0 2px}
 .commentsEmpty{padding:35px 10px!important;line-height:1.8}
 .commentComposer{padding:12px 0 0;border-top:1px solid #eee;display:flex;gap:8px;margin-top:8px}
-.commentComposer input{flex:1;border:1px solid #ddd;border-radius:22px;padding:11px 14px;outline:none}
-.commentComposer button{width:44px;border:0;border-radius:50%;background:#111;color:#fff;font-size:18px}
+.commentComposer input{flex:1;border:1px solid var(--border);border-radius:22px;padding:11px 14px;outline:none}
+.commentComposer button{width:44px;border:0;border-radius:50%;background:var(--primary-bg);color:var(--primary-fg);font-size:18px}
 
 /* ---------- Profile / settings ---------- */
 .profileTopBar,.detailHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:-4px 0 14px}
 .profileTopBar h2,.detailHead h2{margin:0;flex:1}
-.profileBack,.profileGear,.detailHead button{border:0;background:#eee;color:#111;border-radius:10px;width:38px;height:38px;font-size:22px}
+.profileBack,.profileGear,.detailHead button{border:0;background:var(--surface-2);color:var(--text);border-radius:10px;width:38px;height:38px;font-size:22px}
 .profileGear{font-size:18px}
 .profileHero{display:flex;align-items:center;gap:14px;padding:5px 0 14px}
 .profileHero h2{margin:0 0 4px}
@@ -288,16 +319,16 @@ textarea.field{resize:vertical}
 .profileAvatar.big{width:96px;height:96px}
 .erProfilePhoto{width:64px;height:64px;border-radius:50%;object-fit:cover;display:block;flex:none}
 .erProfilePhoto.big{width:96px;height:96px}
-.muted{color:#777}
-.profileStats{display:grid;grid-template-columns:repeat(4,1fr);background:#fff;border:1px solid #ddd;border-radius:13px;margin-bottom:12px;overflow:hidden}
-.profileStats button{border:0;background:#fff;border-right:1px solid #eee;padding:11px 3px;text-align:center}
+.muted{color:var(--text-3)}
+.profileStats{display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);border:1px solid var(--border);border-radius:13px;margin-bottom:12px;overflow:hidden}
+.profileStats button{border:0;background:var(--surface);border-right:1px solid #eee;padding:11px 3px;text-align:center}
 .profileStats button:last-child{border-right:0}
 .profileStats b{display:block;font-size:17px}
-.profileStats small{color:#777;font-size:10px}
+.profileStats small{color:var(--text-3);font-size:10px}
 .profileActions{display:flex;gap:9px;margin:4px 0 13px}
-.profileActions button{flex:1;border:1px solid #ddd;background:#fff;border-radius:10px;padding:10px;font-weight:700}
-.filterNote{font-size:12px;color:#666;margin:7px 0 12px;line-height:1.5}
-.profileCard .deleteReelBtn{background:#fff;color:#b91c1c;border:1px solid #f0bcbc;margin-top:6px}
+.profileActions button{flex:1;border:1px solid var(--border);background:var(--surface);border-radius:10px;padding:10px;font-weight:700}
+.filterNote{font-size:12px;color:var(--text-3);margin:7px 0 12px;line-height:1.5}
+.profileCard .deleteReelBtn{background:var(--surface);color:#b91c1c;border:1px solid #f0bcbc;margin-top:6px}
 a.playManageBtn{display:block;text-align:center;text-decoration:none;margin:8px 0}
 .accountExists{background:#3b2a12;border:1px solid #f59e0b;color:#fde68a;border-radius:12px;padding:14px;margin:0 0 14px;text-align:left}
 .accountExists b{display:block;color:#fbbf24;font-size:15px;margin-bottom:6px}
@@ -306,27 +337,27 @@ a.playManageBtn{display:block;text-align:center;text-decoration:none;margin:8px 
 .accountExists .btnSecondary{margin-top:8px}
 .accountExistsLink{background:none;border:0;color:#fbbf24;text-decoration:underline;font-size:13px;margin-top:10px;padding:0}
 .profileTabs{display:flex;border-bottom:1px solid #ddd;margin-bottom:14px}
-.profileTabs button{flex:1;border:0;background:none;padding:12px;font-weight:700;color:#777;border-bottom:2px solid transparent}
-.profileTabs button.selected{color:#111;border-bottom-color:#111}
+.profileTabs button{flex:1;border:0;background:none;padding:12px;font-weight:700;color:var(--text-3);border-bottom:2px solid transparent}
+.profileTabs button.selected{color:var(--text);border-bottom-color:var(--text)}
 .profileGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.profileCard{background:#fff;border:1px solid #ddd;border-radius:12px;padding:8px;overflow:hidden}
+.profileCard{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px;overflow:hidden}
 .profileCard b{display:block;font-size:13px;margin:7px 2px 3px}
-.profileCard small{display:block;color:#777;font-size:11px;margin:0 2px 7px}
-.profileCard button{width:100%;border:0;background:#111;color:#fff;border-radius:8px;padding:8px;font-size:12px}
+.profileCard small{display:block;color:var(--text-3);font-size:11px;margin:0 2px 7px}
+.profileCard button{width:100%;border:0;background:var(--primary-bg);color:var(--primary-fg);border-radius:8px;padding:8px;font-size:12px}
 .thumb+b{display:block;margin-top:8px}
 .thumb{height:120px;background:linear-gradient(135deg,#1a2030,#241b38);border-radius:9px;overflow:hidden;position:relative}
 .thumb video,.searchReel video{opacity:0;transition:opacity .25s}
 .thumb video.thumbReady,.searchReel video.thumbReady{opacity:1}
 .thumb video{width:100%;height:100%;object-fit:cover}
 .thumb span{position:absolute;left:8px;bottom:7px;background:#000b;color:#fff;border-radius:12px;padding:3px 7px;font-size:11px}
-.profileEmpty{background:#fff;border:1px dashed #ccc;border-radius:12px;margin-bottom:18px}
-.historyMeta{color:#999!important}
+.profileEmpty{background:var(--surface);border:1px dashed #ccc;border-radius:12px;margin-bottom:18px}
+.historyMeta{color:var(--text-3)!important}
 .historyClearBar{display:flex;justify-content:flex-end;margin-bottom:10px}
-.historyClearBar button{border:1px solid #ddd;background:#fff;border-radius:9px;padding:7px 11px;font-size:12px;color:#a33}
+.historyClearBar button{border:1px solid var(--border);background:var(--surface);border-radius:9px;padding:7px 11px;font-size:12px;color:#a33}
 
 /* ---------- Upload picker / camera ---------- */
 .upHead h2{margin:0 0 4px;font-size:22px;letter-spacing:-.2px}
-.upHead p{margin:0;font-size:13px;color:#555;line-height:1.45}
+.upHead p{margin:0;font-size:13px;color:var(--text-2);line-height:1.45}
 .upChips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 14px}
 .upChips span{font-size:11px;font-weight:700;color:#3f3a73;background:rgba(124,108,246,.10);border:1px solid rgba(124,108,246,.22);border-radius:999px;padding:4px 9px}
 .upDrop{position:relative;border-radius:20px;padding:2px;background:linear-gradient(135deg,var(--brand-teal),var(--brand-purple));box-shadow:0 10px 28px rgba(124,108,246,.18);margin:4px 0 16px}
@@ -352,16 +383,16 @@ a.playManageBtn{display:block;text-align:center;text-decoration:none;margin:8px 
 .upPrevInfo .upDur{font-weight:700;color:#5eead4}
 .upPrevBtns{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
 .upPrevBtns button{border:0;background:linear-gradient(90deg,var(--brand-teal),var(--brand-purple));color:#04101a;border-radius:999px;padding:8px 13px;font-size:12px;font-weight:800;white-space:nowrap;box-shadow:0 4px 12px rgba(124,108,246,.3)}
-.upTags{background:#fff;border:1px solid #e3e1ef;border-radius:14px;padding:12px;margin:10px 0}
+.upTags{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px;margin:10px 0}
 .upTagsHead{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
 .upTagsHead b{font-size:14px}
-.upTagsHead small{font-size:11px;color:#777}
+.upTagsHead small{font-size:11px;color:var(--text-3)}
 .upTagsSub{font-size:11px;font-weight:700;color:#6b6790;text-transform:uppercase;letter-spacing:.4px;margin:11px 0 6px}
 .upTagList{display:flex;flex-wrap:wrap;gap:7px}
 .upTag{border:1px solid #d9d5f3;background:#faf9ff;color:#2b2650;border-radius:999px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer;line-height:1.1}
 .upTag.on{background:linear-gradient(90deg,var(--brand-teal),var(--brand-purple));border-color:transparent;color:#04101a}
 .upTag.ai::before{content:'✨ ';}
-.upTagsNote{font-size:12px;color:#777;margin:2px 0}
+.upTagsNote{font-size:12px;color:var(--text-3);margin:2px 0}
 .upTagMore{border:0;background:transparent;color:var(--brand-purple);font-weight:800;font-size:12px;padding:8px 0 0;cursor:pointer}
 .tagSheet{max-height:78vh;display:flex;flex-direction:column}
 .tagSheetBody{overflow:auto;margin-top:8px}
@@ -386,20 +417,20 @@ a.playManageBtn{display:block;text-align:center;text-decoration:none;margin:8px 
 @keyframes spin{to{transform:rotate(360deg)}}
 .safetyFlags{font-weight:700}
 .suggestTitle button{border:0;background:#14532d;color:#fff;border-radius:7px;padding:4px 9px;font-size:11px;margin-left:5px}
-.uploadOption{display:flex;align-items:center;gap:12px;width:100%;border:1px solid #ddd;background:#fff;border-radius:11px;padding:13px;text-align:left;margin:6px 0;font-weight:700}
+.uploadOption{display:flex;align-items:center;gap:12px;width:100%;border:1px solid var(--border);background:var(--surface);border-radius:11px;padding:13px;text-align:left;margin:6px 0;font-weight:700}
 .uploadOption span{display:flex;width:36px;height:36px;border-radius:10px;align-items:center;justify-content:center;background:rgba(124,108,246,.10);color:var(--brand-purple)}
 .uploadOption span svg{width:20px;height:20px}
-a.uploadOption{text-decoration:none;color:#111;display:flex;align-items:center}
+a.uploadOption{text-decoration:none;color:var(--text);display:flex;align-items:center}
 .fieldLabel{display:block;font-weight:700;font-size:13px;margin:14px 2px 2px}
-.profileMenuCard,.settingSection{background:#fff;border:1px solid #ddd;border-radius:14px;margin:14px 0;overflow:hidden}
-.profileMenuCard h3,.settingSection h3{padding:13px 14px;margin:0;background:#f5f5f5;font-size:14px}
-.settingRow{width:100%;display:flex;align-items:center;gap:12px;padding:13px 14px;border:0;border-top:1px solid #eee;background:#fff;color:#111;text-align:left}
+.profileMenuCard,.settingSection{background:var(--surface);border:1px solid var(--border);border-radius:14px;margin:14px 0;overflow:hidden}
+.profileMenuCard h3,.settingSection h3{padding:13px 14px;margin:0;background:var(--surface-2);font-size:14px}
+.settingRow{width:100%;display:flex;align-items:center;gap:12px;padding:13px 14px;border:0;border-top:1px solid #eee;background:var(--surface);color:var(--text);text-align:left}
 .settingRow:first-of-type{border-top:0}
 .settingIcon{width:28px;text-align:center;font-size:20px}
 .settingText{flex:1;min-width:0}
 .settingText b{display:block;font-size:14px}
-.settingText small{display:block;color:#777;font-size:11px;margin-top:3px}
-.chev{font-size:23px;color:#888}
+.settingText small{display:block;color:var(--text-3);font-size:11px;margin-top:3px}
+.chev{font-size:23px;color:var(--text-3)}
 .detailBody{padding-bottom:24px}
 .toggleRow,.selectRow{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 0;border-bottom:1px solid #eee}
 .toggleRow>div,.selectRow>span{flex:1 1 auto;min-width:0}
@@ -408,42 +439,42 @@ a.uploadOption{text-decoration:none;color:#111;display:flex;align-items:center}
 .toggleRow:last-child,.selectRow:last-child{border-bottom:0}
 .toggleRow div{flex:1}
 .toggleRow b,.selectRow b{display:block;font-size:14px}
-.toggleRow small{display:block;color:#777;font-size:11px;margin-top:3px}
-.switch{width:48px!important;min-width:48px;max-width:48px;height:28px;border:0;border-radius:20px;background:#ccc;padding:3px;flex:none;margin:0;box-sizing:border-box}
-.switch i{display:block;width:22px;height:22px;border-radius:50%;background:#fff;transition:.15s;font-style:normal}
+.toggleRow small{display:block;color:var(--text-3);font-size:11px;margin-top:3px}
+.switch{width:48px!important;min-width:48px;max-width:48px;height:28px;border:0;border-radius:20px;background:var(--border);padding:3px;flex:none;margin:0;box-sizing:border-box}
+.switch i{display:block;width:22px;height:22px;border-radius:50%;background:var(--surface);transition:.15s;font-style:normal}
 .switch.on{background:#111}
 .switch i{pointer-events:none}
 .switch.on i{transform:translateX(20px)}
-.selectRow select{border:1px solid #ddd;border-radius:9px;padding:9px;max-width:50%;min-width:120px;background:#fff;flex:none}
+.selectRow select{border:1px solid var(--border);border-radius:9px;padding:9px;max-width:50%;min-width:120px;background:var(--surface);color:var(--text);flex:none}
 .deviceItem{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #f0f0f0}
 .deviceItem:last-child{border-bottom:0}
 .deviceItem>span{font-size:26px}
 .deviceItem div{flex:1}
-.deviceItem small{display:block;color:#777;margin-top:3px}
+.deviceItem small{display:block;color:var(--text-3);margin-top:3px}
 .deviceItem em{font-style:normal;color:#167c44;font-size:12px}
 .statsLarge{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
-.statsLarge div{background:#fff;border:1px solid #ddd;border-radius:12px;padding:15px;text-align:center}
+.statsLarge div{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:15px;text-align:center}
 .statsLarge b{display:block;font-size:21px}
-.statsLarge span{font-size:11px;color:#777}
-.infoBox{background:#f1f4f5;border-radius:10px;padding:11px;margin-top:12px;font-size:12px;color:#555}
+.statsLarge span{font-size:11px;color:var(--text-3)}
+.infoBox{background:var(--surface-2);border-radius:10px;padding:11px;margin-top:12px;font-size:12px;color:var(--text-2)}
 .trustBadge,.statusGood{background:#eaf7ee;color:#167c44;border-radius:10px;padding:12px;font-weight:700;margin-bottom:10px}
 
 /* ---------- Interests ---------- */
 .interestSheet{max-height:88dvh}
-.interestIntro{font-size:13px;color:#555;line-height:1.45;padding:0 0 8px}
+.interestIntro{font-size:13px;color:var(--text-2);line-height:1.45;padding:0 0 8px}
 .interestTabs{display:flex;gap:6px;border-bottom:1px solid #ddd;margin:4px 0 10px}
-.interestTab{flex:1;border:0;background:transparent;padding:10px;font-weight:700;color:#777;border-bottom:2px solid transparent}
+.interestTab{flex:1;border:0;background:transparent;padding:10px;font-weight:700;color:var(--text-3);border-bottom:2px solid transparent}
 .interestTab.active{color:#111;border-bottom-color:#111}
 .interestGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;max-height:36dvh;overflow:auto;padding:2px 1px}
-.interestItem{position:relative;border:1px solid #d7d7d7;background:#fff;color:#111;border-radius:11px;padding:10px 8px;text-align:left;font-size:13px;min-height:44px}
+.interestItem{position:relative;border:1px solid #d7d7d7;background:var(--surface);color:var(--text);border-radius:11px;padding:10px 8px;text-align:left;font-size:13px;min-height:44px}
 .interestItem span{font-weight:800;margin-right:5px}
-.interestItem.on{background:#111;color:#fff;border-color:#111}
+.interestItem.on{background:#111;color:#fff;border-color:var(--text)}
 .interestItem em{position:absolute;right:6px;top:5px;font-size:9px;font-style:normal;opacity:.65}
-.selectedInterestBox{border:1px solid #e1e1e1;background:#f7f7f7;border-radius:11px;padding:10px;margin-top:11px}
+.selectedInterestBox{border:1px solid var(--border);background:#f7f7f7;border-radius:11px;padding:10px;margin-top:11px}
 .selectedInterestBox>b{font-size:12px}
-.selectedChip{border:1px solid #ccc;background:#fff;border-radius:18px;padding:6px 9px;margin:6px 4px 0 0;font-size:11px}
+.selectedChip{border:1px solid var(--border);background:var(--surface);border-radius:18px;padding:6px 9px;margin:6px 4px 0 0;font-size:11px}
 .customInterest{display:flex;gap:7px;margin-top:10px}
-.customInterest input{flex:1;min-width:0;padding:11px;border:1px solid #ccc;border-radius:10px;color:#111;background:#fff}
+.customInterest input{flex:1;min-width:0;padding:11px;border:1px solid var(--border);border-radius:10px;color:var(--text);background:var(--surface)}
 .customInterest .primary{width:auto;white-space:nowrap}
 .interestActions{display:flex;gap:8px;margin-top:12px}
 .interestActions>*{flex:1}
@@ -451,26 +482,26 @@ a.uploadOption{text-decoration:none;color:#111;display:flex;align-items:center}
 
 /* ---------- Followers / following ---------- */
 .networkQuick{display:flex;gap:8px;margin:4px 0 13px}
-.networkQuick button{flex:1;border:1px solid #ddd;background:#fff;border-radius:10px;padding:9px;font-weight:700}
-.networkTabs{display:flex;background:#eee;border-radius:11px;padding:4px;margin:4px 0 8px}
-.networkTabs button{flex:1;border:0;background:transparent;border-radius:8px;padding:10px;font-weight:700;color:#777}
+.networkQuick button{flex:1;border:1px solid var(--border);background:var(--surface);border-radius:10px;padding:9px;font-weight:700}
+.networkTabs{display:flex;background:var(--surface-2);border-radius:11px;padding:4px;margin:4px 0 8px}
+.networkTabs button{flex:1;border:0;background:transparent;border-radius:8px;padding:10px;font-weight:700;color:var(--text-3)}
 .networkTabs button.active{background:#fff;color:#111;box-shadow:0 1px 4px #ccc}
 .networkTabs b{font-size:11px}
-.networkHint{font-size:12px;color:#777;margin:9px 2px 12px}
+.networkHint{font-size:12px;color:var(--text-3);margin:9px 2px 12px}
 .personRow{display:flex;align-items:center;gap:10px;padding:12px 2px;border-bottom:1px solid #eee}
 .personAvatar{width:42px;height:42px;border-radius:50%;background:#111;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;flex:none}
 .personInfo{flex:1;min-width:0}
 .personInfo b{display:block;font-size:14px}
-.personInfo small{display:block;color:#777;font-size:11px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.personInfo small{display:block;color:var(--text-3);font-size:11px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .networkBtn{border:1px solid #111;background:#111;color:#fff;border-radius:9px;padding:8px 10px;font-weight:700;font-size:11px;white-space:nowrap}
 .networkBtn.following{background:#fff;color:#111;border-color:#ccc}
-.youBadge{font-size:11px;color:#777;font-weight:700;padding:7px}
+.youBadge{font-size:11px;color:var(--text-3);font-weight:700;padding:7px}
 
 /* ---------- Auth ---------- */
 .authCard{max-width:520px;margin:auto}
-.authTabs{display:flex;gap:5px;background:#eee;padding:4px;border-radius:12px;margin-bottom:14px}
-.authTabs button{flex:1;border:0;padding:10px;border-radius:9px;background:transparent;color:#555;font-weight:700}
-.authTabs button.on{background:#fff;color:#111;box-shadow:0 1px 4px #ccc}
+.authTabs{display:flex;gap:5px;background:var(--surface-2);padding:4px;border-radius:12px;margin-bottom:14px}
+.authTabs button{flex:1;border:0;padding:10px;border-radius:9px;background:transparent;color:var(--text-2);font-weight:700}
+.authTabs button.on{background:var(--surface);color:var(--text);box-shadow:0 1px 4px #ccc}
 .userBadge{display:flex;align-items:center;gap:10px;background:#f4f4f4;border-radius:13px;padding:10px;margin:10px 0}
 .avatar{width:42px;height:42px;border-radius:50%;background:#111;color:#5eead4;display:flex;align-items:center;justify-content:center;font-weight:800;flex:none}
 
@@ -479,7 +510,7 @@ a.uploadOption{text-decoration:none;color:#111;display:flex;align-items:center}
 .erPhotoActions{display:flex;flex-direction:column;gap:8px;min-width:0}
 .erUploadPhoto{position:relative;display:inline-flex;width:max-content;cursor:pointer}
 .erUploadPhoto input{position:absolute;inset:0;opacity:0;cursor:pointer}
-.erPhotoActions small{font-size:11px;color:#777;line-height:1.35}
+.erPhotoActions small{font-size:11px;color:var(--text-3);line-height:1.35}
 
 
 /* ================= Desktop / wide-screen layout =================
@@ -562,23 +593,23 @@ a.uploadOption{text-decoration:none;color:#111;display:flex;align-items:center}
 .premiumBadgeRow{display:flex;align-items:center;gap:8px;background:linear-gradient(90deg,#fff7e0,#fff);border:1px solid #f2d98a;border-radius:12px;padding:10px 12px;margin:2px 0 12px;font-size:13px;cursor:pointer}
 .premiumBadgeRow span{margin-left:auto;color:#8a6d1a;font-size:12px}
 .upgradeBanner{display:flex;align-items:center;gap:8px;background:linear-gradient(90deg,#eafaf7,#f2effc);border:1px solid #cdeee7;border-radius:12px;padding:11px 12px;margin:2px 0 12px;font-size:13px;cursor:pointer}
-.upgradeBanner span{margin-left:auto;color:#555}
+.upgradeBanner span{margin-left:auto;color:var(--text-2)}
 .premiumActiveBanner{background:linear-gradient(90deg,#fff7e0,#fff);border:1px solid #f2d98a;border-radius:14px;padding:14px;margin-bottom:10px;font-size:14px}
 .premiumActiveBanner small{color:#8a6d1a}
-.compareTable{background:#fff;border:1px solid #ddd;border-radius:14px;overflow:hidden;margin:14px 0}
-.compareRow{display:grid;grid-template-columns:2.2fr 1fr 1fr;gap:6px;padding:10px 12px;border-top:1px solid #f0f0f0;font-size:12.5px;align-items:center}
+.compareTable{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin:14px 0}
+.compareRow{display:grid;grid-template-columns:2.2fr 1fr 1fr;gap:6px;padding:10px 12px;border-top:1px solid var(--border);font-size:12.5px;align-items:center}
 .compareRow:first-child{border-top:0}
 .compareHead{background:#f7f7f7;font-weight:700}
 .compareRow .yesCol{color:#167c44;font-weight:800}
 .planPicker{display:flex;flex-direction:column;gap:8px;margin:14px 0}
-.planCard{position:relative;text-align:left;border:1px solid #ddd;background:#fff;border-radius:13px;padding:13px}
+.planCard{position:relative;text-align:left;border:1px solid var(--border);background:var(--surface);border-radius:13px;padding:13px}
 .planCard.on{border-color:#7c6cf6;box-shadow:0 0 0 2px #7c6cf633}
 .planPrice{font-size:18px;font-weight:800;margin-top:4px}
-.planPrice small{font-size:11px;font-weight:400;color:#777}
+.planPrice small{font-size:11px;font-weight:400;color:var(--text-3)}
 .planBadge{position:absolute;right:12px;top:12px;background:#111;color:#fff;font-size:10px;border-radius:10px;padding:3px 8px}
 .checkoutSummary{display:flex;justify-content:space-between;align-items:center;background:#f7f7f7;border-radius:10px;padding:11px;margin:10px 0;font-size:14px}
 .paymentMethods{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
-.payMethod{display:flex;align-items:center;gap:7px;border:1px solid #ddd;background:#fff;border-radius:10px;padding:10px;font-size:13px;cursor:pointer}
+.payMethod{display:flex;align-items:center;gap:7px;border:1px solid var(--border);background:var(--surface);border-radius:10px;padding:10px;font-size:13px;cursor:pointer}
 .payMethod input{margin:0}
 
 /* ---------- Ads ---------- */
@@ -588,7 +619,7 @@ a.uploadOption{text-decoration:none;color:#111;display:flex;align-items:center}
 .adSponsor{color:#5eead4;font-weight:700;font-size:13px;margin-bottom:8px}
 .adHeadline{font-size:20px;font-weight:800;margin-bottom:18px;line-height:1.3}
 .adCta{width:auto;padding:11px 22px}
-.adDisclosure{margin-top:16px;font-size:11px;color:#999}
+.adDisclosure{margin-top:16px;font-size:11px;color:var(--text-3)}
 .adSkipHint{position:absolute;bottom:22px;left:0;right:0;text-align:center;font-size:12px;color:#8b93a7;animation:adHintPulse 2s ease-in-out infinite}
 @keyframes adHintPulse{0%,100%{opacity:.45}50%{opacity:1}}
 .adRemoveLink{display:block;margin:8px auto 0;background:transparent;border:0;color:#5eead4;font-size:11px;text-decoration:underline}
@@ -600,12 +631,12 @@ body.a11yLargeText .personInfo small,body.a11yLargeText .profileCard small{font-
 body.a11yLargeText .title,body.a11yLargeText .adHeadline{font-size:21px}
 body.a11yLargeText .nav{font-size:13px}
 
-body.a11yHighContrast .panel{background:#fff}
+body.a11yHighContrast .panel{background:var(--surface)}
 body.a11yHighContrast .card,body.a11yHighContrast .settingSection,body.a11yHighContrast .profileStats,
-body.a11yHighContrast .profileMenuCard,body.a11yHighContrast .compareTable{border-color:#111;border-width:2px}
+body.a11yHighContrast .profileMenuCard,body.a11yHighContrast .compareTable{border-color:var(--text);border-width:2px}
 body.a11yHighContrast .field,body.a11yHighContrast .searchInput,body.a11yHighContrast .chip,
-body.a11yHighContrast .btnSecondary,body.a11yHighContrast .optionBtn{border-color:#111;border-width:2px}
-body.a11yHighContrast .muted,body.a11yHighContrast .filterNote,body.a11yHighContrast .settingText small{color:#333}
+body.a11yHighContrast .btnSecondary,body.a11yHighContrast .optionBtn{border-color:var(--text);border-width:2px}
+body.a11yHighContrast .muted,body.a11yHighContrast .filterNote,body.a11yHighContrast .settingText small{color:var(--text-2)}
 body.a11yHighContrast .switch{border:2px solid #111}
 body.a11yHighContrast .primary{background:#000}
 
@@ -619,19 +650,65 @@ body.a11yReducedMotion *,body.a11yReducedMotion *::before,body.a11yReducedMotion
 .earningsHero small{display:block;font-size:11px;opacity:.85}
 .earningsHero b{display:block;font-size:31px;margin:5px 0;letter-spacing:-.02em}
 .earningsHero span{font-size:11px;opacity:.85}
-.revenueRow{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:10px 0;border-top:1px solid #f0f0f0;font-size:13px}
+.revenueRow{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:10px 0;border-top:1px solid var(--border);font-size:13px}
 .revenueRow:first-of-type{border-top:0}
 .revenueRow b{white-space:nowrap}
 .revenueRow .negAmount{color:#c0392b}
 .revenueRow.totalRow{border-top:2px solid #ddd;font-weight:800;padding-top:12px}
-.detailHead button[title="Lock"]{background:#eee}
+.detailHead button[title="Lock"]{background:var(--surface-2)}
 
 /* ---------- Advertiser campaigns ---------- */
-.campaignRow{display:flex;align-items:center;gap:10px;justify-content:space-between;padding:12px 0;border-top:1px solid #f0f0f0;font-size:13px}
+.campaignRow{display:flex;align-items:center;gap:10px;justify-content:space-between;padding:12px 0;border-top:1px solid var(--border);font-size:13px}
 .campaignActions{display:flex;flex-direction:column;gap:6px;flex-shrink:0}
 .campaignActions .btnSecondary{margin:0;padding:6px 10px;font-size:12px}
 .campaignRow:first-child{border-top:0}
-.campaignRow small{color:#777}
+.campaignRow small{color:var(--text-3)}
+
+/* ---------- Black theme: the few places a token swap isn't enough ---------- */
+body.themeDark .upTag{background:#1b1f2b;border-color:#333a4a;color:#dfe3ea}
+body.themeDark .upTag.on{background:linear-gradient(90deg,var(--brand-teal),var(--brand-purple));border-color:transparent;color:#04101a}
+/* A <select>'s own dropdown list is drawn by the OS, so tell it this is a
+   dark surface - otherwise the open list is white text on white. */
+body.themeDark{color-scheme:dark}
+body.themeDark .selectRow select option{background:var(--surface);color:var(--text)}
+body.themeDark textarea.field,body.themeDark select.field{background:var(--surface);color:var(--text)}
+body.themeDark .field::placeholder,body.themeDark .searchInput::placeholder{color:var(--text-3)}
+body.themeDark .statusGood,body.themeDark .trustBadge{background:#10261a;color:#9ae6b4}
+body.themeDark .deviceItem{border-color:var(--border)}
+body.themeDark .statsLarge b,body.themeDark .profileStats b{color:var(--text)}
+body.themeDark .checkPass{background:#10261a;border-color:#1f5134;color:#9ae6b4}
+body.themeDark .checkFail{background:#2a1314;border-color:#5f2426;color:#fca5a5}
+body.themeDark .checkPending{background:#101c2c;border-color:#24415f;color:#bcd6f2}
+body.themeDark .checkSpinner{border-color:#24415f;border-top-color:#bcd6f2}
+body.themeDark .suggestTitle button{background:#1f5134}
+body.themeDark .thumb{background:linear-gradient(135deg,#11151f,#1a1426)}
+body.themeDark .mention{color:#6cb3ff}
+body.themeDark .btnDanger,body.themeDark .profileCard .deleteReelBtn{border-color:#5f2426;color:#fca5a5;background:var(--surface)}
+body.themeDark .primary.danger{background:#b3261e;color:#fff}
+body.themeDark .profileAvatar{background:#1b1f2b}
+body.themeDark .switch.on{background:var(--brand-teal)}
+body.themeDark .upPreview{background:#15171e;border:1px solid var(--border)}
+body.themeDark .searchReel video{background:#000}
+body.themeDark .upChips span{background:rgba(124,108,246,.18);border-color:rgba(124,108,246,.4);color:#cfc9ff}
+body.themeDark .upHead p{color:var(--text-2)}
+body.themeDark .upDropInner{background:#15171e}
+body.themeDark .upDropMain{color:var(--text)}
+body.themeDark .upDropMain small{color:var(--text-3)}
+body.themeDark .upSource{background:#1b1f2b;border-color:#333a4a;color:#dfe3ea}
+body.themeDark .uploadOption,body.themeDark a.uploadOption{background:var(--surface);border-color:var(--border);color:var(--text)}
+body.themeDark .tagSheetBody h4,body.themeDark .upTagsSub{color:var(--text-3)}
+body.themeDark .commentClosed,body.themeDark .replyBar{background:var(--surface-2);color:var(--text-2)}
+
+/* ---------- White theme: black partition lines, as asked ---------- */
+body:not(.themeDark) .upPreview{background:#fff;border:1px solid var(--line)}
+body:not(.themeDark) .upPrevVid{border:1px solid var(--line);box-shadow:none}
+body:not(.themeDark) .upPrevInfo{border-left:1px solid var(--line);color:#333}
+body:not(.themeDark) .upPrevInfo b,body:not(.themeDark) .upPrevInfo .upDur{color:#111}
+body:not(.themeDark) .upTags{border-color:var(--line)}
+body:not(.themeDark) .upDrop{background:var(--line);padding:1px}
+body:not(.themeDark) .upDropInner{border-radius:17px}
+body:not(.themeDark) .upChips span{border-color:var(--line)}
+body:not(.themeDark) .upSource{border-color:var(--line)}
 </style>
 </head>
 <body>
@@ -925,6 +1002,7 @@ function refreshNotificationPanel(){
 function onSettingChanged(key){
   if(['activityStatus','allowMentions','commentPermission','notifyFollowers','notifyComments','loginAlerts'].includes(key))sendPresence();
   if(['autoplay','preload','dataSaver','wifiOnly'].includes(key))applyVideoWindow();
+  if(key==='theme')applyTheme();
 }
 function sendPresence(){
   if(!serverMode()||!(account&&account.loggedIn&&account.token))return;
@@ -4069,8 +4147,15 @@ async function loadNetworkPage(first){
 /* Accessibility preferences have to actually change the interface, otherwise
    the toggles are decorative. Applied to <body> so every screen inherits them,
    and re-applied at boot because the DOM is rebuilt on each render. */
+/* White (default) or Black, chosen in Settings > Appearance. One class on
+   <body> flips every screen, because the colours all come from the theme
+   tokens in the stylesheet. */
+function applyTheme(){
+  document.body.classList.toggle('themeDark',erGet('theme','White')==='Black');
+}
 function applyAccessibilitySettings(){
   const b=document.body;
+  applyTheme();
   b.classList.toggle('a11yLargeText',!!erGet('largeText',false));
   b.classList.toggle('a11yHighContrast',!!erGet('highContrast',false));
   b.classList.toggle('a11yReducedMotion',!!erGet('reducedMotion',false));
@@ -4163,7 +4248,7 @@ function settingsPage(){
       <div class="settingSection"><h3>Community</h3>${settingsRow('👥','Followers & following','People following you and accounts you follow','network')}</div>
       <div class="settingSection"><h3>Your Gyanora activity</h3>${settingsRow('🔖','Saved learning','Manage saved educational reels','saved')}${settingsRow('📊','Your activity','Likes, comments and follows','activity')}${settingsRow('🔔','Notifications','Choose which Gyanora alerts you receive','notifications')}</div>
       <div class="settingSection"><h3>Feed & learning</h3>${settingsRow('🎯','Interests','Subjects and topics used for recommendations','interests')}${settingsRow('🧠','Learning preferences','How your For You feed is chosen','content')}${settingsRow('💬','Engagement display','Show or hide like/share counts','counts')}${settingsRow('🚫','Muted creators','Creators hidden from your feed','muted')}</div>
-      <div class="settingSection"><h3>App & media</h3>${settingsRow('⬇️','Downloads & media','Mobile data and saving your reels','downloads')}${settingsRow('♿','Accessibility','Text size, contrast and motion','accessibility')}${settingsRow('📶','Data & playback','Data saver and autoplay behavior','data')}</div>
+      <div class="settingSection"><h3>App & media</h3>${settingsRow('🎨','Appearance','White or black theme for the whole app','appearance')}${settingsRow('⬇️','Downloads & media','Mobile data and saving your reels','downloads')}${settingsRow('♿','Accessibility','Text size, contrast and motion','accessibility')}${settingsRow('📶','Data & playback','Data saver and autoplay behavior','data')}</div>
       <div class="settingSection"><h3>Privacy & community</h3>${settingsRow('🛡️','Privacy','Control profile visibility and interactions','privacy')}${settingsRow('🗨️','Comment controls','Choose who can comment on your reels','comments')}${settingsRow('⚠️','Blocked accounts','Manage accounts you blocked','blocked')}</div>
       <div class="settingSection"><h3>Creator tools</h3>${settingsRow('🎥','Creator settings','Default upload category','creator')}${settingsRow('✓','Creator trust','Your education-creator status','trust')}</div>
       <div class="settingSection"><h3>Help & information</h3>${settingsRow('❓','Help centre','Common questions and quick guidance','help')}${settingsRow('🐞','Report a problem','Send us feedback or report a bug','problem')}${settingsRow('✅','Account status','See whether your account has restrictions','status')}${settingsRow('ℹ️','About Gyanora','Version and product information','about')}</div>
@@ -4230,7 +4315,7 @@ function settingDetail(key){
   if(key==='adminConfig'){if(!isOwner()){promptOwnerLogin();return}adminConfigPage();return}
   if(key==='ads'){if(!isOwner()){promptOwnerLogin();return}adCampaignsPage();return}
 
-  const titleMap={accountDetails:'Account details',security:'Sign-in & security',devices:'Active devices',activity:'Your activity',notifications:'Notifications',time:'Learning time',content:'Learning preferences',counts:'Engagement display',muted:'Muted creators',downloads:'Downloads & media',accessibility:'Accessibility',language:'Language',data:'Data & playback',privacy:'Privacy',circle:'Study Circle',comments:'Comment controls',blocked:'Blocked accounts',creator:'Creator settings',trust:'Creator trust',help:'Help centre',problem:'Report a problem',status:'Account status',about:'About Gyanora'};
+  const titleMap={accountDetails:'Account details',security:'Sign-in & security',devices:'Active devices',activity:'Your activity',notifications:'Notifications',time:'Learning time',content:'Learning preferences',counts:'Engagement display',muted:'Muted creators',downloads:'Downloads & media',appearance:'Appearance',accessibility:'Accessibility',language:'Language',data:'Data & playback',privacy:'Privacy',circle:'Study Circle',comments:'Comment controls',blocked:'Blocked accounts',creator:'Creator settings',trust:'Creator trust',help:'Help centre',problem:'Report a problem',status:'Account status',about:'About Gyanora'};
   let body='';
   if(key==='accountDetails') body=`<div class="card"><p><b>Name</b><br>${escapeHtml(profile.name)}</p><p><b>Username</b><br>${escapeHtml(profile.username)}</p><p><b>Role</b><br>${escapeHtml(profile.role)}</p><p><b>Login</b><br>${account.loggedIn?escapeHtml(account.email):'Not signed in'}</p><p><b>Phone number</b><br>${profile.phone?escapeHtml(maskPhone(profile.phone)):'Not added'}</p>${btnHtml(profile.phone?'Update phone number':'Add phone number',"updatePhonePage()")}${btnHtml('Edit profile',"editProfilePage()")}${btnHtml('Open account / sign-in',"authPage()")}</div>`;
   if(key==='security') body=`<div class="card">${toggleLine('loginAlerts','New sign-in alerts','Get a notification when your account signs in on another phone.',true)}${toggleLine('rememberDevice','Remember this device','Stay signed in on this phone. Turn off to log in every time you open Gyanora.',true)}${btnHtml('Change password',"securityAction('password')")}</div>`;
@@ -4246,6 +4331,7 @@ function settingDetail(key){
   if(key==='counts') body=`<div class="card">${toggleLine('showLikeCounts','Show like counts','Display engagement totals on reels.',true)}${toggleLine('showShareCounts','Show share counts','Display how often learning reels were shared.',true)}</div>`;
   if(key==='muted') body=`<div class="card">${(erGet('mutedCreators',[]).length?erGet('mutedCreators',[]).map(x=>`<div class="deviceItem"><div><b>${escapeHtml(x)}</b><small>Their reels are hidden from your feeds</small></div>${btnHtml('Unmute',`unmuteCreator(${jsArg(x)})`)}</div>`).join(''):'<div class="empty">No muted creators.</div>')}${btnHtml('Mute a creator',"muteCreator()")}</div>`;
   if(key==='downloads') body=`<div class="card">${toggleLine('wifiOnly','Wi-Fi only for media','On mobile data, reels don\'t play or load until you tap them.',false)}${toggleLine('autoSave','Auto-save published reels','Add your newly published reels to your Saved list automatically.',false)}${btnHtml('Open saved reels',"page('downloads')")}</div>`;
+  if(key==='appearance') body=`<div class="card">${selectLine('theme','App theme',['White','Black'],erGet('theme','White'))}<div class="infoBox">Changes apply straight away, everywhere in the app. Reels themselves always play on a black background so the video stands out.</div></div>`;
   if(key==='accessibility') body=`<div class="card">${toggleLine('largeText','Larger text','Increase text size across the whole app.',false)}${toggleLine('highContrast','Higher contrast','Stronger borders and darker text for easier reading.',false)}${toggleLine('reducedMotion','Reduce motion','Remove animations and smooth-scrolling effects.',false)}<div class="infoBox">These apply immediately across the app — try one and look at this screen.</div></div>`;
   if(key==='data') body=`<div class="card">${toggleLine('dataSaver','Data saver','Load only the reel on screen and skip video previews in Explore and Profile.',false)}${toggleLine('autoplay','Autoplay reels','Start the reel on screen automatically. Off: tap a reel to play it.',true)}${toggleLine('preload','Preload next reel','Load nearby reels early for smoother scrolling.',true)}<div class="infoBox">If autoplay with sound is blocked, tap the reel or use the sound button to start playback.</div></div>`;
   if(key==='privacy') body=`<div class="card">${toggleLine('activityStatus','Show active status','Followers can see when you are active (Active now, 5m ago). Turn it off to hide yours - you then also stop seeing theirs.',false)}${toggleLine('allowMentions','Allow mentions','Let people @mention you in comments. You get a notification when they do.',true)}</div>`;

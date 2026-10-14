@@ -3935,12 +3935,28 @@ function removeProfilePhoto(){
     delete creatorAvatars[currentUserId()];
   }
 }
-function shareProfile(){
-  shareContent({
+/* Share a LINK to the profile, not just a name. It points at our own
+   /u/<handle> page (the profile counterpart of /reel/:id), which previews
+   with a name and follower count in WhatsApp/Telegram and opens this
+   profile in the app when it is installed. Without a handle there is
+   nothing to address, so say so instead of sharing a bare name. */
+function profileLink(handle){
+  const h=String(handle||'').trim().replace(/^@+/,'');
+  return (serverMode()&&h)?`${API_BASE.replace(/\/$/,'')}/u/${encodeURIComponent(h)}`:null;
+}
+async function shareProfile(){
+  const link=profileLink(profile.username);
+  if(!link){
+    toast(serverMode()?'Add a username in Edit profile to share your profile':'Sharing needs a connection');
+    return;
+  }
+  const result=await shareContent({
     title:'Gyanora profile',
     text:`${profile.name} (${profile.username}) on Gyanora`,
+    url:link,
     dialogTitle:'Share profile'
   });
+  if(result==='clipboard')toast('Profile link copied — paste it anywhere');
 }
 
 /* ================= Interests ================= */
@@ -5750,6 +5766,11 @@ function exitAuthGate(){
     pendingDeepLinkReelId=null;
     openReel(id);
   }
+  if(pendingDeepLinkHandle){
+    const h=pendingDeepLinkHandle;
+    pendingDeepLinkHandle=null;
+    openProfileByHandle(h);
+  }
 }
 
 /* ---- Delete account (Settings > Danger zone) ----
@@ -5857,14 +5878,35 @@ function completePhoneUpdate(){
    cold start (app wasn't running) and while the app is already open, and
    jumping straight to the reel it names. */
 var pendingDeepLinkReelId=null;
+var pendingDeepLinkHandle=null;
 function handleDeepLinkUrl(url){
   if(!url)return;
-  const m=String(url).match(/\/reel\/([^/?#]+)/);
+  const u=String(url);
+  const person=u.match(/\/u\/@?([^/?#]+)/);
+  if(person){
+    const handle=decodeURIComponent(person[1]);
+    if(account&&account.loggedIn)openProfileByHandle(handle);
+    else pendingDeepLinkHandle=handle;   // opened once the user finishes logging in
+    return;
+  }
+  const m=u.match(/\/reel\/([^/?#]+)/);
   if(!m)return;
   const id=Number(m[1]);
   if(!Number.isFinite(id))return;
   if(account&&account.loggedIn)openReel(id);
   else pendingDeepLinkReelId=id;   // opened once the user finishes logging in
+}
+/* A shared link names an @handle; the profile screen needs the person's id. */
+async function openProfileByHandle(handle){
+  const h=String(handle||'').replace(/^@+/,'');
+  if(!h||!serverMode())return;
+  if(norm(h)===norm(String(profile.username||'').replace(/^@+/,''))){profileTab='uploads';profilePage();return}
+  try{
+    const res=await fetch(`${API_BASE}/api/people/by-handle/${encodeURIComponent(h)}`,{headers:authHeaders()});
+    const d=await res.json().catch(()=>({}));
+    if(res.ok&&d.ok&&d.pid)personPage(d.pid);
+    else toast(d.error||'That Gyanora profile is not available');
+  }catch{toast('Could not reach the server. Check your connection and try again.')}
 }
 function initDeepLinks(){
   const plugin=window.Capacitor?.Plugins?.App;

@@ -57,6 +57,7 @@ new_block = old_filter + f'''
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" android:host="{APP_LINK_HOST}" android:pathPrefix="/reel" />
+                <data android:scheme="https" android:host="{APP_LINK_HOST}" android:pathPrefix="/u" />
             </intent-filter>
 
             <!-- Custom-scheme fallback (eduinsta://reel/<id>) for the rare
